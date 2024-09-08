@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 
+from django.conf.global_settings import CSRF_TRUSTED_ORIGINS
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,9 +27,17 @@ SECRET_KEY = 'django-insecure-6@f00_hq#e3ox9$clwp5udx=oi8iq^@q@==nlcofoj*)q*@o+6
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "fd6d-105-161-218-223.ngrok-free.app",
+    "127.0.0.1:8000",
+    "127.0.0.1",
+]
 
+CORS_ORIGIN_ALLOW_ALL = True
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://fd6d-105-161-218-223.ngrok-free.app'
+]
 # Application definition
 
 INSTALLED_APPS = [
