@@ -17,9 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from Grade7.views import index
+from Grade7.views import index, tables, login, register
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),
+    path('tables/', tables, name='tables'),
+    path('auth/login', login, name='login'),
+    path('auth/register', register, name='register'),
 ]
