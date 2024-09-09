@@ -28,15 +28,16 @@ SECRET_KEY = 'django-insecure-6@f00_hq#e3ox9$clwp5udx=oi8iq^@q@==nlcofoj*)q*@o+6
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "fd6d-105-161-218-223.ngrok-free.app",
+    "34c9-154-159-237-53.ngrok-free.app",
     "127.0.0.1:8000",
     "127.0.0.1",
+    "localhost"
 ]
 
 CORS_ORIGIN_ALLOW_ALL = True
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://fd6d-105-161-218-223.ngrok-free.app'
+    'https://34c9-154-159-237-53.ngrok-free.app'
 ]
 # Application definition
 

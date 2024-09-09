@@ -1,0 +1,131 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<div class="flex">
+    <!-- Sticky Sidebar -->
+    <aside class="w-64 h-screen bg-gray-800 text-white sticky top-0 left-0 overflow-y-auto">
+        <div class="p-4">
+            <h2 class="text-2xl font-bold mb-4">School Admin</h2>
+            <nav>
+                <ul>
+                    <li class="mb-2">
+                        <button id="studentsDropdown" class="flex items-center justify-between w-full py-2 px-4 rounded hover:bg-gray-700">
+                            Students
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                        </button>
+                        <ul id="studentsMenu" class="hidden pl-4">
+                            <li><a href="#" class="block py-2 hover:bg-gray-700">View All</a></li>
+                            <li><a href="#" class="block py-2 hover:bg-gray-700">Add New</a></li>
+                            <li><a href="#" class="block py-2 hover:bg-gray-700">Attendance</a></li>
+                        </ul>
+                    </li>
+                    <li class="mb-2">
+                        <button id="teachersDropdown" class="flex items-center justify-between w-full py-2 px-4 rounded hover:bg-gray-700">
+                            Teachers
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                        </button>
+                        <ul id="teachersMenu" class="hidden pl-4">
+                            <li><a href="#" class="block py-2 hover:bg-gray-700">View All</a></li>
+                            <li><a href="#" class="block py-2 hover:bg-gray-700">Add New</a></li>
+                            <li><a href="#" class="block py-2 hover:bg-gray-700">Schedules</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#" class="block py-2 px-4 rounded hover:bg-gray-700">Classes</a></li>
+                    <li><a href="#" class="block py-2 px-4 rounded hover:bg-gray-700">Grades</a></li>
+                    <li><a href="#" class="block py-2 px-4 rounded hover:bg-gray-700">Calendar</a></li>
+                    <li><a href="#" class="block py-2 px-4 rounded hover:bg-gray-700">Reports</a></li>
+                    <li><a href="{% url 'fees_management' %}" class="block py-2 px-4 rounded hover:bg-gray-700">Fees Management</a></li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 p-8">
+        <h1 class="text-3xl font-bold mb-6">School Dashboard</h1>
+        
+        <!-- Grid Layout -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Statistics Cards -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Total Students</h3>
+                <p class="text-3xl font-bold">{{ total_students }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Total Teachers</h3>
+                <p class="text-3xl font-bold">{{ total_teachers }}</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Grades</h3>
+                <p class="text-3xl font-bold">{{ total_grades }}</p>
+            </div>
+            
+            <!-- New Fees Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Total Fees Collected</h3>
+                <p class="text-3xl font-bold">{{ total_fees_collected }}</p>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2">
+                <h2 class="text-xl font-bold mb-4">Recent Activity</h2>
+                <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for activity in recent_activities %}
+                        <li class="py-3">{{ activity.description }}</li>
+                    {% empty %}
+                        <li class="py-3">No recent activities</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- Calendar -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">Upcoming Events</h2>
+                <ul class="space-y-2">
+                    {% for event in upcoming_events %}
+                        <li>{{ event.date|date:"M d" }} - {{ event.title }}</li>
+                    {% empty %}
+                        <li>No upcoming events</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2 lg:col-span-3">
+                <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <a href="{% url 'add_student' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded text-center">
+                        Add Student
+                    </a>
+                    <a href="{% url 'take_attendance' %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded text-center">
+                        Take Attendance
+                    </a>
+                    <a href="{% url 'generate_reports' %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded text-center">
+                        Generate Reports
+                    </a>
+                    <a href="{% url 'send_notification' %}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded text-center">
+                        Send Notification
+                    </a>
+                    <a href="{% url 'fees_management' %}" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded text-center">
+                        Manage Fees
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle dropdowns
+    function toggleDropdown(dropdownId, menuId) {
+        const dropdown = document.getElementById(dropdownId);
+        const menu = document.getElementById(menuId);
+        dropdown.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+        });
+    }
+
+    toggleDropdown('studentsDropdown', 'studentsMenu');
+    toggleDropdown('teachersDropdown', 'teachersMenu');
+</script>
+{% endblock %}
