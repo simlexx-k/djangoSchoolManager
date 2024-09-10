@@ -1,0 +1,144 @@
+{% extends '_base.html' %}
+{% load custom_filters %}
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css">
+<style>
+    .sticky-table-container {
+        max-height: 70vh;
+        overflow-y: auto;
+        position: relative;
+    }
+    .sticky-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .sticky-table th {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        
+    }
+    .sticky-table td:first-child,
+    .sticky-table th:first-child {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        
+    }
+    .sticky-table th:first-child {
+        z-index: 3;
+    }
+    .sticky-table td,
+    .sticky-table th {
+        padding: 10px;
+        border: 1px solid #e3e6f0;
+    }
+    .sticky-table input[type="number"] {
+        width: 60px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="text-3xl font-bold mb-6 p-4 bg-gray-50 dark:bg-gray-900 dark:text-white border-t-2 border-white">Bulk Exam Result Entry for {{ grade.grade_name }}</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="flex flex-col rounded-lg shadow overflow-hidden">
+            <div class="flex inline-block w-full rounded-lg bg-gray-50 dark:bg-gray-700 p-4">
+                <div class="flex-inline justify-between rounded-lg dark:text-white">
+                    <label class="" for="exam_type">Exam Type:</label>
+                    <select class="rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white" name="exam_type" required>
+                        {% for exam_type in exam_types %}
+                            <option class="rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white" value="{{ exam_type.exam_id }}">{{ exam_type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex-inline justify-between">
+                    <label class="rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white" for="date_examined">Date Examined:</label>
+                        <input class="rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white" type="date" name="date_examined" required>
+                </div>   
+            </div>
+            <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 sm:px-6 lg:px-8">
+            <div class="sticky-table-container">
+                <table class="table table-bordered min-w-full text-left text-sm font-light text-surface dark:text-white sticky-table" id="dataTable" width="100%" cellspacing="0">
+                    <thead class="sticky top-0 border-b border-neutral-200 bg-[#332D2D] font-medium text-white dark:border-white/10">
+                        <tr>
+                            <th scope="col" class="px-6 py-4">Learner</th>
+                            {% for subject in subjects %}
+                                <th scope="col" class=" px-6 py-4">{{ subject.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for learner in learners %}
+                        <tr class="border-b border-neutral-200 dark:border-white/10">
+                            <td class="whitespace-nowrap px-6 py-4 font-medium">{{ learner.name }}</td>
+                            {% for subject in subjects %}
+                                <td class="whitespace-nowrap  px-6 py-4">
+                                    {% if learner.id in existing_scores and subject.subject_id in existing_scores|get_item:learner.id %}
+                                        <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" type="number" name="score_{{ learner.id }}_{{ subject.subject_id }}" value="{{ existing_scores|get_item:learner.id|get_item:subject.subject_id }}" readonly>
+                                    {% else %}
+                                        <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" type="number" name="score_{{ learner.id }}_{{ subject.subject_id }}" min="0" max="100" step="1">
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>        
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Submit Results</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.10.24/js/dataTables.bootstrap4.min.js"></script>
+<script>
+$(document).ready(function() {
+    var table = $('#dataTable').DataTable({
+        "pageLength": 25,
+        "order": [[0, "asc"]],
+        "columnDefs": [
+            { "orderable": false, "targets": "_all" }
+        ],
+        "language": {
+            "search": "Search students:"
+        }
+    });
+
+    // Custom filtering function for missing marks
+    $.fn.dataTable.ext.search.push(
+        function(settings, data, dataIndex) {
+            var row = table.row(dataIndex).node();
+            var inputs = $(row).find('input[type="number"]');
+            var hasMissingMark = false;
+            inputs.each(function() {
+                if ($(this).val() === '' && !$(this).prop('readonly')) {
+                    hasMissingMark = true;
+                    return false;  // break the loop
+                }
+            });
+            return hasMissingMark;
+        }
+    );
+
+    // Add a button to toggle between all students and students with missing marks
+    $('<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2 mb-2">Show Only Missing Marks</button>')
+        .prependTo('#dataTable_wrapper')
+        .on('click', function() {
+            $(this).toggleClass('active');
+            table.draw();
+            $(this).text($(this).hasClass('active') ? 'Show All Students' : 'Show Only Missing Marks');
+        });
+});
+</script>
+{% endblock %}

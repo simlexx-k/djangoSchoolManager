@@ -1,0 +1,13 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <h2 class="text-xl font-bold mb-4">Bulk Exam Result Entry</h2>
+    <form class="w-full text-black dark:text-white font-bold py-2 px-4 rounded-lg text-center" method="post">
+        {% csrf_token %}
+        {{ grade_form.as_p }}
+        <br>
+        <button class="w-full bg-green-500 hover:bg-green-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center" type="submit">Select Grade</button>
+    </form>
+</div>
+{% endblock %}

@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="{% static 'src/output.css' %}">
     {% endcompress %}
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
-
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body class="bg-primary-50 dark:bg-gray-900">

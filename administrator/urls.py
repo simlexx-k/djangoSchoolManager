@@ -23,4 +23,7 @@ urlpatterns = [
     path('control/api/reports/all-students/', generate_all_student_reports, name='generate_all_student_reports'),
     path('control/api/get-students-by-grade/', views.get_students_by_grade, name='get_students_by_grade'),
     path('control/api/reports/student/<int:student_id>/', views.generate_student_report, name='generate_student_report'),
+    path('exam-result-entry/', views.exam_result_entry, name='exam_result_entry'),
+    path('bulk-exam-result-entry/', views.bulk_exam_result_entry, name='bulk_exam_result_entry'),
+    path('bulk-exam-result-entry/<int:grade_id>/', views.bulk_exam_result_entry_grade, name='bulk_exam_result_entry_grade'),
 ]

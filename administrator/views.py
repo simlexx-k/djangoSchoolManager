@@ -25,6 +25,7 @@ from reportlab.pdfgen import canvas
 from io import BytesIO
 from exams.models import Subject, ExamResult, ExamType, LearnerTotalScore, Grade
 from zipfile import ZipFile
+from .forms import ExamResultForm, GradeSelectionForm
 
 
 # Create your views here.
@@ -265,7 +266,8 @@ def generate_class_report(request, grade_id):
         return redirect('report_options')
 
     learners = LearnerRegister.objects.filter(grade=grade)
-    subjects = Subject.objects.filter(grade=grade)
+    subjects =Subject.objects.filter(grade=grade)
+    #subjects = exams.models.Subject.objects.all()
 
     LearnerTotalScore.update_all_totals(exam_type)
 
@@ -509,3 +511,77 @@ def get_students_by_grade(request):
     grade_id = request.GET.get('grade_id')
     students = LearnerRegister.objects.filter(grade_id=grade_id).values('id', 'name')
     return JsonResponse(list(students), safe=False)
+
+def exam_result_entry(request):
+    if request.method == 'POST':
+        form = ExamResultForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Exam result added successfully.')
+            return redirect('exam_result_entry')
+    else:
+        form = ExamResultForm()
+    
+    return render(request, 'admin/exam_result_entry.html', {'form': form})
+
+def bulk_exam_result_entry(request):
+    if request.method == 'POST':
+        grade_form = GradeSelectionForm(request.POST)
+        if grade_form.is_valid():
+            grade = grade_form.cleaned_data['grade']
+            return redirect('bulk_exam_result_entry_grade', grade_id=grade.id)
+    else:
+        grade_form = GradeSelectionForm()
+    
+    return render(request, 'admin/bulk_exam_result_entry.html', {'grade_form': grade_form})
+
+def bulk_exam_result_entry_grade(request, grade_id):
+    grade = get_object_or_404(Grade, id=grade_id)
+    learners = LearnerRegister.objects.filter(grade=grade)
+    #subjects = exams.models.Subject.objects.all()
+    subjects = Subject.objects.filter(grade=grade)
+    exam_types = ExamType.objects.all()
+
+    if request.method == 'POST':
+        exam_type_id = request.POST.get('exam_type')
+        exam_type = get_object_or_404(ExamType, exam_id=exam_type_id)
+        date_examined = request.POST.get('date_examined')
+
+        for learner in learners:
+            for subject in subjects:
+                score = request.POST.get(f'score_{learner.id}_{subject.subject_id}')
+                if score:
+                    ExamResult.objects.update_or_create(
+                        exam_type=exam_type,
+                        learner_id=learner,
+                        subject=subject,
+                        defaults={
+                            'score': float(score),
+                            'date_examined': date_examined
+                        }
+                    )
+        
+        messages.success(request, 'Exam results added successfully.')
+        return redirect('bulk_exam_result_entry')
+
+    # Fetch existing scores
+    existing_scores = {}
+    for learner in learners:
+        learner_scores = {}
+        for subject in subjects:
+            try:
+                result = ExamResult.objects.get(learner_id=learner, subject=subject)
+                learner_scores[subject.subject_id] = result.score
+            except ExamResult.DoesNotExist:
+                pass
+        if learner_scores:
+            existing_scores[learner.id] = learner_scores
+
+    context = {
+        'grade': grade,
+        'learners': learners,
+        'subjects': subjects,
+        'exam_types': exam_types,
+        'existing_scores': existing_scores,
+    }
+    return render(request, 'admin/bulk_exam_result_entry_grade.html', context)

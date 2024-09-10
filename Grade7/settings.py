@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-6@f00_hq#e3ox9$clwp5udx=oi8iq^@q@==nlcofoj*)q*@o+6
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    "34c9-154-159-237-53.ngrok-free.app",
+    "5522-154-159-237-53.ngrok-free.app",
     "127.0.0.1:8000",
     "127.0.0.1",
     "localhost"
@@ -37,7 +37,7 @@ ALLOWED_HOSTS = [
 CORS_ORIGIN_ALLOW_ALL = True
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://34c9-154-159-237-53.ngrok-free.app'
+    'https://5522-154-159-237-53.ngrok-free.app'
 ]
 # Application definition
 
@@ -50,7 +50,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'learners.apps.LearnersConfig',
     'exams.apps.ExamsConfig',
+    'administrator.apps.AdministratorConfig',
     'compressor',
+    
 ]
 
 MIDDLEWARE = [
