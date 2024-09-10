@@ -504,3 +504,8 @@ def generate_student_pdf(student, exam_type):
     
     buffer.seek(0)
     return buffer
+
+def get_students_by_grade(request):
+    grade_id = request.GET.get('grade_id')
+    students = LearnerRegister.objects.filter(grade_id=grade_id).values('id', 'name')
+    return JsonResponse(list(students), safe=False)

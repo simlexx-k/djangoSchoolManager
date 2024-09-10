@@ -22,4 +22,5 @@ urlpatterns = [
     path('api/reports/class/<int:grade_id>/', generate_class_report, name='generate_class_report'),
     path('api/reports/student/<int:student_id>/', generate_student_report, name='generate_student_report'),
     path('control/api/reports/all-students/', views.generate_all_student_reports, name='generate_all_student_reports'),
+    path('control/api/get-students-by-grade/', views.get_students_by_grade, name='get_students_by_grade'),
 ]

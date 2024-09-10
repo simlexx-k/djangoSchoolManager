@@ -5,15 +5,15 @@ class Grade(models.Model):
     GRADES = [
         ('Pre-Primary-1', 'Pre-Primary-1'),
         ('Pre-Primary-2', 'Pre-Primary-2'),
-        ('1', 'Grade 1'),
-        ('2', 'Grade 2'),
-        ('3', 'Grade 3'),
-        ('4', 'Grade 4'),
-        ('5', 'Grade 5'),
-        ('6', 'Grade 6'),
-        ('7', 'Grade 7'),
-        ('8', 'Grade 8'),
-        ('9', 'Grade 9'),
+        ('Grade 1', 'Grade 1'),
+        ('Grade 2', 'Grade 2'),
+        ('Grade 3', 'Grade 3'),
+        ('Grade 4', 'Grade 4'),
+        ('Grade 5', 'Grade 5'),
+        ('Grade 6', 'Grade 6'),
+        ('Grade 7', 'Grade 7'),
+        ('Grade 8', 'Grade 8'),
+        ('Grade 9', 'Grade 9'),
     ]
     grade_name = models.CharField(max_length=100, choices=GRADES, unique=True)
     grade_description = models.TextField()
