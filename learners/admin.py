@@ -1,7 +1,7 @@
 from multiprocessing.resource_tracker import register
 
 from django.contrib import admin
-from .models import LearnerRegister, FeesModel
+from .models import LearnerRegister, FeesModel, Grade
 
 # Register your models here.
 #admin.site.register(LearnerRegister)
@@ -18,3 +18,8 @@ class LearnerRegisterAdmin(admin.ModelAdmin):
     search_fields = ['name', 'learner_id',]  # Add search fields for LearnerRegister
 
 admin.site.register(LearnerRegister, LearnerRegisterAdmin)
+
+class GradeAdmin(admin.ModelAdmin):
+    list_display = ("id","grade_name", "grade_description")
+
+admin.site.register(Grade, GradeAdmin)

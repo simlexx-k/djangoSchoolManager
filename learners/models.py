@@ -1,52 +1,40 @@
 from django.db import models
 
+
 class Grade(models.Model):
     GRADES = [
         ('Pre-Primary-1', 'Pre-Primary-1'),
         ('Pre-Primary-2', 'Pre-Primary-2'),
-        ('grade1', 'Grade 1'),
-        ('grade2', 'Grade 2'),
-        ('grade3', 'Grade 3'),
-        ('grade4', 'Grade 4'),
-        ('grade5', 'Grade 5'),
-        ('grade6', 'Grade 6'),
-        ('grade7', 'Grade 7'),
-        ('grade8', 'Grade 8'),
-        ('grade9', 'Grade 9'),
+        ('1', 'Grade 1'),
+        ('2', 'Grade 2'),
+        ('3', 'Grade 3'),
+        ('4', 'Grade 4'),
+        ('5', 'Grade 5'),
+        ('6', 'Grade 6'),
+        ('7', 'Grade 7'),
+        ('8', 'Grade 8'),
+        ('9', 'Grade 9'),
     ]
-    grade_name = models.CharField(max_length=100, choices=GRADES, default='Grade 1')
+    grade_name = models.CharField(max_length=100, choices=GRADES, unique=True)
     grade_description = models.TextField()
 
     def __str__(self):
         return self.grade_name
 
+
 class LearnerRegister(models.Model):
-    GRADES = [
-        ('Pre-Primary-1', 'Pre-Primary-1'),
-        ('Pre-Primary-2', 'Pre-Primary-2'),
-        ('grade1', 'Grade 1'),
-        ('grade2', 'Grade 2'),
-        ('grade3', 'Grade 3'),
-        ('grade4', 'Grade 4'),
-        ('grade5', 'Grade 5'),
-        ('grade6', 'Grade 6'),
-        ('grade7', 'Grade 7'),
-        ('grade8', 'Grade 8'),
-        ('grade9', 'Grade 9'),
-        
-    ]
     register_date = models.DateTimeField(auto_now_add=True)
-    learner_id = models.IntegerField(default=0,)
+    learner_id = models.IntegerField(unique=True)
     date_of_birth = models.DateField()
     name = models.CharField(max_length=100)
-    grade_name = models.CharField(max_length=100, choices=GRADES, default='Grade 1')
+    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='learners', default='1')
     gender = models.CharField(max_length=100)
     name_of_parent = models.CharField(max_length=100, default='Parent')
-    #home_address = models.CharField(max_length=100), default='')
     parent_contact = models.CharField(max_length=100, default='Contact')
 
     def __str__(self):
         return f"{self.learner_id} {self.name}"
+
 
 class FeesModel(models.Model):
     PAYMENT_METHODS = [
@@ -58,7 +46,7 @@ class FeesModel(models.Model):
     ]
 
     register_date = models.DateTimeField(auto_now_add=True)
-    #payment_date = models.DateTimeField(auto_now_add=True)
+    # payment_date = models.DateTimeField(auto_now_add=True)
     payment_id = models.IntegerField(default=0)
     amount = models.IntegerField()
     payment_type = models.CharField(max_length=100)
