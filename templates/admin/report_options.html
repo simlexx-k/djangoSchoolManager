@@ -35,16 +35,52 @@
             <form action="{% url 'generate_student_report' student_id=0 %}" method="get" id="studentReportForm">
                 <div class="mb-4">
                     <label for="student_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Student ID</label>
-                    <select id="student_id" name="class_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <select id="student_id" name="student_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         {% for student in students %}
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300" for="student_id">{{ student.name }}</label>
                             <option value="{{ student.id }}">{{ student.name }}</option>
                         {% endfor %}
-                    </select>                
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="exam_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Exam Type</label>
+                    <select id="exam_type" name="exam_type" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        {% for exam_type in exam_types %}
+                            <option value="{{ exam_type.exam_id }}">{{ exam_type.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <button type="submit" class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                     Generate Student Report
                 </button>
             </form>
+        </div>
+    </div>
+    <br>
+    <h2 class="text-3xl font-bold mb-6">Generate All Student Reports</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Class Reports</h2>
+                <form action="{% url 'generate_all_student_reports' %}" method="get">
+                    <div class="mb-4">
+                    <select name="grade_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        {% for grade in grades %}
+                            <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
+                        {% endfor %}
+                    </select>
+                    </div>
+                    <div class="mb-4">
+                    <select name="exam_type" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        {% for exam_type in exam_types %}
+                            <option value="{{ exam_type.exam_id }}">{{ exam_type.name }}</option>
+                        {% endfor %}
+                    </select>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Generate All Reports
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </div>

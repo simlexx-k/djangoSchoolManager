@@ -24,6 +24,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.pdfgen import canvas
 from io import BytesIO
 from exams.models import Subject, ExamResult, ExamType, LearnerTotalScore, Grade
+from zipfile import ZipFile
 
 
 # Create your views here.
@@ -258,7 +259,7 @@ def generate_class_report(request, grade_id):
         return redirect('report_options')
 
     try:
-        exam_type = ExamType.objects.get(id=exam_type_id)
+        exam_type = ExamType.objects.get(exam_id=exam_type_id)
     except ExamType.DoesNotExist:
         messages.error(request, f"Exam type with id {exam_type_id} does not exist.")
         return redirect('report_options')
@@ -328,15 +329,39 @@ def generate_student_report(request, student_id):
     if student_id == 0:
         student_id = request.GET.get('student_id')
         if not student_id:
+            messages.error(request, "No student selected.")
             return redirect('report_options')
 
-    student = get_object_or_404(LearnerRegister, id=student_id)
-    exam_type = get_object_or_404(ExamType, exam_id=request.GET.get('exam_type'))
+    try:
+        student = LearnerRegister.objects.get(id=student_id)
+    except LearnerRegister.DoesNotExist:
+        messages.error(request, f"Student with id {student_id} does not exist.")
+        return redirect('report_options')
+
+    exam_type_id = request.GET.get('exam_type')
+    if not exam_type_id:
+        messages.error(request, "No exam type selected.")
+        return redirect('report_options')
+
+    try:
+        exam_type = ExamType.objects.get(exam_id=exam_type_id)
+    except ExamType.DoesNotExist:
+        messages.error(request, f"Exam type with id {exam_type_id} does not exist.")
+        return redirect('report_options')
+
     results = ExamResult.objects.filter(learner_id=student, exam_type=exam_type).select_related('subject')
 
-    LearnerTotalScore.update_all_totals(exam_type)
+    if not results.exists():
+        messages.warning(request, f"No results found for {student.name} in {exam_type.name}.")
+        return redirect('report_options')
 
-    total_score = LearnerTotalScore.objects.get(learner=student, exam_type=exam_type).total_score
+    try:
+        LearnerTotalScore.update_all_totals(exam_type)
+        total_score = LearnerTotalScore.objects.get(learner=student, exam_type=exam_type).total_score
+    except LearnerTotalScore.DoesNotExist:
+        messages.error(request, f"Total score not found for {student.name} in {exam_type.name}.")
+        return redirect('report_options')
+
     class_rank = LearnerTotalScore.objects.filter(
         learner__grade=student.grade,
         exam_type=exam_type,
@@ -367,13 +392,13 @@ def generate_student_report(request, student_id):
 
     table = Table(data)
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.darkkhaki),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 12),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
         ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
@@ -393,3 +418,89 @@ def generate_student_report(request, student_id):
     response['Content-Disposition'] = f'attachment; filename="{student.name}_{exam_type.name}_report.pdf"'
     response.write(pdf)
     return response
+
+def generate_all_student_reports(request):
+    grade_id = request.GET.get('grade_id')
+    exam_type_id = request.GET.get('exam_type')
+
+    if not grade_id or not exam_type_id:
+        messages.error(request, "Both grade and exam type must be selected.")
+        return redirect('report_options')
+
+    try:
+        grade = Grade.objects.get(id=grade_id)
+        exam_type = ExamType.objects.get(exam_id=exam_type_id)
+    except (Grade.DoesNotExist, ExamType.DoesNotExist):
+        messages.error(request, "Invalid grade or exam type selected.")
+        return redirect('report_options')
+
+    students = LearnerRegister.objects.filter(grade=grade)
+
+    # Create a ZIP file to store all PDFs
+    zip_buffer = BytesIO()
+    with ZipFile(zip_buffer, 'w') as zip_file:
+        for student in students:
+            pdf_buffer = generate_student_pdf(student, exam_type)
+            zip_file.writestr(f"{student.name}_{exam_type.name}_report.pdf", pdf_buffer.getvalue())
+
+    # Prepare response
+    response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+    response['Content-Disposition'] = f'attachment; filename="{grade.grade_name}_{exam_type.name}_all_reports.zip"'
+    return response
+
+def generate_student_pdf(student, exam_type):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph(f"Student Report: {student.name}", styles['Title']))
+    elements.append(Spacer(1, 12))
+
+    results = ExamResult.objects.filter(learner_id=student, exam_type=exam_type).select_related('subject')
+    
+    try:
+        total_score = LearnerTotalScore.objects.get(learner=student, exam_type=exam_type).total_score
+    except LearnerTotalScore.DoesNotExist:
+        total_score = sum(result.score for result in results)
+
+    class_rank = LearnerTotalScore.objects.filter(
+        learner__grade=student.grade,
+        exam_type=exam_type,
+        total_score__gt=total_score
+    ).count() + 1
+
+    elements.append(Paragraph(f"Class: {student.grade.grade_name}", styles['Normal']))
+    elements.append(Paragraph(f"Exam: {exam_type.name}", styles['Normal']))
+    elements.append(Paragraph(f"Rank: {class_rank} out of {student.grade.learners.count()}", styles['Normal']))
+    elements.append(Spacer(1, 12))
+
+    data = [['Subject', 'Score', 'Grade']]
+    for result in results:
+        data.append([result.subject.name, result.score, result.get_grade()])
+
+    data.append(['Total', total_score, ''])
+
+    table = Table(data)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+
+    elements.append(table)
+    doc.build(elements)
+    
+    buffer.seek(0)
+    return buffer

@@ -30,7 +30,7 @@
             <!-- New Fees Card -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Total Fees Collected</h3>
-                <p class="text-3xl font-bold">{{ total_fees_collected }}</p>
+                <p class="text-3xl font-bold">Ksh.{{ total_fees_collected }}</p>
             </div>
             
             <!-- Recent Activity -->
@@ -67,7 +67,7 @@
                     <a href="{% url 'take_attendance' %}" class="w-full bg-green-500 hover:bg-green-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
                         Take Attendance
                     </a>
-                    <a href="{% url 'generate_reports' %}" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
+                    <a href="{% url 'report_options' %}" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
                         Generate Reports
                     </a>
                     <a href="{% url 'send_notification' %}" class="w-full bg-red-500 hover:bg-red-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
@@ -94,5 +94,6 @@
 
     toggleDropdown('studentsDropdown', 'studentsMenu');
     toggleDropdown('teachersDropdown', 'teachersMenu');
+    toggleDropdown('academicsDropdown', 'academicsMenu');
 </script>
 {% endblock %}
