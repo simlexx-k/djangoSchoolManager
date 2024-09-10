@@ -233,11 +233,11 @@ def export_payments(request, format):
 
 def report_options(request):
     grades = learners.models.Grade.objects.all()
-    students = LearnerRegister.objects.all()
     exam_types = exams.models.ExamType.objects.all()
-    exam = exams.models.ExamType.objects.all()
-    return render(request, 'admin/report_options.html',
-                  {'grades': grades, 'exam_types': exam_types, 'students': students, 'exams': exam})
+    return render(request, 'admin/report_options.html', {
+        'grades': grades,
+        'exam_types': exam_types
+    })
 
 
 def generate_class_report(request, grade_id):
