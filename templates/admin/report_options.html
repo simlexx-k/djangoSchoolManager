@@ -67,7 +67,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h2 class="text-xl font-bold mb-4">Class Reports</h2>
-                <form action="{% url 'generate_all_student_reports' %}" method="get">
+                <form action="{% url 'generate_all_student_report' %}" method="get">
                     <div class="mb-4">
                     <select name="grade_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         {% for grade in grades %}

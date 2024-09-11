@@ -242,89 +242,242 @@ def report_options(request):
     })
 
 
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from reportlab.graphics.charts.linecharts import HorizontalLineChart
+from reportlab.graphics.charts.piecharts import Pie
+from django.db.models import Avg, Max, Min
+from learners.models import LearnerRegister, Grade, School
+from exams.models import ExamType, ExamResult, LearnerTotalScore, Subject
+from datetime import datetime
+
 def generate_class_report(request, grade_id):
-    if grade_id == 0:
-        grade_id = request.GET.get('grade_id')
-        if not grade_id:
-            messages.error(request, "No grade selected.")
-            return redirect('report_options')
-
-    try:
-        grade = Grade.objects.get(id=grade_id)
-    except Grade.DoesNotExist:
-        messages.error(request, f"Grade with id {grade_id} does not exist.")
-        return redirect('report_options')
-
+    grade = get_object_or_404(Grade, id=grade_id)
     exam_type_id = request.GET.get('exam_type')
-    if not exam_type_id:
-        messages.error(request, "No exam type selected.")
-        return redirect('report_options')
-
-    try:
-        exam_type = ExamType.objects.get(exam_id=exam_type_id)
-    except ExamType.DoesNotExist:
-        messages.error(request, f"Exam type with id {exam_type_id} does not exist.")
-        return redirect('report_options')
+    exam_type = get_object_or_404(ExamType, exam_id=exam_type_id)
 
     learners = LearnerRegister.objects.filter(grade=grade)
     subjects = Subject.objects.filter(grades=grade)
-
-    LearnerTotalScore.update_all_totals(exam_type)
-
-    results = ExamResult.objects.filter(learner_id__grade=grade, exam_type=exam_type).select_related('learner_id',
-                                                                                                     'subject')
-
-    learner_scores = LearnerTotalScore.objects.filter(learner__grade=grade, exam_type=exam_type).order_by(
-        '-total_score')
+    class_teacher_remark = grade.class_teacher_remark
+    # Fetch school information
+    school = School.objects.first()
 
     # Generate PDF
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.2*inch, bottomMargin=0.2*inch)
     elements = []
 
     styles = getSampleStyleSheet()
-    elements.append(Paragraph(f"Class Report: {grade.grade_name} - {exam_type.name}", styles['Title']))
-    elements.append(Spacer(1, 12))
+    styles.add(ParagraphStyle(name='Center', alignment=1))
+    styles.add(ParagraphStyle(name='Right', alignment=2))
+    styles.add(ParagraphStyle(name='Left', alignment=0))
 
-    data = [['Rank', 'Student Name'] + [subject.name for subject in subjects] + ['Total Score']]
-    for rank, learner_score in enumerate(learner_scores, start=1):
-        learner = learner_score.learner
+    # School logo and header
+    elements.append(Image('static/src/img/masabaLogo.png', width=0.8*inch, height=0.8*inch))
+    elements.append(Paragraph("ST MARY'S MASABA SCHOOL", styles['Title']))
+    elements.append(Paragraph("P.O. BOX 12-30302 LESSOS, KENYA", styles['Center']))
+    elements.append(Paragraph("PHONE: (254) 700-098-595 | EMAIL: stmarysmasaba@gmail.com", styles['Center']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Report header
+    elements.append(Paragraph(f" {grade.grade_name.upper()} - {exam_type.name.upper()} REPORT -- {exam_type.term.upper()} {datetime.now().year}", styles['Title']))
+    elements.append(Spacer(1, 0.1*inch))
+
+    # Class summary
+    class_summary = [
+        ['Total Students', 'Average Score', 'Highest Score', 'Lowest Score'],
+        [str(learners.count()), '', '', '']
+    ]
+    
+    # Calculate total scores and ranks
+    total_scores = []
+    for learner in learners:
+        learner_scores = ExamResult.objects.filter(learner_id=learner, exam_type=exam_type)
+        total_score = learner_scores.aggregate(Sum('score'))['score__sum'] or 0
+        total_scores.append((learner, total_score))
+
+    # Sort learners by total score
+    total_scores.sort(key=lambda x: x[1], reverse=True)
+
+    # Update class summary with calculated values
+    if total_scores:
+        class_summary[1][1] = f"{sum(score for _, score in total_scores) / len(total_scores):.2f}"
+        class_summary[1][2] = f"{max(score for _, score in total_scores):.2f}"
+        class_summary[1][3] = f"{min(score for _, score in total_scores):.2f}"
+
+    summary_table = Table(class_summary, colWidths=[2.5*inch, 2.5*inch, 2.5*inch, 2.5*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+        ('GRID', (0,0), (-1,-1), 1, colors.black),
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Create the main results table
+    data = [['Rank', 'Student Name'] + [subject.name for subject in subjects] + ['Total Score', 'Mean Score', 'Grade']]
+
+    for rank, (learner, total_score) in enumerate(total_scores, start=1):
         row = [rank, learner.name]
+        learner_scores = ExamResult.objects.filter(learner_id=learner, exam_type=exam_type)
         for subject in subjects:
-            score = next(
-                (result.score for result in results if result.learner_id == learner and result.subject == subject), '-')
-            row.append(score)
-        row.append(learner_score.total_score)
+            score = learner_scores.filter(subject=subject).first()
+            row.append(f"{score.score:.2f}" if score else "-")
+        mean_score = total_score / len(subjects)
+        row.extend([
+            f"{total_score:.2f}",
+            f"{mean_score:.2f}",
+            get_grade(mean_score)  # You'll need to implement this function
+        ])
         data.append(row)
 
-    table = Table(data)
+    # Add class average row
+    class_average = ['', 'Class Average']
+    for subject in subjects:
+        avg_score = ExamResult.objects.filter(exam_type=exam_type, subject=subject, learner_id__grade=grade).aggregate(Avg('score'))['score__avg']
+        class_average.append(f"{avg_score:.2f}" if avg_score else "-")
+    total_avg = sum(float(score) for score in class_average[2:] if score != "-") / len(subjects)
+    class_average.extend([f"{total_avg:.2f}", f"{total_avg:.2f}", get_grade(total_avg)])
+    data.append(class_average)
+
+    # Create the table
+    table = Table(data, repeatRows=1)
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 10),
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 10),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-2), colors.beige),
+        ('BACKGROUND', (0,-1), (-1,-1), colors.lightblue),  # Class average row
+        ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,1), (-1,-1), 8),
+        ('TOPPADDING', (0,1), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 3),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
+    ]))
+    elements.append(table)
+    elements.append(PageBreak())
+
+    # Subject Performance Analysis
+    elements.append(Paragraph(f"Subject Performance Analysis for {grade.grade_name} - {exam_type.name} {exam_type.term} {datetime.now().year}", styles['Heading1']))
+    elements.append(Spacer(1, 0.15*inch))
+
+    # Prepare subject performance data
+    subject_data = []
+    for subject in subjects:
+        subject_scores = ExamResult.objects.filter(exam_type=exam_type, subject=subject, learner_id__grade=grade)
+        avg_score = subject_scores.aggregate(Avg('score'))['score__avg'] or 0
+        max_score = subject_scores.aggregate(Max('score'))['score__max'] or 0
+        min_score = subject_scores.aggregate(Min('score'))['score__min'] or 0
+        subject_data.append([
+            subject.name,
+            f"{avg_score:.2f}",
+            f"{max_score:.2f}",
+            f"{min_score:.2f}",
+            get_grade(avg_score)
+        ])
+
+    # Create subject performance table
+    subject_table = Table([['Subject', 'Average', 'Highest', 'Lowest', 'Grade']] + subject_data)
+    subject_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+        ('GRID', (0,0), (-1,-1), 1, colors.black),
     ]))
 
-    elements.append(table)
-    doc.build(elements)
+    # Create bar chart for subject averages
+    drawing = Drawing(300, 200)
+    data = [[float(row[1]) for row in subject_data]]
+    bc = VerticalBarChart()
+    bc.x = 50
+    bc.y = 50
+    bc.height = 125
+    bc.width = 225
+    bc.data = data
+    bc.strokeColor = colors.black
+    bc.valueAxis.valueMin = 0
+    bc.valueAxis.valueMax = 100
+    bc.valueAxis.valueStep = 10
+    bc.categoryAxis.labels.boxAnchor = 'ne'
+    bc.categoryAxis.labels.dx = 8
+    bc.categoryAxis.labels.dy = -2
+    bc.categoryAxis.labels.angle = 30
+    bc.categoryAxis.categoryNames = [subject.name for subject in subjects]
+    drawing.add(bc)
 
+    # Create a table to hold the subject table and bar chart side by side
+    combined_table = Table([
+        [subject_table, drawing]
+    ], colWidths=[4.5*inch, 4.5*inch])
+    combined_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+
+    elements.append(combined_table)
+    elements.append(Spacer(1, 0.5*inch))
+   
+    # Grade Distribution
+    elements.append(Paragraph("Grade Distribution", styles['Heading2']))
+    grade_distribution = {grade: 0 for grade in ['A', 'B', 'C', 'D', 'E']}
+    for _, total_score in total_scores:
+        grade_score = get_grade(total_score / len(subjects))
+        grade_distribution[grade_score] += 1
+
+    pie = Pie()
+    pie.x = 150
+    pie.y = 65
+    pie.width = 130
+    pie.height = 130
+    pie.data = list(grade_distribution.values())
+    pie.labels = list(grade_distribution.keys())
+    pie.slices.strokeWidth = 0.5
+    drawing = Drawing(400, 200)
+    drawing.add(pie)
+    elements.append(drawing)
+
+
+    # Build PDF
+    doc.build(elements)
     pdf = buffer.getvalue()
     buffer.close()
 
     response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{grade.grade_name}_{exam_type.name}_report.pdf"'
+    response['Content-Disposition'] = f'attachment; filename="{grade.grade_name}_{exam_type.name}_class_report.pdf"'
     response.write(pdf)
     return response
+
+def get_grade(score):
+    if score >= 80:
+        return 'A'
+    elif score >= 65:
+        return 'B'
+    elif score >= 50:
+        return 'C'
+    elif score >= 40:
+        return 'D'
+    else:
+        return 'E'
+    
 
 from io import BytesIO
 from reportlab.lib import colors
@@ -416,9 +569,9 @@ def generate_student_report(request, student_id):
 
     # School logo and header
     elements.append(Image('static/src/img/masabaLogo.png', width=0.8*inch, height=0.8*inch))
-    elements.append(Paragraph("St Marys Masaba School", styles['Title']))
-    elements.append(Paragraph("PO BOX 12-30302 Lessos, Kenya", styles['Center']))
-    elements.append(Paragraph("Phone: (254) 700-098-595 | Email: stmarysmasaba@gmail.com", styles['Center']))
+    elements.append(Paragraph("ST MARY'S MASABA SCHOOL", styles['Title']))
+    elements.append(Paragraph("P.O. BOX 12-30302 LESSOS, KENYA", styles['Center']))
+    elements.append(Paragraph("PHONE: (254) 700-098-595 | EMAIL: stmarysmasaba@gmail.com", styles['Center']))
     elements.append(Spacer(1, 0.25*inch))
 
     # Report header
@@ -429,9 +582,9 @@ def generate_student_report(request, student_id):
     data = [
         ['Student Name:', student.name, 'Class:', student.grade.grade_name],
         ['Exam:', exam_type.name, 'Date:', exam_type.date_administered.strftime('%B %d, %Y')],
-        ['Rank:', f"{class_rank} out of {student.grade.learners.count()}", 'Total Score:', f"{total_score:.2f} out of {results.count() * 100}"],
-        ['Fee Balance:', f"Ksh {fee_balance:.2f}", 'Maize Balance:', f"{maize_balance} Tins"],
-        ['Beans Balance:', f"{beans_balance} Tins", '', '']
+        ['Term:', exam_type.term, 'Rank:', f"{class_rank} out of {student.grade.learners.count()}"],
+        ['Total Score:', f"{total_score:.2f} out of {results.count() * 100}", 'Fee Balance:', f"Ksh {fee_balance:.2f}"],
+        [ 'Maize Balance:', f"{maize_balance} Tins", 'Beans Balance:', f"{beans_balance} Tins"]
     ]
     t = Table(data, colWidths=[1.5*inch, 2.5*inch, 1.5*inch, 2.5*inch])
     t.setStyle(TableStyle([
@@ -547,91 +700,194 @@ def generate_student_report(request, student_id):
     response.write(pdf)
     return response
 
-def generate_all_student_reports(request):
+import zipfile
+from io import BytesIO
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from learners.models import LearnerRegister, Grade, School
+from exams.models import ExamType, ExamResult, LearnerTotalScore, Subject
+
+def generate_all_student_report(request):
     grade_id = request.GET.get('grade_id')
     exam_type_id = request.GET.get('exam_type')
-
+    
     if not grade_id or not exam_type_id:
-        messages.error(request, "Both grade and exam type must be selected.")
-        return redirect('report_options')
+        return HttpResponse("Both grade_id and exam_type are required", status=400)
 
-    try:
-        grade = Grade.objects.get(id=grade_id)
-        exam_type = ExamType.objects.get(exam_id=exam_type_id)
-    except (Grade.DoesNotExist, ExamType.DoesNotExist):
-        messages.error(request, "Invalid grade or exam type selected.")
-        return redirect('report_options')
-
-    students = LearnerRegister.objects.filter(grade=grade)
-
-    # Create a ZIP file to store all PDFs
+    grade = get_object_or_404(Grade, id=grade_id)
+    exam_type = get_object_or_404(ExamType, exam_id=exam_type_id)
+    learners = LearnerRegister.objects.filter(grade=grade)
+    
+    # Create a BytesIO buffer to receive ZIP file data
     zip_buffer = BytesIO()
-    with ZipFile(zip_buffer, 'w') as zip_file:
-        for student in students:
-            pdf_buffer = generate_student_pdf(student, exam_type)
-            zip_file.writestr(f"{student.name}_{exam_type.name}_report.pdf", pdf_buffer.getvalue())
-
+    
+    # Create ZIP file
+    with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+        for learner in learners:
+            pdf_buffer = generate_student_report_pdf(learner, exam_type)
+            zip_file.writestr(f"{learner.name}_{exam_type.name}_report.pdf", pdf_buffer.getvalue())
+    
     # Prepare response
     response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
     response['Content-Disposition'] = f'attachment; filename="{grade.grade_name}_{exam_type.name}_all_reports.zip"'
+    
     return response
 
-def generate_student_pdf(student, exam_type):
+def generate_student_report_pdf(student, exam_type):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    doc = SimpleDocTemplate(buffer, pagesize=portrait(letter), topMargin=0.1*inch, bottomMargin=0.1*inch)
     elements = []
 
     styles = getSampleStyleSheet()
-    elements.append(Paragraph(f"Student Report: {student.name}", styles['Title']))
-    elements.append(Spacer(1, 12))
+    styles.add(ParagraphStyle(name='Center', alignment=1))
 
+    # Fetch additional data
+    fee_balance = student.fee_balance  # Assuming you have this field in your LearnerRegister model
+    maize_balance = student.maize_balance  # Assuming you have this field
+    beans_balance = student.beans_balance  # Assuming you have this field
+    class_teacher_remark = student.grade.class_teacher_remark  # Assuming you have this field in Grade model
+
+    # School logo and header
+    elements.append(Image('static/src/img/masabaLogo.png', width=0.6*inch, height=0.6*inch))
+    elements.append(Paragraph("St Marys Masaba School", styles['Title']))
+    elements.append(Paragraph("PO BOX 12-30302 Lessos, Kenya", styles['Center']))
+    elements.append(Paragraph("Phone: (254) 700-098-595 | Email: stmarysmasaba@gmail.com", styles['Center']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Report header
+    elements.append(Paragraph("Student Exam Report", styles['Title']))
+    elements.append(Spacer(1, 0.1*inch))
+
+    # Student details
     results = ExamResult.objects.filter(learner_id=student, exam_type=exam_type).select_related('subject')
-    
-    try:
-        total_score = LearnerTotalScore.objects.get(learner=student, exam_type=exam_type).total_score
-    except LearnerTotalScore.DoesNotExist:
-        total_score = sum(result.score for result in results)
-
+    total_score = sum(result.score for result in results)
     class_rank = LearnerTotalScore.objects.filter(
         learner__grade=student.grade,
         exam_type=exam_type,
         total_score__gt=total_score
     ).count() + 1
 
-    elements.append(Paragraph(f"Class: {student.grade.grade_name}", styles['Normal']))
-    elements.append(Paragraph(f"Exam: {exam_type.name}", styles['Normal']))
-    elements.append(Paragraph(f"Rank: {class_rank} out of {student.grade.learners.count()}", styles['Normal']))
-    elements.append(Spacer(1, 12))
-
-    data = [['Subject', 'Score', 'Grade']]
-    for result in results:
-        data.append([result.subject.name, result.score, result.get_grade()])
-
-    data.append(['Total', total_score, ''])
-
-    table = Table(data)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 10),
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    data = [
+        ['Student Name:', student.name, 'Class:', student.grade.grade_name],
+        ['Exam:', exam_type.name, 'Date:', exam_type.date_administered.strftime('%B %d, %Y')],
+        ['Term:', exam_type.term, 'Rank:', f"{class_rank} out of {student.grade.learners.count()}"],
+        ['Total Score:', f"{total_score:.2f} out of {results.count() * 100}", 'Fee Balance:', f"Ksh {fee_balance:.2f}"],
+        [ 'Maize Balance:', f"{maize_balance} Tins", 'Beans Balance:', f"{beans_balance} Tins"]
+    ]
+    t = Table(data, colWidths=[1.5*inch, 2.5*inch, 1.5*inch, 2.5*inch])
+    t.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
+        ('BOX', (0,0), (-1,-1), 0.25, colors.black),
     ]))
+    elements.append(t)
+    elements.append(Spacer(1, 0.25*inch))
 
-    elements.append(table)
+    # Results table
+    data = [['Subject', 'Score', 'Grade', 'Teacher Comment']]
+    for result in results:
+        data.append([
+            result.subject.name, 
+            f"{result.score:.2f}", 
+            result.get_grade(), 
+            result.teacher_comment
+        ])
+
+    t = Table(data, colWidths=[2*inch, 1*inch, 1*inch, 4*inch])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 12),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+        ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+        ('ALIGN', (3,1), (3,-1), 'LEFT'),
+        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,1), (-1,-1), 10),
+        ('TOPPADDING', (0,1), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 6),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 0.15*inch))
+
+    # Bar chart and remarks
+    chart_and_remarks = []
+
+    # Bar chart
+    drawing = Drawing(300, 150)
+    data = [[result.score for result in results]]
+    bc = VerticalBarChart()
+    bc.x = 30
+    bc.y = 30
+    bc.height = 125
+    bc.width = 250
+    bc.data = data
+    bc.strokeColor = colors.black
+    bc.valueAxis.valueMin = 0
+    bc.valueAxis.valueMax = 100
+    bc.valueAxis.valueStep = 10
+    bc.categoryAxis.labels.boxAnchor = 'ne'
+    bc.categoryAxis.labels.dx = 8
+    bc.categoryAxis.labels.dy = -2
+    bc.categoryAxis.labels.angle = 30
+    bc.categoryAxis.categoryNames = [result.subject.name for result in results]
+    drawing.add(bc)
+    chart_and_remarks.append(drawing)
+
+    # Remarks
+    school = School.objects.first()
+    remarks_data = [
+        [Paragraph("Class Teacher's Remark:", styles['Heading3'])],
+        [Paragraph(str(student.grade.class_teacher_remark), styles['Normal'])],
+        [Spacer(1, 0.1*inch)],
+        [Paragraph("Principal's Remark:", styles['Heading3'])],
+        [Paragraph(str(school.principal_remark if school else ""), styles['Normal'])]
+    ]
+    remarks_table = Table(remarks_data, colWidths=[4*inch])
+    remarks_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+    ]))
+    chart_and_remarks.append(remarks_table)
+
+    chart_and_remarks_table = Table([chart_and_remarks], colWidths=[4*inch, 4*inch])
+    chart_and_remarks_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+    ]))
+    elements.append(chart_and_remarks_table)
+
+    # Signature lines
+    elements.append(Spacer(1, 0.5*inch))
+    signature_data = [
+        ['_________________________', '_________________________', '_________________________'],
+        ['Class Teacher', 'Principal', 'Parent/Guardian']
+    ]
+    signature_table = Table(signature_data, colWidths=[3*inch, 3*inch, 3*inch])
+    signature_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    elements.append(signature_table)
+
+    # Build PDF
     doc.build(elements)
-    
-    buffer.seek(0)
     return buffer
+
 
 def get_students_by_grade(request):
     grade_id = request.GET.get('grade_id')

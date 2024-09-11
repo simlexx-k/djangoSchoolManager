@@ -6,8 +6,14 @@ from learners.models import LearnerRegister, Grade
 
 # Create your models here.
 class ExamType(models.Model):
+    TERM_CHOICES = [
+        ('Term 1', 'Term 1'),
+        ('Term 2', 'Term 2'),
+        ('Term 3', 'Term 3'),
+    ]
     exam_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
+    term = models.CharField(max_length=100, choices=TERM_CHOICES, default='Term 1')
     date_administered = models.DateField()
 
     def __str__(self):
