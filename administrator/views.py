@@ -26,7 +26,8 @@ from io import BytesIO
 from exams.models import Subject, ExamResult, ExamType, LearnerTotalScore, Grade
 from zipfile import ZipFile
 from .forms import ExamResultForm, GradeSelectionForm
-
+from django.shortcuts import render, redirect
+from .forms import SubjectForm, SubjectAssignmentForm, GradeSubjectForm
 
 # Create your views here.
 
@@ -266,8 +267,7 @@ def generate_class_report(request, grade_id):
         return redirect('report_options')
 
     learners = LearnerRegister.objects.filter(grade=grade)
-    subjects =Subject.objects.filter(grade=grade)
-    #subjects = exams.models.Subject.objects.all()
+    subjects = Subject.objects.filter(grades=grade)
 
     LearnerTotalScore.update_all_totals(exam_type)
 
@@ -326,8 +326,29 @@ def generate_class_report(request, grade_id):
     response.write(pdf)
     return response
 
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.graphics.shapes import Drawing, Line
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape, portrait
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
+from reportlab.graphics.shapes import Drawing, Line
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from django.db.models import Sum
+from learners.models import LearnerRegister, Grade, School
+from exams.models import ExamType, ExamResult, LearnerTotalScore
 
 def generate_student_report(request, student_id):
+    # ... (previous code for fetching student, exam type, and results)
     if student_id == 0:
         student_id = request.GET.get('student_id')
         if not student_id:
@@ -370,49 +391,154 @@ def generate_student_report(request, student_id):
         total_score__gt=total_score
     ).count() + 1
 
+    # Fetch additional data
+    fee_balance = student.fee_balance  # Assuming you have this field in your LearnerRegister model
+    maize_balance = student.maize_balance  # Assuming you have this field
+    beans_balance = student.beans_balance  # Assuming you have this field
+    class_teacher_remark = student.grade.class_teacher_remark  # Assuming you have this field in Grade model
+
+    # Fetch school and principal's remark
+    school = School.objects.first()  # Assuming you have only one school record
+    if school:
+        principal_remark = school.principal_remark
+    else:
+        principal_remark = "Principal's remark not available."
+
     # Generate PDF
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    doc = SimpleDocTemplate(buffer, pagesize=portrait(letter), topMargin=0.1*inch, bottomMargin=0.1*inch)
     elements = []
 
     styles = getSampleStyleSheet()
-    elements.append(Paragraph(f"Student Report: {student.name}", styles['Title']))
-    elements.append(Spacer(1, 12))
+    styles.add(ParagraphStyle(name='Center', alignment=1))
+    styles.add(ParagraphStyle(name='Right', alignment=2))
+    styles.add(ParagraphStyle(name='Left', alignment=0))
+
+    # School logo and header
+    elements.append(Image('static/src/img/masabaLogo.png', width=0.8*inch, height=0.8*inch))
+    elements.append(Paragraph("St Marys Masaba School", styles['Title']))
+    elements.append(Paragraph("PO BOX 12-30302 Lessos, Kenya", styles['Center']))
+    elements.append(Paragraph("Phone: (254) 700-098-595 | Email: stmarysmasaba@gmail.com", styles['Center']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Report header
+    elements.append(Paragraph("Student Exam Report", styles['Title']))
+    elements.append(Spacer(1, 0.1*inch))
 
     # Student details
-    elements.append(Paragraph(f"Class: {student.grade.grade_name}", styles['Normal']))
-    elements.append(Paragraph(f"Exam: {exam_type.name}", styles['Normal']))
-    elements.append(Paragraph(f"Rank: {class_rank} out of {student.grade.learners.count()}", styles['Normal']))
-    elements.append(Spacer(1, 12))
-
-    # Results table
-    data = [['Subject', 'Score', 'Grade']]
-    for result in results:
-        data.append([result.subject.name, result.score, result.get_grade()])
-
-    data.append(['Total', total_score, ''])
-
-    table = Table(data)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.darkkhaki),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 10),
-        ('TOPPADDING', (0, 1), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    data = [
+        ['Student Name:', student.name, 'Class:', student.grade.grade_name],
+        ['Exam:', exam_type.name, 'Date:', exam_type.date_administered.strftime('%B %d, %Y')],
+        ['Rank:', f"{class_rank} out of {student.grade.learners.count()}", 'Total Score:', f"{total_score:.2f} out of {results.count() * 100}"],
+        ['Fee Balance:', f"Ksh {fee_balance:.2f}", 'Maize Balance:', f"{maize_balance} Tins"],
+        ['Beans Balance:', f"{beans_balance} Tins", '', '']
+    ]
+    t = Table(data, colWidths=[1.5*inch, 2.5*inch, 1.5*inch, 2.5*inch])
+    t.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
+        ('BOX', (0,0), (-1,-1), 0.25, colors.black),
     ]))
+    elements.append(t)
+    elements.append(Spacer(1, 0.25*inch))
 
-    elements.append(table)
+    # Results table with subject teacher comments
+    data = [['Subject', 'Score', 'Grade', 'Teacher Comment']]
+    for result in results:
+        data.append([
+            result.subject.name, 
+            f"{result.score:.2f}", 
+            result.get_grade(), 
+            result.teacher_comment  # Assuming you have this field in ExamResult model
+        ])
+
+    t = Table(data, colWidths=[2*inch, 1*inch, 1*inch, 4*inch])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 12),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+        ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+        ('ALIGN', (3,1), (3,-1), 'LEFT'),  # Left-align comments
+        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,1), (-1,-1), 10),
+        ('TOPPADDING', (0,1), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 6),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 0.1*inch))
+
+    # Bar chart and remarks side by side
+    chart_and_remarks = []
+
+    # Bar chart
+    drawing = Drawing(300, 150)
+    data = [[result.score for result in results]]
+    bc = VerticalBarChart()
+    bc.x = 30
+    bc.y = 30
+    bc.height = 125
+    bc.width = 250
+    bc.data = data
+    bc.strokeColor = colors.black
+    bc.fillColor = colors.white
+    bc.strokeWidth = 0.5
+    bc.valueAxis.valueMin = 0
+    bc.valueAxis.valueMax = 100
+    bc.valueAxis.valueStep = 10
+    bc.categoryAxis.labels.boxAnchor = 'ne'
+    bc.categoryAxis.labels.dx = 8
+    bc.categoryAxis.labels.dy = -2
+    bc.categoryAxis.labels.angle = 30
+    bc.categoryAxis.categoryNames = [result.subject.name for result in results]
+    drawing.add(bc)
+    chart_and_remarks.append(drawing)
+
+    # Remarks
+    remarks_data = [
+        [Paragraph("Class Teacher's Remark:", styles['Heading3'])],
+        [Paragraph(str(class_teacher_remark), styles['Normal'])],
+        [Spacer(1, 0.1*inch)],
+        [Paragraph("Principal's Remark:", styles['Heading3'])],
+        [Paragraph(str(principal_remark), styles['Normal'])]
+    ]
+    remarks_table = Table(remarks_data, colWidths=[4*inch])
+    remarks_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+    ]))
+    chart_and_remarks.append(remarks_table)
+
+    chart_and_remarks_table = Table([chart_and_remarks], colWidths=[4*inch, 4*inch])
+    chart_and_remarks_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+    ]))
+    elements.append(chart_and_remarks_table)
+
+    # Signature lines
+    elements.append(Spacer(1, 0.5*inch))
+    signature_data = [
+        ['_________________________', '_________________________', '_________________________'],
+        ['Class Teacher', 'Principal', 'Parent/Guardian']
+    ]
+    signature_table = Table(signature_data, colWidths=[3*inch, 3*inch, 3*inch])
+    signature_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+    ]))
+    elements.append(signature_table)
+
+    # Build PDF
     doc.build(elements)
-
     pdf = buffer.getvalue()
     buffer.close()
 
@@ -538,8 +664,7 @@ def bulk_exam_result_entry(request):
 def bulk_exam_result_entry_grade(request, grade_id):
     grade = get_object_or_404(Grade, id=grade_id)
     learners = LearnerRegister.objects.filter(grade=grade)
-    #subjects = exams.models.Subject.objects.all()
-    subjects = Subject.objects.filter(grade=grade)
+    subjects = grade.subjects.all()
     exam_types = ExamType.objects.all()
 
     if request.method == 'POST':
@@ -585,3 +710,47 @@ def bulk_exam_result_entry_grade(request, grade_id):
         'existing_scores': existing_scores,
     }
     return render(request, 'admin/bulk_exam_result_entry_grade.html', context)
+
+def assign_subjects_to_grade(request):
+    if request.method == 'POST':
+        form = SubjectAssignmentForm(request.POST)
+        if form.is_valid():
+            grade = form.cleaned_data['grade']
+            subjects = form.cleaned_data['subjects']
+            grade.subjects.set(subjects)
+            messages.success(request, f"Subjects assigned to {grade.grade_name} successfully.")
+            return redirect('grade_subject_list')
+    else:
+        form = SubjectAssignmentForm()
+    return render(request, 'admin/assign_subjects.html', {'form': form})
+
+def grade_subject_list(request):
+    grades = Grade.objects.all().prefetch_related('subjects')
+    return render(request, 'admin/grade_subject_list.html', {'grades': grades})
+
+def edit_grade_subjects(request, grade_id):
+    grade = get_object_or_404(Grade, id=grade_id)
+    if request.method == 'POST':
+        form = GradeSubjectForm(request.POST, instance=grade)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Subjects for {grade.grade_name} updated successfully.")
+            return redirect('grade_subject_list')
+    else:
+        form = GradeSubjectForm(instance=grade)
+    return render(request, 'admin/edit_grade_subjects.html', {'form': form, 'grade': grade})
+
+def subject_list(request):
+    subjects = Subject.objects.all().prefetch_related('grades')
+    return render(request, 'admin/subject_list.html', {'subjects': subjects})
+
+def create_subject(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if name:
+            subject = Subject.objects.create(name=name)
+            messages.success(request, f"Subject '{subject.name}' created successfully.")
+            return redirect('subject_list')
+        else:
+            messages.error(request, "Subject name is required.")
+    return render(request, 'admin/create_subject.html')

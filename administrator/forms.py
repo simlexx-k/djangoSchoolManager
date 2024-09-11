@@ -1,5 +1,12 @@
 from django import forms
-from learners.models import FeesModel, LearnerRegister, Grade
+
+from learners.models import FeesModel
+from exams.models import ExamResult, ExamType, Subject
+from learners.models import LearnerRegister, Grade
+from django import forms
+from exams.models import Subject
+from learners.models import Grade
+
 
 class FeePaymentForm(forms.ModelForm):
     class Meta:
@@ -9,8 +16,6 @@ class FeePaymentForm(forms.ModelForm):
             'register_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
-from exams.models import ExamResult, ExamType, Subject
-from learners.models import LearnerRegister, Grade
 
 class ExamResultForm(forms.ModelForm):
     exam_type = forms.ModelChoiceField(queryset=ExamType.objects.all())
@@ -26,6 +31,45 @@ class ExamResultForm(forms.ModelForm):
         self.fields['learner'].label_from_instance = lambda obj: f"{obj.learner_id} - {obj.name}"
         self.fields['subject'].label_from_instance = lambda obj: f"{obj.name}"
 
+
 class GradeSelectionForm(forms.Form):
     grade = forms.ModelChoiceField(queryset=Grade.objects.all())
 
+
+class SubjectForm(forms.ModelForm):
+    class Meta:
+        model = Subject
+        fields = ['name', 'grades']
+
+
+class SubjectAssignmentForm(forms.Form):
+    grade = forms.ModelChoiceField(queryset=Grade.objects.all())
+    subjects = forms.ModelMultipleChoiceField(
+        queryset=Subject.objects.all(),
+        widget=forms.CheckboxSelectMultiple
+    )
+
+
+class GradeSubjectForm(forms.ModelForm):
+    subjects = forms.ModelMultipleChoiceField(
+        queryset=Subject.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+
+    class Meta:
+        model = Grade
+        fields = ['grade_name']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['subjects'].initial = self.instance.subjects.all()
+
+    def save(self, commit=True):
+        grade = super().save(commit=False)
+        if commit:
+            grade.save()
+        if grade.pk:
+            grade.subjects.set(self.cleaned_data['subjects'])
+        return grade

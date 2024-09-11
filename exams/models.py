@@ -17,7 +17,7 @@ class ExamType(models.Model):
 class Subject(models.Model):
     name = models.CharField(max_length=100)
     subject_id = models.AutoField(primary_key=True)
-    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='subjects', default='1')
+    grades = models.ManyToManyField(Grade, related_name='subjects')
 
     def __str__(self):
         return f"{self.name}, {self.subject_id}"
@@ -37,6 +37,7 @@ class ExamResult(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)], null=True
     )
     date_examined = models.DateField(null=True, blank=True)
+    teacher_comment = models.TextField(blank=True)
 
     class Meta:
         unique_together = ('learner_id', 'subject', 'exam_type')

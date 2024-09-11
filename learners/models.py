@@ -17,6 +17,7 @@ class Grade(models.Model):
     ]
     grade_name = models.CharField(max_length=100, choices=GRADES, unique=True)
     grade_description = models.TextField()
+    class_teacher_remark = models.TextField(blank=True)
 
     def __str__(self):
         return self.grade_name
@@ -31,6 +32,9 @@ class LearnerRegister(models.Model):
     gender = models.CharField(max_length=100)
     name_of_parent = models.CharField(max_length=100, default='Parent')
     parent_contact = models.CharField(max_length=100, default='Contact')
+    fee_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    maize_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    beans_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     def __str__(self):
         return f"{self.learner_id} {self.name}"
@@ -56,3 +60,9 @@ class FeesModel(models.Model):
 
     def __str__(self):
         return f"{self.amount} {self.payment_type} {self.received_by} {str(self.learner_id)}"
+
+
+class School(models.Model):
+    name = models.CharField(max_length=100)
+    principal_remark = models.TextField(blank=True)
+    # ... other school-related fields ...

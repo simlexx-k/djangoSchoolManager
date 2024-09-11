@@ -1391,6 +1391,11 @@ select {
   margin-bottom: 1.5rem;
 }
 
+.my-4 {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
 .mb-1 {
   margin-bottom: 0.25rem;
 }
@@ -1753,6 +1758,16 @@ select {
 
 .resize {
   resize: both;
+}
+
+.list-disc {
+  list-style-type: disc;
+}
+
+.appearance-none {
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
 }
 
 .grid-cols-1 {
@@ -2346,6 +2361,11 @@ select {
   padding-bottom: 1.25rem;
 }
 
+.px-8 {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
 .pb-20 {
   padding-bottom: 5rem;
 }
@@ -2396,6 +2416,18 @@ select {
 
 .pl-8 {
   padding-left: 2rem;
+}
+
+.pb-8 {
+  padding-bottom: 2rem;
+}
+
+.pt-6 {
+  padding-top: 1.5rem;
+}
+
+.pl-5 {
+  padding-left: 1.25rem;
 }
 
 .text-left {

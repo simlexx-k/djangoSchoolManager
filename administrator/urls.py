@@ -26,4 +26,10 @@ urlpatterns = [
     path('exam-result-entry/', views.exam_result_entry, name='exam_result_entry'),
     path('bulk-exam-result-entry/', views.bulk_exam_result_entry, name='bulk_exam_result_entry'),
     path('bulk-exam-result-entry/<int:grade_id>/', views.bulk_exam_result_entry_grade, name='bulk_exam_result_entry_grade'),
+    #path('create-subject', views.create_subject, name='create_subject'),
+    path('assign-subjects/', views.assign_subjects_to_grade, name='assign_subjects'),
+    path('grade-subjects/', views.grade_subject_list, name='grade_subject_list'),
+    path('edit-grade-subjects/<int:grade_id>/', views.edit_grade_subjects, name='edit_grade_subjects'),
+    path('subjects/', views.subject_list, name='subject_list'),
+    path('create-subject/', views.create_subject, name='create_subject'),
 ]
