@@ -256,6 +256,9 @@ from django.db.models import Avg, Max, Min
 from learners.models import LearnerRegister, Grade, School
 from exams.models import ExamType, ExamResult, LearnerTotalScore, Subject
 from datetime import datetime
+from reportlab.graphics.charts.legends import Legend
+from reportlab.graphics.shapes import Circle
+
 
 def generate_class_report(request, grade_id):
     grade = get_object_or_404(Grade, id=grade_id)
@@ -414,6 +417,8 @@ def generate_class_report(request, grade_id):
     bc.width = 225
     bc.data = data
     bc.strokeColor = colors.black
+    bc.fillColor = colors.white
+    bc.strokeWidth = 0.5
     bc.valueAxis.valueMin = 0
     bc.valueAxis.valueMax = 100
     bc.valueAxis.valueStep = 10
@@ -454,7 +459,7 @@ def generate_class_report(request, grade_id):
     drawing = Drawing(400, 200)
     drawing.add(pie)
     elements.append(drawing)
-
+    elements.append(Spacer(1, 0.5*inch))
 
     # Build PDF
     doc.build(elements)
