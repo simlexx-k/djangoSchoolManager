@@ -1,0 +1,61 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Bulk Import Students{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Bulk Import Students</h1>
+
+    <div class="bg-white shadow-md rounded-lg overflow-hidden p-6">
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="flex flex-col">
+                <label for="grade" class="text-sm font-medium text-gray-700 mb-1">Select Class</label>
+                <select name="grade" id="grade" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400" required>
+                    <option value="">Select a class</option>
+                    {% for grade in grades %}
+                        <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="file-upload-section" class="hidden">
+                <div class="flex flex-col">
+                    <label for="file" class="text-sm font-medium text-gray-700 mb-1">Upload CSV File</label>
+                    <input type="file" name="file" id="file" accept=".csv" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400" required>
+                </div>
+
+                <div class="mt-4">
+                    <a href="#" id="download-template" class="text-blue-500 hover:text-blue-700">Download CSV Template</a>
+                </div>
+
+                <div class="flex justify-end mt-6">
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                        Import Students
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const gradeSelect = document.getElementById('grade');
+        const fileUploadSection = document.getElementById('file-upload-section');
+        const downloadTemplateLink = document.getElementById('download-template');
+
+        gradeSelect.addEventListener('change', function() {
+            if (this.value) {
+                fileUploadSection.classList.remove('hidden');
+                downloadTemplateLink.href = `/control/api/students/bulk-import/template/${this.value}/${gradeSelect.options[gradeSelect.selectedIndex].text}`;
+            } else {
+                fileUploadSection.classList.add('hidden');
+                downloadTemplateLink.href = '#';
+            }
+        });
+    });
+</script>
+{% endblock %}

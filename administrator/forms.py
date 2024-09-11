@@ -82,3 +82,11 @@ class StudentForm(forms.ModelForm):
         widgets = {
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
         }
+
+
+from django import forms
+from learners.models import Grade
+
+class StudentBulkImportForm(forms.Form):
+    grade = forms.ModelChoiceField(queryset=Grade.objects.all())
+    file = forms.FileField()

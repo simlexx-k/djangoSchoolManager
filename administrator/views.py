@@ -109,6 +109,56 @@ def student_create(request):
         form = StudentForm()
     return render(request, 'admin/student_form.html', {'form': form})
 
+import csv
+from django.http import HttpResponse
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
+from learners.models import LearnerRegister, Grade
+from .forms import StudentBulkImportForm
+
+# ... existing views ...
+@login_required
+def student_bulk_import(request):
+    grades = Grade.objects.all()
+
+    if request.method == 'POST':
+        form = StudentBulkImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            grade = form.cleaned_data['grade']
+            csv_file = request.FILES['file']
+            
+            decoded_file = csv_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded_file)
+            
+            for row in reader:
+                LearnerRegister.objects.create(
+                    name=row['name'],
+                    learner_id=row['learner_id'],
+                    date_of_birth=row['date_of_birth'],
+                    gender=row['gender'],
+                    name_of_parent=row['name_of_parent'],
+                    parent_contact=row['parent_contact'],
+                    grade=grade
+                )
+            
+            messages.success(request, 'Students imported successfully.')
+            return redirect('student_management')
+    else:
+        form = StudentBulkImportForm()
+
+    return render(request, 'admin/student_bulk_import.html', {'grades': grades, 'form': form})
+
+def student_bulk_import_template(request, grade_name, grade_id):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="student_import_template_grade_{grade_name}_{grade_id}.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['name', 'learner_id', 'date_of_birth', 'gender', 'name_of_parent', 'parent_contact'])
+
+    return response
+
 @login_required
 def student_update(request, pk):
     student = get_object_or_404(LearnerRegister, pk=pk)
@@ -231,51 +281,254 @@ def get_payment_details(request, payment_id):
     }
     return JsonResponse(data)
 
-@login_required
+from io import BytesIO
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.piecharts import Pie
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from django.utils import timezone
+from django.db.models import Sum, Avg, Max, Min, Count
+from django.conf import settings
+import os
+from django.db.models.functions import TruncMonth, TruncYear
+from django.db.models import Count
+from reportlab.graphics.charts.linecharts import HorizontalLineChart, VerticalLineChart
+from reportlab.graphics.widgets.markers import makeMarker
+
+
 def generate_pdf(payments):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.5*inch, bottomMargin=0.5*inch)
     elements = []
 
-    # Add title
+    # Styles
     styles = getSampleStyleSheet()
-    elements.append(Paragraph("Fee Payments Report", styles['Title']))
-    elements.append(Spacer(1, 12))
+    styles.add(ParagraphStyle(name='Center', alignment=1))
+    styles.add(ParagraphStyle(name='Right', alignment=2))
 
-    # Prepare data for the table
-    data = [['Student ID', 'Student Name', 'Amount', 'Date', 'Payment Method']]
-    for payment in payments:
-        data.append([
-            payment.learner_id.learner_id,
-            payment.learner_id.name,
-            f"Ksh.{payment.amount}",
-            payment.register_date.strftime('%Y-%m-%d'),
-            payment.payment_method
+    def add_page_number(canvas, doc):
+        page_num = canvas.getPageNumber()
+        text = f"Page {page_num}"
+        canvas.drawRightString(11*inch, 0.75*inch, text)
+
+    # Cover Page
+    elements.append(Paragraph("St. Mary's Masaba School", styles['Title']))
+    elements.append(Spacer(1, 0.25*inch))
+    elements.append(Paragraph("Comprehensive Fee Payments Report", styles['Title']))
+    elements.append(Spacer(1, 0.5*inch))
+
+    # School Logo
+    logo_path = ('static/src/img/masabaLogo.png')
+    if os.path.exists(logo_path):
+        im = Image(logo_path, width=2*inch, height=2*inch)
+        elements.append(im)
+
+    elements.append(Spacer(1, 0.5*inch))
+    
+    # Date Range
+    if payments:
+        start_date = payments.order_by('register_date').first().register_date
+        end_date = payments.order_by('-register_date').first().register_date
+        date_range = f"Report Period: {start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')}"
+        elements.append(Paragraph(date_range, styles['Center']))
+
+    elements.append(PageBreak())
+
+    # Executive Summary
+    elements.append(Paragraph("Executive Summary", styles['Heading1']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Summary Statistics
+    total_amount = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+    payment_count = payments.count()
+    avg_payment = total_amount / payment_count if payment_count else 0
+    max_payment = payments.aggregate(Max('amount'))['amount__max'] or 0
+    min_payment = payments.aggregate(Min('amount'))['amount__min'] or 0
+
+    summary_data = [
+        ['Total Amount Collected', f'Ksh. {total_amount:,.2f}'],
+        ['Number of Payments', str(payment_count)],
+        ['Average Payment', f'Ksh. {avg_payment:,.2f}'],
+        ['Largest Payment', f'Ksh. {max_payment:,.2f}'],
+        ['Smallest Payment', f'Ksh. {min_payment:,.2f}'],
+    ]
+
+    summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.lightgrey),
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Payment Method Analysis
+    elements.append(Paragraph("Payment Method Analysis", styles['Heading2']))
+    payment_methods = payments.values('payment_method').annotate(
+        total=Sum('amount'),
+        count=Count('id')
+    ).order_by('-total')
+
+    method_data = [['Payment Method', 'Total Amount', 'Number of Payments', 'Average Payment']]
+    for method in payment_methods:
+        method_data.append([
+            method['payment_method'],
+            f"Ksh. {method['total']:,.2f}",
+            str(method['count']),
+            f"Ksh. {method['total'] / method['count']:,.2f}"
         ])
 
-    # Create the table
-    table = Table(data)
-    table.setStyle(TableStyle([
+    method_table = Table(method_data, colWidths=[2*inch, 2*inch, 2*inch, 2*inch])
+    method_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 14),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
         ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
         ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-        ('FONTSIZE', (0, 1), (-1, -1), 12),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
         ('TOPPADDING', (0, 1), (-1, -1), 6),
         ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
+    elements.append(method_table)
+    elements.append(Spacer(1, 0.25*inch))
 
-    elements.append(table)
+    # Payment Method Distribution (Pie Chart)
+    drawing = Drawing(400, 200)
+    pie = Pie()
+    pie.x = 100
+    pie.y = 0
+    pie.width = 200
+    pie.height = 200
+    pie.data = [method['total'] for method in payment_methods]
+    pie.labels = [method['payment_method'] for method in payment_methods]
+    pie.slices.strokeWidth = 0.5
+    drawing.add(pie)
+    elements.append(Paragraph("Payment Method Distribution", styles['Heading3']))
+    elements.append(drawing)
+
+    elements.append(PageBreak())
+
+    # Monthly Payment Trend
+    elements.append(Paragraph("Monthly Payment Trend", styles['Heading2']))
+    monthly_payments = payments.annotate(month=TruncMonth('register_date')).values('month').annotate(
+        total=Sum('amount'),
+        count=Count('id')
+    ).order_by('month')
+
+    trend_data = [['Month', 'Total Amount', 'Number of Payments', 'Average Payment']]
+    for payment in monthly_payments:
+        trend_data.append([
+            payment['month'].strftime('%b %Y'),
+            f"Ksh. {payment['total']:,.2f}",
+            str(payment['count']),
+            f"Ksh. {payment['total'] / payment['count']:,.2f}"
+        ])
+
+    trend_table = Table(trend_data, colWidths=[2*inch, 2*inch, 2*inch, 2*inch])
+    trend_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('TOPPADDING', (0, 1), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black)
+    ]))
+    elements.append(trend_table)
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Monthly Payment Trend (Line Chart)
+    drawing = Drawing(500, 200)
+    lc = HorizontalLineChart()
+    lc.x = 50
+    lc.y = 50
+    lc.height = 125
+    lc.width = 400
+    lc.data = [tuple(payment['total'] for payment in monthly_payments)]
+    lc.categoryAxis.categoryNames = [payment['month'].strftime('%b %Y') for payment in monthly_payments]
+    lc.valueAxis.valueMin = 0
+    lc.valueAxis.valueMax = max(payment['total'] for payment in monthly_payments) * 1.1
+    lc.valueAxis.valueStep = lc.valueAxis.valueMax / 5
+    lc.lines[0].strokeWidth = 2
+    lc.lines[0].symbol = makeMarker('Circle')
+    drawing.add(lc)
+    elements.append(Paragraph("Monthly Payment Trend", styles['Heading3']))
+    elements.append(drawing)
+
+    elements.append(PageBreak())
+
+    # Detailed Payment Records
+    elements.append(Paragraph("Detailed Payment Records by Class", styles['Heading2']))
+
+     # Group payments by class
+    payments_by_class = {}
+    for payment in payments:
+        grade = payment.learner_id.grade
+        if grade not in payments_by_class:
+            payments_by_class[grade] = []
+        payments_by_class[grade].append(payment)
+    
+    # Create a table for each class
+    for grade, grade_payments in payments_by_class.items():
+        elements.append(Paragraph(f"{grade.grade_name} Payments", styles['Heading3']))
+        
+        if grade_payments:
+            data = [['Student ID', 'Student Name', 'Amount', 'Date', 'Payment Method']]
+            for payment in grade_payments:
+                data.append([
+                    payment.learner_id.learner_id,
+                    payment.learner_id.name,
+                    f"Ksh. {payment.amount:,.2f}",
+                    payment.register_date.strftime('%Y-%m-%d'),
+                    payment.payment_method
+                ])
+        else:
+            data = [['No payments available for this class']]
+
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('TOPPADDING', (0, 1), (-1, -1), 6),
+            ('BOTTOMPADDING', (0, 1), (-1, -1), 6),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        elements.append(table)
+        elements.append(Spacer(1, 0.25*inch))
 
     # Build the PDF
-    doc.build(elements)
+    doc.build(elements, onFirstPage=add_page_number, onLaterPages=add_page_number)
     pdf = buffer.getvalue()
     buffer.close()
     return pdf

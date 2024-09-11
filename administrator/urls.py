@@ -44,4 +44,6 @@ urlpatterns = [
     path('students/create/', student_create, name='student_create'),
     path('students/<int:pk>/update/', student_update, name='student_update'),
     path('students/<int:pk>/delete/', student_delete, name='student_delete'),
+    path('students/bulk-import/', views.student_bulk_import, name='student_bulk_import'),
+    path('api/students/bulk-import/template/<int:grade_id>/<str:grade_name>/', views.student_bulk_import_template, name='student_bulk_import_template'),
 ]
