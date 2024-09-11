@@ -73,3 +73,12 @@ class GradeSubjectForm(forms.ModelForm):
         if grade.pk:
             grade.subjects.set(self.cleaned_data['subjects'])
         return grade
+
+
+class StudentForm(forms.ModelForm):
+    class Meta:
+        model = LearnerRegister
+        fields = ['name', 'learner_id', 'grade', 'date_of_birth', 'gender', 'name_of_parent', 'parent_contact']
+        widgets = {
+            'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
+        }

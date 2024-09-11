@@ -1,0 +1,54 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Student Details - {{ student.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Student Details</h1>
+                <div class="space-x-2">
+                    <a href="{% url 'student_update' student.pk %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                        <i class="fas fa-edit mr-2"></i>Edit
+                    </a>
+                    <a href="{% url 'student_delete' student.pk %}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h2 class="text-xl font-semibold mb-2">Personal Information</h2>
+                    <p><strong>Name:</strong> {{ student.name }}</p>
+                    <p><strong>Student ID:</strong> {{ student.learner_id }}</p>
+                    <p><strong>Date of Birth:</strong> {{ student.date_of_birth }}</p>
+                    <p><strong>Gender:</strong> {{ student.gender }}</p>
+                </div>
+                <div>
+                    <h2 class="text-xl font-semibold mb-2">Academic Information</h2>
+                    <p><strong>Grade:</strong> {{ student.grade.grade_name }}</p>
+                    <!-- Add more academic details as needed -->
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <h2 class="text-xl font-semibold mb-2">Parent/Guardian Information</h2>
+                <p><strong>Parent Name:</strong> {{ student.parent_name }}</p>
+                <p><strong>Parent Contact:</strong> {{ student.parent_contact }}</p>
+            </div>
+
+            <!-- Add more sections as needed, e.g., attendance record, grades, etc. -->
+
+        </div>
+    </div>
+
+    <div class="mt-6">
+        <a href="{% url 'student_management' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+            <i class="fas fa-arrow-left mr-2"></i>Back to Student List
+        </a>
+    </div>
+</div>
+{% endblock %}

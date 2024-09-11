@@ -1,0 +1,31 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Delete Student - {{ student.name }}{% endblock %}
+    
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="p-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Delete Student</h1>
+
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+                <p class="font-bold">Warning</p>
+                <p>Are you sure you want to delete the student "{{ student.name }}"? This action cannot be undone.</p>
+            </div>
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                <div class="flex justify-end space-x-2">
+                    <a href="{% url 'student_management' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                        Cancel
+                    </a>
+                    <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                        Confirm Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

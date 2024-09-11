@@ -2,9 +2,11 @@ from django.contrib import admin
 from django.urls import path
 
 import administrator
-from administrator.views import dashboard, take_attendance, send_notification, generate_reports, add_student, add_teacher, add_class, fees_management, add_payment, get_payment_details, export_payments, generate_class_report, generate_student_report, report_options, generate_all_student_report, get_students_by_grade
+from administrator.views import dashboard, take_attendance, send_notification, generate_reports, add_student, add_teacher, add_class, fees_management, add_payment, get_payment_details, export_payments, generate_class_report, generate_student_report, report_options, generate_all_student_report, get_students_by_grade, student_list, student_detail, student_create, student_update, student_delete
 from . import views
 from authenticator.views import logout_view
+
+#app_name = 'administrator'
 
 urlpatterns = [
     path('dashboard/', dashboard, name="admin_dashboard"),
@@ -34,5 +36,12 @@ urlpatterns = [
     path('subjects/', views.subject_list, name='subject_list'),
     path('create-subject/', views.create_subject, name='create_subject'),
     path('logout/', logout_view, name='logout'),
-    
+    #path('student-management/', views.student_management, name='student_management'),
+    path('teacher-management/', views.teacher_management, name='teacher_management'),
+    path('academic-management/', views.academic_management, name='academic_management'),
+    path('students/', views.student_list, name='student_management'),
+    path('students/<int:pk>/', student_detail, name='student_detail'),
+    path('students/create/', student_create, name='student_create'),
+    path('students/<int:pk>/update/', student_update, name='student_update'),
+    path('students/<int:pk>/delete/', student_delete, name='student_delete'),
 ]

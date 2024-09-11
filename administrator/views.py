@@ -31,7 +31,7 @@ from .forms import SubjectForm, SubjectAssignmentForm, GradeSubjectForm
 
 # Create your views here.
 
-
+@login_required
 def dashboard(request):
     # Get total counts
     total_students = LearnerRegister.objects.count()
@@ -55,31 +55,123 @@ def dashboard(request):
 
     return render(request, 'admin/dashboard.html', context)
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
+from learners.models import LearnerRegister  # Assuming this is your Student model
+from .forms import StudentForm  # We'll create this form in administrator/forms.py
 
+@login_required
+def student_list(request):
+    query = request.GET.get('q')
+    selected_grade = request.GET.get('grade')
+    
+    students = LearnerRegister.objects.all()
+    grades = Grade.objects.all()
+
+    if query:
+        students = students.filter(
+            Q(name__icontains=query) |
+            Q(learner_id__icontains=query)
+        )
+    
+    if selected_grade:
+        students = students.filter(grade_id=selected_grade)
+    
+    paginator = Paginator(students, 10)  # Show 10 students per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'query': query,
+        'grades': grades,
+        'selected_grade': int(selected_grade) if selected_grade else None,
+    }
+    return render(request, 'admin/student_management.html', context)
+
+@login_required
+def student_detail(request, pk):
+    student = get_object_or_404(LearnerRegister, pk=pk)
+    return render(request, 'admin/student_detail.html', {'student': student})
+
+@login_required
+def student_create(request):
+    if request.method == 'POST':
+        form = StudentForm(request.POST)
+        if form.is_valid():
+            student = form.save()
+            messages.success(request, 'Student created successfully.')
+            return redirect('student_detail', pk=student.pk)
+    else:
+        form = StudentForm()
+    return render(request, 'admin/student_form.html', {'form': form})
+
+@login_required
+def student_update(request, pk):
+    student = get_object_or_404(LearnerRegister, pk=pk)
+    if request.method == 'POST':
+        form = StudentForm(request.POST, instance=student)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Student updated successfully.')
+            return redirect('admin/student_detail.html', pk=student.pk)
+    else:
+        form = StudentForm(instance=student)
+    return render(request, 'admin/student_form.html', {'form': form, 'student': student})
+
+@login_required
+def student_delete(request, pk):
+    student = get_object_or_404(LearnerRegister, pk=pk)
+    if request.method == 'POST':
+        student.delete()
+        messages.success(request, 'Student deleted successfully.')
+        return redirect('admin/student_management.html')
+    return render(request, 'admin/student_confirm_delete.html', {'student': student})
+
+@login_required
 def take_attendance(request):
     return render(request, 'admin/take_attendance.html')
 
+@login_required
+def academic_management(request):
+    return render(request, 'admin/academic_management.html')
 
+@login_required
+
+def student_management(request):
+    return render(request, 'admin/student_management.html')
+
+@login_required
+def teacher_management(request):
+    return render(request, 'admin/teacher_management.html')
+
+@login_required
 def send_notification(request):
     return render(request, 'admin/send_notification.html')
 
-
+@login_required
 def generate_reports(request):
     return render(request, 'admin/generate_reports.html')
 
-
+@login_required
 def add_student(request):
     return render(request, 'admin/add_student.html')
 
 
+@login_required
 def add_teacher(request):
     return render(request, 'admin/add_teacher.html')
 
 
+@login_required
 def add_class(request):
     return render(request, 'admin/add_class.html')
 
 
+@login_required
 def fees_management(request):
     if request.method == 'POST':
         form = FeePaymentForm(request.POST)
@@ -108,6 +200,7 @@ def fees_management(request):
     return render(request, 'admin/fees.html', context)
 
 
+@login_required
 def add_payment(request):
     if request.method == 'POST':
         form = FeePaymentForm(request.POST)
@@ -121,6 +214,7 @@ def add_payment(request):
     return render(request, 'admin/add_payment.html', {'form': form})
 
 
+@login_required
 def get_payment_details(request, payment_id):
     payment = get_object_or_404(FeesModel, id=payment_id)
     data = {
@@ -137,7 +231,7 @@ def get_payment_details(request, payment_id):
     }
     return JsonResponse(data)
 
-
+@login_required
 def generate_pdf(payments):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
@@ -186,7 +280,7 @@ def generate_pdf(payments):
     buffer.close()
     return pdf
 
-
+@login_required
 def export_payments(request, format):
     filter_param = request.GET.get('filter', '')
     payments = FeesModel.objects.select_related('learner_id').order_by('-register_date')
@@ -233,6 +327,7 @@ def export_payments(request, format):
         return response
 
 
+@login_required
 def report_options(request):
     grades = learners.models.Grade.objects.all()
     exam_types = exams.models.ExamType.objects.all()
@@ -471,6 +566,7 @@ def generate_class_report(request, grade_id):
     response.write(pdf)
     return response
 
+@login_required
 def get_grade(score):
     if score >= 80:
         return 'A'
@@ -486,15 +582,6 @@ def get_grade(score):
 
 from io import BytesIO
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.graphics.shapes import Drawing, Line
-from reportlab.graphics.charts.barcharts import VerticalBarChart
-
-from io import BytesIO
-from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, landscape, portrait
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
@@ -505,6 +592,7 @@ from django.db.models import Sum
 from learners.models import LearnerRegister, Grade, School
 from exams.models import ExamType, ExamResult, LearnerTotalScore
 
+@login_required
 def generate_student_report(request, student_id):
     # ... (previous code for fetching student, exam type, and results)
     if student_id == 0:
@@ -719,6 +807,7 @@ from reportlab.graphics.charts.barcharts import VerticalBarChart
 from learners.models import LearnerRegister, Grade, School
 from exams.models import ExamType, ExamResult, LearnerTotalScore, Subject
 
+@login_required
 def generate_all_student_report(request):
     grade_id = request.GET.get('grade_id')
     exam_type_id = request.GET.get('exam_type')
@@ -745,6 +834,7 @@ def generate_all_student_report(request):
     
     return response
 
+@login_required
 def generate_student_report_pdf(student, exam_type):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=portrait(letter), topMargin=0.1*inch, bottomMargin=0.1*inch)
@@ -893,12 +983,13 @@ def generate_student_report_pdf(student, exam_type):
     doc.build(elements)
     return buffer
 
-
+@login_required
 def get_students_by_grade(request):
     grade_id = request.GET.get('grade_id')
     students = LearnerRegister.objects.filter(grade_id=grade_id).values('id', 'name')
     return JsonResponse(list(students), safe=False)
 
+@login_required
 def exam_result_entry(request):
     if request.method == 'POST':
         form = ExamResultForm(request.POST)
@@ -911,6 +1002,7 @@ def exam_result_entry(request):
     
     return render(request, 'admin/exam_result_entry.html', {'form': form})
 
+@login_required
 def bulk_exam_result_entry(request):
     if request.method == 'POST':
         grade_form = GradeSelectionForm(request.POST)
@@ -922,6 +1014,7 @@ def bulk_exam_result_entry(request):
     
     return render(request, 'admin/bulk_exam_result_entry.html', {'grade_form': grade_form})
 
+@login_required
 def bulk_exam_result_entry_grade(request, grade_id):
     grade = get_object_or_404(Grade, id=grade_id)
     learners = LearnerRegister.objects.filter(grade=grade)
@@ -972,6 +1065,7 @@ def bulk_exam_result_entry_grade(request, grade_id):
     }
     return render(request, 'admin/bulk_exam_result_entry_grade.html', context)
 
+@login_required
 def assign_subjects_to_grade(request):
     if request.method == 'POST':
         form = SubjectAssignmentForm(request.POST)
@@ -985,10 +1079,12 @@ def assign_subjects_to_grade(request):
         form = SubjectAssignmentForm()
     return render(request, 'admin/assign_subjects.html', {'form': form})
 
+@login_required
 def grade_subject_list(request):
     grades = Grade.objects.all().prefetch_related('subjects')
     return render(request, 'admin/grade_subject_list.html', {'grades': grades})
 
+@login_required
 def edit_grade_subjects(request, grade_id):
     grade = get_object_or_404(Grade, id=grade_id)
     if request.method == 'POST':
@@ -1001,10 +1097,12 @@ def edit_grade_subjects(request, grade_id):
         form = GradeSubjectForm(instance=grade)
     return render(request, 'admin/edit_grade_subjects.html', {'form': form, 'grade': grade})
 
+@login_required
 def subject_list(request):
     subjects = Subject.objects.all().prefetch_related('grades')
     return render(request, 'admin/subject_list.html', {'subjects': subjects})
 
+@login_required
 def create_subject(request):
     if request.method == 'POST':
         name = request.POST.get('name')
