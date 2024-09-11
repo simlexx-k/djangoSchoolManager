@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'learners.apps.LearnersConfig',
     'exams.apps.ExamsConfig',
     'administrator.apps.AdministratorConfig',
+    'authenticator.apps.AuthenticatorConfig',
     'compressor',
     
 ]
@@ -144,3 +145,5 @@ COMPRESS_ROOT = BASE_DIR / 'static'
 COMPRESS_ENABLED = True
 
 STATICFILES_FINDERS = ('compressor.finders.CompressorFinder',)
+
+AUTH_USER_MODEL = 'authenticator.CustomUser'

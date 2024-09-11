@@ -1,7 +1,10 @@
-{% extends '_base.html' %}
+<head>
+    <title>Academic Reports - Admin Dashboard</title>
+</head>
+{% extends 'admin/base.html' %}
 {% load static %}
 {% block content %}
-<div class="p-8">
+<div class="p-8 bg-gray-100 dark:bg-gray-800 min-h-screen rounded-lg">
     <h1 class="text-3xl font-bold mb-6">Academic Reports</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -66,25 +69,28 @@
     <h2 class="text-3xl font-bold mb-6">Generate All Student Reports</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h2 class="text-xl font-bold mb-4">Class Reports</h2>
+            <h2 class="text-xl font-bold mb-4">All Student Reports</h2>
                 <form action="{% url 'generate_all_student_report' %}" method="get">
                     <div class="mb-4">
+                    <label for="grade_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Class</label>
                     <select name="grade_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         {% for grade in grades %}
                             <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
                         {% endfor %}
                     </select>
-                    
+                    </div>
                     <div class="mb-4">
+                    <label for="exam_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Exam Type</label>
                     <select name="exam_type" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
                         {% for exam_type in exam_types %}
                             <option value="{{ exam_type.exam_id }}">{{ exam_type.name }}</option>
                         {% endfor %}
                     </select>
                     </div>
-                    <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    <button type="submit" class="w-full bg-blue-700 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                         Generate All Reports
                     </button>
+                    </div>
                 </form>
             </div>
         </div>

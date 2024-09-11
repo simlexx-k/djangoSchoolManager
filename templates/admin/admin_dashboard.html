@@ -1,0 +1,38 @@
+{% extends 'dashboard_base.html' %}
+
+{% block dashboard_title %}Admin Dashboard{% endblock %}
+
+{% block sidebar_menu %}
+<li class="mb-2">
+    <a href="{% url 'admin_dashboard' %}" class="flex items-center px-4 py-2 text-gray-700 bg-gray-200 rounded-md">
+        <span class="mx-4 font-medium">Dashboard</span>
+    </a>
+</li>
+<li class="mb-2">
+    <a href="#" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+        <span class="mx-4 font-medium">Manage Users</span>
+    </a>
+</li>
+<li class="mb-2">
+    <a href="#" class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-200 rounded-md">
+        <span class="mx-4 font-medium">School Settings</span>
+    </a>
+</li>
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Total Students</h2>
+        <p class="text-3xl font-bold">500</p>
+    </div>
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Total Teachers</h2>
+        <p class="text-3xl font-bold">50</p>
+    </div>
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Total Courses</h2>
+        <p class="text-3xl font-bold">30</p>
+    </div>
+</div>
+{% endblock %}

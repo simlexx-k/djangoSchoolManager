@@ -1,11 +1,13 @@
-{% extends '_base.html' %}
+<head>
+    <title>Dashboard - Admin</title>
+</head>
+{% extends 'admin/base.html' %}
 
 {% block content %}
-<div class="flex">
+
+<div>
     <!-- Sidebar -->
-    <div class="w-64 h-screen bg-gray-800 text-white sticky top-0 left-0 overflow-y-auto">
-        {% include 'admin/partials/sidenav.html' %}
-    </div>
+
     <br>
     <!-- Main Content -->
     <div class="flex-1 p-8">
@@ -82,18 +84,5 @@
     </div>
 </div>
 
-<script>
-    // Toggle dropdowns
-    function toggleDropdown(dropdownId, menuId) {
-        const dropdown = document.getElementById(dropdownId);
-        const menu = document.getElementById(menuId);
-        dropdown.addEventListener('click', () => {
-            menu.classList.toggle('hidden');
-        });
-    }
 
-    toggleDropdown('studentsDropdown', 'studentsMenu');
-    toggleDropdown('teachersDropdown', 'teachersMenu');
-    toggleDropdown('academicsDropdown', 'academicsMenu');
-</script>
 {% endblock %}

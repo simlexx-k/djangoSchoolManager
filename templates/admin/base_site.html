@@ -1,0 +1,32 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/responsive.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/forms.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/base.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'admin/css/widgets.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/admin_overrides.css' %}">
+    {# Your Tailwind CSS file #}
+    <link rel="stylesheet" type="text/css" href="{% static 'src/output.css' %}">
+    
+    <style>
+        /* Add any custom styles to override Tailwind here */
+        /* For example: */
+        #header {
+            background: #417690;
+            color: #ffc;
+        }
+        .module h2, .module caption, .inline-group h2 {
+            background: #79aec8;
+        }
+        a:link, a:visited {
+            color: #447e9b;
+        }
+        .button, input[type=submit], input[type=button], .submit-row input, a.button {
+            background: #79aec8;
+        }
+    </style>
+{% endblock %}
+

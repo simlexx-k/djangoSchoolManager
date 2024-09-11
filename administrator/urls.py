@@ -4,6 +4,7 @@ from django.urls import path
 import administrator
 from administrator.views import dashboard, take_attendance, send_notification, generate_reports, add_student, add_teacher, add_class, fees_management, add_payment, get_payment_details, export_payments, generate_class_report, generate_student_report, report_options, generate_all_student_report, get_students_by_grade
 from . import views
+from authenticator.views import logout_view
 
 urlpatterns = [
     path('dashboard/', dashboard, name="admin_dashboard"),
@@ -32,4 +33,6 @@ urlpatterns = [
     path('edit-grade-subjects/<int:grade_id>/', views.edit_grade_subjects, name='edit_grade_subjects'),
     path('subjects/', views.subject_list, name='subject_list'),
     path('create-subject/', views.create_subject, name='create_subject'),
+    path('logout/', logout_view, name='logout'),
+    
 ]

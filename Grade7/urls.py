@@ -19,6 +19,7 @@ from django.urls import path, include
 
 from Grade7.views import index, tables, login, register
 import administrator.urls
+import authenticator.urls
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),
@@ -26,4 +27,5 @@ urlpatterns = [
     path('accounts/login/', login, name='login'),
     path('accounts/register/', register, name='register'),
     path('control/', include("administrator.urls")),
+    path('auth/', include("authenticator.urls")),
 ]
