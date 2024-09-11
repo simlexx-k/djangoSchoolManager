@@ -1,0 +1,21 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="text-3xl font-bold mb-6 p-4 bg-gray-50 dark:bg-gray-900 dark:text-white border-t-2 border-white">Grade Subject List</h2>
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        {% for grade in grades %}
+            <h3 class="text-xl font-bold mb-2">{{ grade.grade_name }}</h3>
+            <ul class="list-disc pl-5 mb-4">
+                {% for subject in grade.subjects.all %}
+                    <li>{{ subject.name }}</li>
+                {% empty %}
+                    <li>No subjects assigned</li>
+                {% endfor %}
+            </ul>
+            <a href="{% url 'edit_grade_subjects' grade.id %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Edit Subjects</a>
+            <hr class="my-4">
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="text-3xl font-bold mb-6 p-4 bg-gray-50 dark:bg-gray-900 dark:text-white border-t-2 border-white">Subject List</h2>
+    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        <a href="{% url 'create_subject' %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">Create New Subject</a>
+        <ul class="list-disc pl-5">
+            {% for subject in subjects %}
+                <li class="mb-2">
+                    {{ subject.name }}
+                    <span class="text-sm text-gray-600">
+                        (Grades: {% for grade in subject.grades.all %}{{ grade.grade_name }}{% if not forloop.last %}, {% endif %}{% endfor %})
+                    </span>
+                </li>
+            {% empty %}
+                <li>No subjects available</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
