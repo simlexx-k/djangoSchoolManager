@@ -1,0 +1,38 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Manage Attendance</h1>
+    
+    <form method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            Record Attendance
+        </button>
+    </form>
+
+    <h2 class="text-2xl font-bold mb-4">Recent Attendance Records</h2>
+    <table class="table-auto w-full">
+        <thead>
+            <tr>
+                <th class="px-4 py-2">Learner</th>
+                <th class="px-4 py-2">Grade</th>
+                <th class="px-4 py-2">Date</th>
+                <th class="px-4 py-2">Present</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for attendance in attendances %}
+            <tr>
+                <td class="border px-4 py-2">{{ attendance.learner }}</td>
+                <td class="border px-4 py-2">{{ attendance.grade }}</td>
+                <td class="border px-4 py-2">{{ attendance.date }}</td>
+                <td class="border px-4 py-2">{{ attendance.is_present|yesno:"Yes,No" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Timetable List</h1>
+    
+    <a href="{% url 'manage_timetable' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">
+        Add New Timetable Entry
+    </a>
+
+    <table class="table-auto w-full">
+        <thead>
+            <tr>
+                <th class="px-4 py-2">Grade</th>
+                <th class="px-4 py-2">Subject</th>
+                <th class="px-4 py-2">Day</th>
+                <th class="px-4 py-2">Start Time</th>
+                <th class="px-4 py-2">End Time</th>
+                <th class="px-4 py-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in timetables %}
+            <tr>
+                <td class="border px-4 py-2">{{ entry.grade }}</td>
+                <td class="border px-4 py-2">{{ entry.subject }}</td>
+                <td class="border px-4 py-2">{{ entry.day }}</td>
+                <td class="border px-4 py-2">{{ entry.start_time }}</td>
+                <td class="border px-4 py-2">{{ entry.end_time }}</td>
+                <td class="border px-4 py-2">
+                    <a href="{% url 'edit_timetable' entry.id %}" class="text-blue-500 hover:text-blue-800">Edit</a>
+                    <a href="{% url 'delete_timetable' entry.id %}" class="text-red-500 hover:text-red-800 ml-2">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="border px-4 py-2 text-center">No timetable entries found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Attendance List</h1>
+    
+    <a href="{% url 'manage_attendance' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">
+        Record New Attendance
+    </a>
+
+    <table class="table-auto w-full">
+        <thead>
+            <tr>
+                <th class="px-4 py-2">Learner</th>
+                <th class="px-4 py-2">Grade</th>
+                <th class="px-4 py-2">Date</th>
+                <th class="px-4 py-2">Present</th>
+                <th class="px-4 py-2">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for attendance in attendances %}
+            <tr>
+                <td class="border px-4 py-2">{{ attendance.learner }}</td>
+                <td class="border px-4 py-2">{{ attendance.grade }}</td>
+                <td class="border px-4 py-2">{{ attendance.date }}</td>
+                <td class="border px-4 py-2">{{ attendance.is_present|yesno:"Yes,No" }}</td>
+                <td class="border px-4 py-2">
+                    <a href="{% url 'edit_attendance' attendance.id %}" class="text-blue-500 hover:text-blue-800">Edit</a>
+                    <a href="{% url 'delete_attendance' attendance.id %}" class="text-red-500 hover:text-red-800 ml-2">Delete</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="border px-4 py-2 text-center">No attendance records found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

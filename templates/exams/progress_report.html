@@ -1,0 +1,68 @@
+{% extends '_base.html' %}
+
+{% block content %}
+<h1>Progress Report for {{ learner.name }}</h1>
+<h2>{{ exam_type.name }} - {{ report.generated_date }}</h2>
+
+<section>
+    <h3>Academic Performance</h3>
+    <table>
+        <tr>
+            <th>Subject</th>
+            <th>Score</th>
+            <th>Grade</th>
+        </tr>
+        {% for result in exam_results %}
+        <tr>
+            <td>{{ result.subject.name }}</td>
+            <td>{{ result.score }}</td>
+            <td>{{ result.get_grade }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <p>Total Score: {{ total_score.total_score }}</p>
+</section>
+
+<section>
+    <h3>Attendance</h3>
+    <p>Present: {{ attendance.filter(status='present').count }}</p>
+    <p>Absent: {{ attendance.filter(status='absent').count }}</p>
+    <p>Late: {{ attendance.filter(status='late').count }}</p>
+</section>
+
+<section>
+    <h3>Skills Assessment</h3>
+    <ul>
+    {% for skill in skills %}
+        <li>{{ skill.skill }}: {{ skill.get_rating_display }}</li>
+    {% endfor %}
+    </ul>
+</section>
+
+<section>
+    <h3>Behavioral Assessment</h3>
+    <ul>
+    {% for behavior in behavior %}
+        <li>{{ behavior.category }}: {{ behavior.get_rating_display }}</li>
+    {% endfor %}
+    </ul>
+</section>
+
+<!-- Add more sections for other components -->
+
+<section>
+    <h3>Overall Comment</h3>
+    <p>{{ report.overall_comment }}</p>
+</section>
+
+<section>
+    <h3>Areas for Improvement</h3>
+    <p>{{ report.areas_for_improvement }}</p>
+</section>
+
+<section>
+    <h3>Future Recommendations</h3>
+    <p>{{ report.future_recommendations }}</p>
+</section>
+
+{% endblock %}
