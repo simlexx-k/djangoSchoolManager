@@ -1,0 +1,169 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    @media print {
+        .no-print {
+            display: none;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="no-print mb-4 flex justify-between items-center">
+        <h1 class="text-3xl font-bold">Progress Report</h1>
+        <div>
+            <a href="{% url 'update_progress_report' report.id %}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2">
+                <i class="fas fa-edit mr-2"></i>Update
+            </a>
+            <button onclick="generatePDF()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                <i class="fas fa-file-pdf mr-2"></i>Print to PDF
+            </button>
+        </div>
+    </div>
+
+    <div id="progress-report" class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-gray-100 p-6 border-b">
+            <h2 class="text-2xl font-semibold">{{ report.learner.name }}</h2>
+            <p class="text-gray-600">{{ report.exam_type.name }} - Generated on: {{ report.generated_date|date:"F d, Y" }}</p>
+        </div>
+
+        <div class="p-6">
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">Academic Performance</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="py-2 px-4 border">Subject</th>
+                                <th class="py-2 px-4 border">Score</th>
+                                <th class="py-2 px-4 border">Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in exam_results %}
+                            <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                                <td class="py-2 px-4 border">{{ result.subject.name }}</td>
+                                <td class="py-2 px-4 border">{{ result.score }}</td>
+                                <td class="py-2 px-4 border">{{ result.get_grade }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="mt-4 font-semibold">Total Score: {{ total_score.total_score }}</p>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">Attendance</h3>
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-blue-100 p-4 rounded-lg text-center">
+                        <p class="text-lg font-medium text-blue-800">Present</p>
+                        <p class="text-3xl font-bold text-blue-600">{{ attendance_present }}</p>
+                    </div>
+                    <div class="bg-red-100 p-4 rounded-lg text-center">
+                        <p class="text-lg font-medium text-red-800">Absent</p>
+                        <p class="text-3xl font-bold text-red-600">{{ attendance_absent }}</p>
+                    </div>
+                    <div class="bg-yellow-100 p-4 rounded-lg text-center">
+                        <p class="text-lg font-medium text-yellow-800">Late</p>
+                        <p class="text-3xl font-bold text-yellow-600">{{ attendance_late }}</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">Skills Assessment</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for skill in skills %}
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="font-medium">{{ skill.skill }}</p>
+                        <p class="text-gray-600">{{ skill.get_rating_display }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">Behavioral Assessment</h3>
+                <div class="space-y-4">
+                    {% for behavior in behavior %}
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="font-medium">{{ behavior.category }}</p>
+                        <p class="text-gray-600">{{ behavior.get_rating_display }}</p>
+                        <p class="text-sm text-gray-500 mt-2">{{ behavior.comment }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">Overall Comment</h3>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p>{{ report.overall_comment }}</p>
+                </div>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">Areas for Improvement</h3>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p>{{ report.areas_for_improvement }}</p>
+                </div>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-gray-700">Future Recommendations</h3>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p>{{ report.future_recommendations }}</p>
+                </div>
+            </section>
+
+            <div class="mt-12 flex justify-between">
+                <div>
+                    <p class="font-semibold">Principal's Signature:</p>
+                    {% if report.principal_signature %}
+                    <p class="text-green-600"><i class="fas fa-check-circle mr-2"></i>Signed</p>
+                    {% else %}
+                    <p class="text-red-600"><i class="fas fa-times-circle mr-2"></i>Not signed</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <p class="font-semibold">Parent's Signature:</p>
+                    {% if report.parent_signature %}
+                    <p class="text-green-600"><i class="fas fa-check-circle mr-2"></i>Signed</p>
+                    {% else %}
+                    <p class="text-red-600"><i class="fas fa-times-circle mr-2"></i>Not signed</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+    function generatePDF() {
+        const element = document.getElementById('progress-report');
+        const opt = {
+            margin: 10,
+            filename: 'progress_report_{{ report.learner.name }}.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+</script>
+{% endblock %}

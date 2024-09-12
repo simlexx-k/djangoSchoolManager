@@ -1,0 +1,33 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Progress Reports</h1>
+
+<table class="w-full bg-white rounded shadow">
+    <thead>
+        <tr class="bg-gray-100">
+            <th class="p-2 text-left">Learner</th>
+            <th class="p-2 text-left">Exam Type</th>
+            <th class="p-2 text-left">Generated Date</th>
+            <th class="p-2 text-left">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for report in reports %}
+        <tr class="hover:bg-gray-50">
+            <td class="p-2">{{ report.learner.name }}</td>
+            <td class="p-2">{{ report.exam_type.name }}</td>
+            <td class="p-2">{{ report.generated_date|date:"M d, Y" }}</td>
+            <td class="p-2">
+                <a href="{% url 'view_progress_report' report.id %}" class="text-blue-500 hover:underline">View</a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4" class="p-4 text-center text-gray-500">No progress reports available</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

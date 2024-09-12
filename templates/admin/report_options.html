@@ -1,5 +1,5 @@
 <head>
-    <title>Academic Reports - Admin Dashboard</title>
+    <title>Reports Section - Admin Dashboard</title>
 </head>
 {% extends 'admin/base.html' %}
 {% load static %}
@@ -65,7 +65,7 @@
             </form>
         </div>
     </div>
-<br>
+    <br>
     <h2 class="text-3xl font-bold mb-6">Generate All Student Reports</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -95,8 +95,86 @@
             </div>
         </div>
     </div>
-</div>
 
+    <br>
+    <div class="container mx-auto mt-4 flex flex-col min-h-screen py-6 px-6 p-6">
+    <h2 class="text-3xl font-bold mb-6">Financial Reports</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Class Financial Report</h2>
+            <form action="{% url 'generate_class_financial_report' %}" method="get">
+                <div class="mb-4">
+                    <label for="class_financial_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Class</label>
+                    <select id="class_financial_id" name="grade_id" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        {% for grade in grades %}
+                            <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="class_start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                    <input type="date" id="class_start_date" name="start_date" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <div class="mb-4">
+                    <label for="class_end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                    <input type="date" id="class_end_date" name="end_date" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <button type="submit" class="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Generate Class Financial Report
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Individual Student Financial Report</h2>
+            <form action="{% url 'generate_student_financial_report' %}" method="get">
+                <div class="mb-4">
+                    <label for="student_financial_grade_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Class</label>
+                    <select id="student_financial_grade_id" name="grade_id" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option value="">Select a class</option>
+                        {% for grade in grades %}
+                            <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="student_financial_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Student</label>
+                    <select id="student_financial_id" name="student_id" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" disabled>
+                        <option value="">Select a student</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="student_start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                    <input type="date" id="student_start_date" name="start_date" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <div class="mb-4">
+                    <label for="student_end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                    <input type="date" id="student_end_date" name="end_date" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <button type="submit" id="generate-student-financial-report" class="w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" disabled>
+                    Generate Student Financial Report
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">All Students Financial Report</h2>
+            <form action="{% url 'generate_all_students_financial_report' %}" method="get">
+                <div class="mb-4">
+                    <label for="all_students_start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                    <input type="date" id="all_students_start_date" name="start_date" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <div class="mb-4">
+                    <label for="all_students_end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                    <input type="date" id="all_students_end_date" name="end_date" required class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <button type="submit" class="w-full bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                    Generate All Students Financial Report
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
@@ -159,6 +237,44 @@ $(document).ready(function() {
             $('#generate-individual-report').prop('disabled', false);
         } else {
             $('#generate-individual-report').prop('disabled', true);
+        }
+    });
+
+    $('#student_financial_grade_id').change(function() {
+        var gradeId = $(this).val();
+        if (gradeId) {
+            $.ajax({
+                url: '{% url "get_students_by_grade" %}',
+                data: {
+                    'grade_id': gradeId
+                },
+                dataType: 'json',
+                success: function(data) {
+                    $('#student_financial_id').empty();
+                    $('#student_financial_id').append('<option value="">Select a student</option>');
+                    $.each(data, function(index, student) {
+                        $('#student_financial_id').append('<option value="' + student.id + '">' + student.name + '</option>');
+                    });
+                    $('#student_financial_id').prop('disabled', false);
+                },
+                error: function(xhr, status, error) {
+                    console.error("An error occurred: " + error);
+                    alert("An error occurred while fetching students. Please try again.");
+                }
+            });
+        } else {
+            $('#student_financial_id').empty();
+            $('#student_financial_id').append('<option value="">Select a student</option>');
+            $('#student_financial_id').prop('disabled', true);
+            $('#generate-student-financial-report').prop('disabled', true);
+        }
+    });
+
+    $('#student_financial_id').change(function() {
+        if ($(this).val()) {
+            $('#generate-student-financial-report').prop('disabled', false);
+        } else {
+            $('#generate-student-financial-report').prop('disabled', true);
         }
     });
 });

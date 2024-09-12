@@ -1,0 +1,33 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Add Skills Assessment</h1>
+<h2 class="text-xl mb-4">{{ learner.name }} - {{ exam_type.name }}</h2>
+{{ learner.name }} - {{ exam_type.name }}</h2>
+
+<form method="post" class="bg-white p-6 rounded shadow">
+    {% csrf_token %}
+    {{ formset.management_form }}
+    {% for form in formset %}
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold mb-2">Skill {{ forloop.counter }}</h3>
+            {% for field in form %}
+                <div class="mb-2">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                            <p class="text-red-500 text-xs italic">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+        Save Skills Assessment
+    </button>
+</form>
+{% endblock %}

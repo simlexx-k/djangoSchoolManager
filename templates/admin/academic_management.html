@@ -4,7 +4,90 @@
 {% extends 'admin/base.html' %}
 {% load static %}
 {% block content %}
-<div class="p-8 bg-gray-100 dark:bg-gray-800 min-h-screen rounded-lg">
-    <h1 class="text-3xl font-bold mb-6">Academic Management</h1>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Academic Management Dashboard</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Curriculum Management -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Curriculum Management</h2>
+            <p class="mb-4">Manage school curricula, subjects, and grade-specific content.</p>
+            <a href="{% url 'curriculum_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Manage Curriculum
+            </a>
+        </div>
+
+        <!-- Attendance Management -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Attendance Management</h2>
+            <p class="mb-4">Record and track student attendance across all grades.</p>
+            <a href="{% url 'attendance_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Manage Attendance
+            </a>
+        </div>
+
+        <!-- Timetable Management -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Timetable Management</h2>
+            <p class="mb-4">Create and manage class schedules for all grades and subjects.</p>
+            <a href="{% url 'timetable_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Manage Timetable
+            </a>
+        </div>
+
+        <!-- Teacher Assignment -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Teacher Assignment</h2>
+            <p class="mb-4">Assign teachers to specific grades and subjects.</p>
+            <a href="{% url 'teacher_assignment_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Assign Teachers
+            </a>
+        </div>
+
+        <!-- Academic Calendar -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Academic Calendar</h2>
+            <p class="mb-4">Manage important dates, events, and holidays for the school year.</p>
+            <a href="{% url 'academic_calendar_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Manage Calendar
+            </a>
+        </div>
+
+        <!-- Exam Management -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Exam Management</h2>
+            <p class="mb-4">Schedule exams, record results, and generate reports.</p>
+            <a href="{% url 'exam_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Manage Exams
+            </a>
+        </div>
+
+        <!-- Progress Reports -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Progress Reports</h2>
+            <p class="mb-4">Generate and manage student progress reports.</p>
+            <a href="{% url 'exam_dashboard' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Generate Reports
+            </a>
+        </div>
+
+        <!-- Subject Management -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Subject Management</h2>
+            <p class="mb-4">Manage subjects offered in the school curriculum.</p>
+            <a href="{% url 'subject_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Manage Subjects
+            </a>
+        </div>
+
+        <!-- Grade Management -->
+        <div class="bg-white shadow-md rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Grade Management</h2>
+            <p class="mb-4">Manage grade levels and associated information.</p>
+            <a href="{% url 'grade_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Manage Grades
+            </a>
+        </div>
+    </div>
 </div>
-{% endblock content %}
+{% endblock %}

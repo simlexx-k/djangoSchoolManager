@@ -589,6 +589,399 @@ def report_options(request):
         'exam_types': exam_types
     })
 
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.barcharts import VerticalBarChart
+from reportlab.graphics.charts.piecharts import Pie
+from io import BytesIO
+from datetime import datetime
+from django.db.models import Sum, Avg
+from learners.models import LearnerRegister, Grade, School
+from learners.models import FeesModel  # Assuming this is your fee payment model
+
+def generate_class_financial_report(request):
+    grade_id = request.GET.get('grade_id')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    grade = get_object_or_404(Grade, id=grade_id)
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+
+    # Fetch fee payments for the specified grade and date range
+    payments = FeesModel.objects.filter(
+        learner_id__grade=grade,
+        register_date__range=[start_date, end_date]
+    ).select_related('learner_id')
+
+    # Generate PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Center', alignment=1))
+
+    # School logo and header
+    elements.append(Image('static/src/img/masabaLogo.png', width=1*inch, height=1*inch))
+    elements.append(Paragraph("St Mary's Masaba School", styles['Title']))
+    elements.append(Paragraph("Class Financial Report", styles['Title']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Report details
+    elements.append(Paragraph(f"Class: {grade.grade_name}", styles['Heading2']))
+    elements.append(Paragraph(f"Period: {start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')}", styles['Heading2']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Summary statistics
+    total_amount = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+    avg_payment = payments.aggregate(Avg('amount'))['amount__avg'] or 0
+    payment_count = payments.count()
+
+    summary_data = [
+        ['Total Amount Collected', f'Ksh. {total_amount:,.2f}'],
+        ['Number of Payments', str(payment_count)],
+        ['Average Payment', f'Ksh. {avg_payment:,.2f}'],
+    ]
+
+    summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.lightgrey),
+        ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 12),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Payment method distribution (Pie chart)
+    payment_methods = payments.values('payment_method').annotate(total=Sum('amount'))
+    if payment_methods:
+        drawing = Drawing(400, 200)
+        pie = Pie()
+        pie.x = 100
+        pie.y = 0
+        pie.width = 200
+        pie.height = 200
+        pie.data = [method['total'] for method in payment_methods]
+        pie.labels = [f"{method['payment_method']}\n({method['total']/total_amount:.1%})" for method in payment_methods]
+        pie.slices.strokeWidth = 0.5
+        drawing.add(pie)
+        elements.append(Paragraph("Payment Method Distribution", styles['Heading3']))
+        elements.append(drawing)
+
+    elements.append(PageBreak())
+
+    # Detailed payment records
+    elements.append(Paragraph("Detailed Payment Records", styles['Heading2']))
+    if payments:
+        data = [['Student Name', 'Amount', 'Date', 'Payment Method']]
+        for payment in payments:
+            data.append([
+                payment.learner_id.name,
+                f"Ksh. {payment.amount:,.2f}",
+                payment.register_date.strftime('%Y-%m-%d'),
+                payment.payment_method
+            ])
+
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 10),
+            ('BOTTOMPADDING', (0,0), (-1,0), 12),
+            ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+            ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 8),
+            ('TOPPADDING', (0,1), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 6),
+            ('GRID', (0,0), (-1,-1), 1, colors.black)
+        ]))
+        elements.append(table)
+    else:
+        elements.append(Paragraph("No payments recorded for this period.", styles['Normal']))
+
+    # Build PDF
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{grade.grade_name}_financial_report.pdf"'
+    response.write(pdf)
+    return response
+
+def generate_student_financial_report(request):
+    student_id = request.GET.get('student_id')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    student = get_object_or_404(LearnerRegister, id=student_id)
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+
+    # Fetch fee payments for the specified student and date range
+    payments = FeesModel.objects.filter(
+        learner_id=student,
+        register_date__range=[start_date, end_date]
+    )
+
+    # Generate PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Center', alignment=1))
+
+    # School logo and header
+    elements.append(Image('static/src/img/masabaLogo.png', width=1*inch, height=1*inch))
+    elements.append(Paragraph("St Mary's Masaba School", styles['Title']))
+    elements.append(Paragraph("Student Financial Report", styles['Title']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Student details
+    elements.append(Paragraph(f"Student Name: {student.name}", styles['Heading2']))
+    elements.append(Paragraph(f"Class: {student.grade.grade_name}", styles['Heading2']))
+    elements.append(Paragraph(f"Period: {start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')}", styles['Heading2']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Summary statistics
+    total_amount = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+    payment_count = payments.count()
+
+    summary_data = [
+        ['Total Amount Paid', f'Ksh. {total_amount:,.2f}'],
+        ['Number of Payments', str(payment_count)],
+        ['Current Fee Balance', f'Ksh. {student.fee_balance:,.2f}'],
+    ]
+
+    summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.lightgrey),
+        ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 12),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Payment history
+    elements.append(Paragraph("Payment History", styles['Heading2']))
+    if payments:
+        data = [['Date', 'Amount', 'Payment Method']]
+        for payment in payments:
+            data.append([
+                payment.register_date.strftime('%Y-%m-%d'),
+                f"Ksh. {payment.amount:,.2f}",
+                payment.payment_method
+            ])
+
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 10),
+            ('BOTTOMPADDING', (0,0), (-1,0), 12),
+            ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+            ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 8),
+            ('TOPPADDING', (0,1), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 6),
+            ('GRID', (0,0), (-1,-1), 1, colors.black)
+        ]))
+        elements.append(table)
+    else:
+        elements.append(Paragraph("No payments recorded for this period.", styles['Normal']))
+
+    # Build PDF
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{student.name}_financial_report.pdf"'
+    response.write(pdf)
+    return response
+
+def generate_all_students_financial_report(request):
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+
+    # Fetch all fee payments for the specified date range
+    payments = FeesModel.objects.filter(
+        register_date__range=[start_date, end_date]
+    ).select_related('learner_id__grade')
+
+    # Generate PDF
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(letter), topMargin=0.5*inch, bottomMargin=0.5*inch)
+    elements = []
+
+    styles = getSampleStyleSheet()
+    styles.add(ParagraphStyle(name='Center', alignment=1))
+
+    # School logo and header
+    elements.append(Image('static/src/img/masabaLogo.png', width=1*inch, height=1*inch))
+    elements.append(Paragraph("St Mary's Masaba School", styles['Title']))
+    elements.append(Paragraph("All Students Financial Report", styles['Title']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Report details
+    elements.append(Paragraph(f"Period: {start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')}", styles['Heading2']))
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Summary statistics
+    total_amount = payments.aggregate(Sum('amount'))['amount__sum'] or 0
+    payment_count = payments.count()
+    student_count = payments.values('learner_id').distinct().count()
+
+    summary_data = [
+        ['Total Amount Collected', f'Ksh. {total_amount:,.2f}'],
+        ['Number of Payments', str(payment_count)],
+        ['Number of Students', str(student_count)],
+    ]
+
+    summary_table = Table(summary_data, colWidths=[3*inch, 2*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.lightgrey),
+        ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 12),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('GRID', (0,0), (-1,-1), 1, colors.black)
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.25*inch))
+
+    # Payment method distribution (Pie chart)
+    payment_methods = payments.values('payment_method').annotate(total=Sum('amount'))
+    if payment_methods:
+        drawing = Drawing(400, 200)
+        pie = Pie()
+        pie.x = 100
+        pie.y = 0
+        pie.width = 200
+        pie.height = 200
+        pie.data = [method['total'] for method in payment_methods]
+        pie.labels = [f"{method['payment_method']}\n({method['total']/total_amount:.1%})" for method in payment_methods]
+        pie.slices.strokeWidth = 0.5
+        drawing.add(pie)
+        elements.append(Paragraph("Payment Method Distribution", styles['Heading3']))
+        elements.append(drawing)
+
+    elements.append(PageBreak())
+
+    # Class-wise summary
+    elements.append(Paragraph("Class-wise Summary", styles['Heading2']))
+    class_summary = payments.values('learner_id__grade__grade_name').annotate(
+        total=Sum('amount'),
+        count=Count('learner_id', distinct=True)
+    ).order_by('learner_id__grade__grade_name')
+
+    if class_summary:
+        data = [['Class', 'Total Amount', 'Number of Students']]
+        for summary in class_summary:
+            data.append([
+                summary['learner_id__grade__grade_name'],
+                f"Ksh. {summary['total']:,.2f}",
+                summary['count']
+            ])
+
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 10),
+            ('BOTTOMPADDING', (0,0), (-1,0), 12),
+            ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+            ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 8),
+            ('TOPPADDING', (0,1), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 6),
+            ('GRID', (0,0), (-1,-1), 1, colors.black)
+        ]))
+        elements.append(table)
+    else:
+        elements.append(Paragraph("No class-wise summary available.", styles['Normal']))
+
+    elements.append(PageBreak())
+
+    # Top 10 payments
+    elements.append(Paragraph("Top 10 Payments", styles['Heading2']))
+    top_payments = payments.order_by('-amount')[:10]
+    if top_payments:
+        data = [['Student Name', 'Class', 'Amount', 'Date', 'Payment Method']]
+        for payment in top_payments:
+            data.append([
+                payment.learner_id.name,
+                payment.learner_id.grade.grade_name,
+                f"Ksh. {payment.amount:,.2f}",
+                payment.register_date.strftime('%Y-%m-%d'),
+                payment.payment_method
+            ])
+
+        table = Table(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.grey),
+            ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0,0), (-1,0), 10),
+            ('BOTTOMPADDING', (0,0), (-1,0), 12),
+            ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+            ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+            ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+            ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+            ('FONTSIZE', (0,1), (-1,-1), 8),
+            ('TOPPADDING', (0,1), (-1,-1), 6),
+            ('BOTTOMPADDING', (0,1), (-1,-1), 6),
+            ('GRID', (0,0), (-1,-1), 1, colors.black)
+        ]))
+        elements.append(table)
+    else:
+        elements.append(Paragraph("No payments recorded for this period.", styles['Normal']))
+
+    # Build PDF
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="all_students_financial_report.pdf"'
+    response.write(pdf)
+    return response
 
 from io import BytesIO
 from reportlab.lib import colors
@@ -1357,12 +1750,592 @@ def subject_list(request):
 
 @login_required
 def create_subject(request):
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        if name:
-            subject = Subject.objects.create(name=name)
-            messages.success(request, f"Subject '{subject.name}' created successfully.")
+   if request.method == 'POST':
+        form = SubjectForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Subject added successfully.')
             return redirect('subject_list')
         else:
-            messages.error(request, "Subject name is required.")
-    return render(request, 'admin/create_subject.html')
+            form = SubjectForm()
+    
+            subjects = Subject.objects.all().order_by('name')
+
+        return render(request, 'admin/manage_subjects.html', {
+        'form': form,
+        'subjects': subjects,
+        'edit_mode': False
+    })
+
+
+from .forms import CurriculumForm
+from .models import Curriculum
+
+@login_required
+def manage_curriculum(request):
+    if request.method == 'POST':
+        form = CurriculumForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Curriculum added successfully.')
+            return redirect('curriculum_list')
+    else:
+        form = CurriculumForm()
+    
+    curricula = Curriculum.objects.all()
+    return render(request, 'admin/manage_curriculum.html', {'form': form, 'curricula': curricula})
+
+@login_required
+def curriculum_list(request):
+    curricula = Curriculum.objects.all()
+    return render(request, 'admin/curriculum_list.html', {'curricula': curricula})
+
+@login_required
+def manage_subjects(request, pk=None):
+    if pk:
+        subject = get_object_or_404(Subject, pk=pk)
+        edit_mode = True
+    else:
+        subject = None
+        edit_mode = False
+
+    if request.method == 'POST':
+        form = SubjectForm(request.POST, instance=subject)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Subject saved successfully.')
+            return redirect('subject_list')
+    else:
+        form = SubjectForm(instance=subject)
+
+    subjects = Subject.objects.all().order_by('name')
+    return render(request, 'admin/manage_subjects.html', {
+        'form': form,
+        'subjects': subjects,
+        'edit_mode': edit_mode
+    })
+
+@login_required
+def subject_list(request):
+    subjects = Subject.objects.all().order_by('name')
+    return render(request, 'admin/manage_subjects.html', {'subjects': subjects})
+
+from .forms import GradeForm
+
+@login_required
+def manage_classes(request):
+    if request.method == 'POST':
+        form = GradeForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Class/Grade added successfully.')
+            return redirect('class_list')
+    else:
+        form = GradeForm()
+    
+    grades = Grade.objects.all()
+    return render(request, 'admin/manage_classes.html', {'form': form, 'grades': grades})
+
+@login_required
+def class_list(request):
+    grades = Grade.objects.all()
+    return render(request, 'admin/class_list.html', {'grades': grades})
+
+from .forms import ExamTypeForm
+
+@login_required
+def manage_exams(request):
+    if request.method == 'POST':
+        form = ExamTypeForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Exam/Assessment added successfully.')
+            return redirect('exam_list')
+    else:
+        form = ExamTypeForm()
+    
+    exams = ExamType.objects.all()
+    return render(request, 'admin/manage_exams.html', {'form': form, 'exams': exams})
+
+@login_required
+def exam_list(request):
+    exams = ExamType.objects.all()
+    return render(request, 'admin/exam_list.html', {'exams': exams})
+
+@login_required
+def exam_result_list(request):
+    results = ExamResult.objects.all().select_related('learner_id', 'subject', 'exam_type')
+    return render(request, 'admin/exam_result_list.html', {'results': results})
+
+from .forms import AttendanceForm
+from .models import Attendance
+
+@login_required
+def manage_attendance(request):
+    if request.method == 'POST':
+        form = AttendanceForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Attendance recorded successfully.')
+            return redirect('attendance_list')
+    else:
+        form = AttendanceForm()
+    
+    return render(request, 'admin/manage_attendance.html', {'form': form})
+
+@login_required
+def attendance_list(request):
+    attendances = Attendance.objects.all().select_related('learner', 'grade')
+    return render(request, 'admin/attendance_list.html', {'attendances': attendances})
+
+from .forms import TimetableForm
+from .models import Timetable
+
+@login_required
+def manage_timetable(request):
+    if request.method == 'POST':
+        form = TimetableForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Timetable entry added successfully.')
+            return redirect('timetable_list')
+    else:
+        form = TimetableForm()
+    
+    return render(request, 'admin/manage_timetable.html', {'form': form})
+
+@login_required
+def timetable_list(request):
+    timetables = Timetable.objects.all().select_related('grade', 'subject')
+    return render(request, 'admin/timetable_list.html', {'timetables': timetables})
+
+from .forms import TeacherAssignmentForm
+from .models import TeacherAssignment
+
+@login_required
+def assign_teachers(request):
+    if request.method == 'POST':
+        form = TeacherAssignmentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Teacher assigned successfully.')
+            return redirect('teacher_assignment_list')
+    else:
+        form = TeacherAssignmentForm()
+    
+    return render(request, 'admin/assign_teachers.html', {'form': form})
+
+@login_required
+def teacher_assignment_list(request):
+    assignments = TeacherAssignment.objects.all().select_related('teacher', 'grade', 'subject')
+    return render(request, 'admin/teacher_assignment_list.html', {'assignments': assignments})
+
+from .forms import AcademicCalendarForm
+from .models import AcademicCalendar
+
+@login_required
+def manage_academic_calendar(request):
+    if request.method == 'POST':
+        form = AcademicCalendarForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Academic calendar event added successfully.')
+            return redirect('academic_calendar_list')
+    else:
+        form = AcademicCalendarForm()
+    
+    return render(request, 'admin/manage_academic_calendar.html', {'form': form})
+
+@login_required
+def academic_calendar_list(request):
+    events = AcademicCalendar.objects.all()
+    return render(request, 'admin/academic_calendar_list.html', {'events': events})
+
+@login_required
+def generate_progress_reports(request):
+    if request.method == 'POST':
+        grade_id = request.POST.get('grade_id')
+        exam_type_id = request.POST.get('exam_type_id')
+        
+        grade = Grade.objects.get(id=grade_id)
+        exam_type = ExamType.objects.get(id=exam_type_id)
+        
+        students = LearnerRegister.objects.filter(grade=grade)
+        results = ExamResult.objects.filter(learner_id__in=students, exam_type=exam_type)
+        
+        # Generate progress reports logic here
+        # You might want to use a PDF library like ReportLab to create the reports
+        
+        messages.success(request, 'Progress reports generated successfully.')
+        return redirect('report_options')
+    
+    grades = Grade.objects.all()
+    exam_types = ExamType.objects.all()
+    return render(request, 'admin/generate_progress_reports.html', {'grades': grades, 'exam_types': exam_types})
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Curriculum, Attendance, Timetable, TeacherAssignment, AcademicCalendar
+from .forms import CurriculumForm, AttendanceForm, TimetableForm, TeacherAssignmentForm, AcademicCalendarForm, ExamTypeForm, SubjectForm, GradeForm
+from learners.models import LearnerRegister
+from exams.models import ExamResult, ExamType
+#from teachers.models import Teacher, TeacherForm
+#from django.contrib.auth.models import User, UserCreationForm
+#from django.contrib.auth import authenticate, login
+#from django.contrib.auth.decorators import login_required
+#from django.contrib import messages
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+
+# Curriculum views
+@login_required
+def curriculum_list(request):
+    curricula = Curriculum.objects.all()
+    return render(request, 'admin/curriculum_list.html', {'curricula': curricula})
+
+@login_required
+def edit_curriculum(request, pk):
+    curriculum = get_object_or_404(Curriculum, pk=pk)
+    if request.method == 'POST':
+        form = CurriculumForm(request.POST, instance=curriculum)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Curriculum updated successfully.')
+            return redirect('curriculum_list')
+    else:
+        form = CurriculumForm(instance=curriculum)
+    return render(request, 'admin/manage_curriculum.html', {'form': form, 'edit_mode': True})
+
+@login_required
+def delete_curriculum(request, pk):
+    curriculum = get_object_or_404(Curriculum, pk=pk)
+    if request.method == 'POST':
+        curriculum.delete()
+        messages.success(request, 'Curriculum deleted successfully.')
+        return redirect('curriculum_list')
+    return render(request, 'admin/confirm_delete.html', {'object': curriculum})
+
+# Attendance views
+@login_required
+def attendance_list(request):
+    attendances = Attendance.objects.all()
+    return render(request, 'admin/attendance_list.html', {'attendances': attendances})
+
+@login_required
+def edit_attendance(request, pk):
+    attendance = get_object_or_404(Attendance, pk=pk)
+    if request.method == 'POST':
+        form = AttendanceForm(request.POST, instance=attendance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Attendance record updated successfully.')
+            return redirect('attendance_list')
+    else:
+        form = AttendanceForm(instance=attendance)
+    return render(request, 'admin/manage_attendance.html', {'form': form, 'edit_mode': True})
+
+@login_required
+def delete_attendance(request, pk):
+    attendance = get_object_or_404(Attendance, pk=pk)
+    if request.method == 'POST':
+        attendance.delete()
+        messages.success(request, 'Attendance record deleted successfully.')
+        return redirect('attendance_list')
+    return render(request, 'admin/confirm_delete.html', {'object': attendance})
+
+# Implement similar view functions for Timetable, TeacherAssignment, AcademicCalendar, ExamType, Subject, and Grade
+# ...
+@login_required
+def edit_timetable(request, pk):
+    timetable = get_object_or_404(Timetable, pk=pk)
+    if request.method == 'POST':
+        form = TimetableForm(request.POST, instance=timetable)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Timetable entry updated successfully.')
+            return redirect('timetable_list')
+    else:
+        form = TimetableForm(instance=timetable)
+    return render(request, 'admin/manage_timetable.html', {'form': form, 'edit_mode': True})
+
+@login_required
+def delete_timetable(request, pk):
+    timetable = get_object_or_404(Timetable, pk=pk)
+    if request.method == 'POST':
+        timetable.delete()
+        messages.success(request, 'Timetable entry deleted successfully.')
+        return redirect('timetable_list')
+    return render(request, 'admin/confirm_delete.html', {'object': timetable})
+
+@login_required
+def teacher_assignment_list(request):
+    assignments = TeacherAssignment.objects.all().select_related('teacher', 'grade', 'subject')
+    return render(request, 'admin/teacher_assessment_list.html', {'assignments': assignments})
+
+@login_required
+def edit_teacher_assignment(request, pk):
+    assignment = get_object_or_404(TeacherAssignment, pk=pk)
+    if request.method == 'POST':
+        form = TeacherAssignmentForm(request.POST, instance=assignment)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Teacher assignment updated successfully.')
+            return redirect('teacher_assignment_list')
+
+@login_required
+def delete_teacher_assignment(request, pk):
+    assignment = get_object_or_404(TeacherAssignment, pk=pk)
+    if request.method == 'POST':
+        assignment.delete()
+        messages.success(request, 'Teacher assignment deleted successfully.')
+        return redirect('teacher_assignment_list')
+    return render(request, 'admin/confirm_delete.html', {'object': assignment})
+
+@login_required
+def academic_calendar_list(request):
+    events = AcademicCalendar.objects.all()
+    return render(request, 'admin/academic_calendar_list.html', {'events': events})
+
+@login_required
+def edit_academic_calendar(request, pk):
+    event = get_object_or_404(AcademicCalendar, pk=pk)
+    if request.method == 'POST':
+        form = AcademicCalendarForm(request.POST, instance=event)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Academic calendar event updated successfully.')
+            return redirect('academic_calendar_list')
+    else:
+        form = AcademicCalendarForm(instance=event)
+    return render(request, 'admin/manage_academic_calendar.html', {'form': form, 'edit_mode': True})
+
+@login_required
+def delete_academic_calendar(request, pk):
+    event = get_object_or_404(AcademicCalendar, pk=pk)
+    if request.method == 'POST':
+        event.delete()
+        messages.success(request, 'Academic calendar event deleted successfully.')
+        return redirect('academic_calendar_list')
+    return render(request, 'admin/confirm_delete.html', {'object': event})
+
+@login_required
+def edit_exam_type(request, pk):
+    exam_type = get_object_or_404(ExamType, pk=pk)
+    if request.method == 'POST':
+        form = ExamTypeForm(request.POST, instance=exam_type)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Exam type updated successfully.')
+            return redirect('exam_type_list')
+    else:
+        form = ExamTypeForm(instance=exam_type)
+    return render(request, 'admin/manage_exam_type.html', {'form': form, 'edit_mode': True})
+
+@login_required
+def delete_exam_type(request, pk):
+    exam_type = get_object_or_404(ExamType, pk=pk)
+    if request.method == 'POST':
+        exam_type.delete()
+        messages.success(request, 'Exam type deleted successfully.')
+        return redirect('exam_type_list')
+    return render(request, 'admin/confirm_delete.html', {'object': exam_type})
+
+@login_required
+def edit_subject(request, pk):
+    subject = get_object_or_404(Subject, pk=pk)
+    if request.method == 'POST':
+        form = SubjectForm(request.POST, instance=subject)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Subject updated successfully.')
+            return redirect('subject_list')
+    else:
+        form = SubjectForm(instance=subject)
+    
+    subjects = Subject.objects.all().order_by('name')
+    return render(request, 'admin/manage_subjects.html', {
+        'form': form,
+        'subjects': subjects,
+        'edit_mode': True
+    })
+@login_required
+def edit_exam(request, pk):
+    exam = get_object_or_404(ExamType, pk=pk)
+    if request.method == 'POST':
+        form = ExamTypeForm(request.POST, instance=exam)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Exam type updated successfully.')
+            return redirect('exam_type_list')
+    else:
+        form = ExamTypeForm(instance=exam)
+    return render(request, 'admin/manage_exams.html', {'form': form, 'edit_mode': True})
+
+@login_required
+def delete_exam(request, pk):
+    exam = get_object_or_404(ExamType, pk=pk)
+    if request.method == 'POST':
+        exam.delete()
+        messages.success(request, 'Exam type deleted successfully.')
+        return redirect('exam_type_list')
+    return render(request, 'admin/confirm_delete.html', {'object': exam})
+
+@login_required
+def edit_grade(request, pk):
+    grade = get_object_or_404(Grade, pk=pk)
+    if request.method == 'POST':
+        form = GradeForm(request.POST, instance=grade)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Grade updated successfully.')
+            return redirect('grade_list')
+    else:
+        form = GradeForm(instance=grade)
+    return render(request, 'admin/manage_grade.html', {'form': form, 'edit_mode': True})
+
+@login_required
+def delete_grade(request, pk):
+    grade = get_object_or_404(Grade, pk=pk)
+    if request.method == 'POST':
+        grade.delete()
+        messages.success(request, 'Grade deleted successfully.')
+        return redirect('grade_list')
+    return render(request, 'admin/confirm_delete.html', {'object': grade})
+
+@login_required
+def grade_list(request):
+    grades = Grade.objects.all()
+    return render(request, 'admin/grade_list.html', {'grades': grades})
+
+@login_required
+def manage_classes(request):
+    if request.method == 'POST':
+        form = GradeForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Class/Grade added successfully.')
+            return redirect('class_list')
+    else:
+        form = GradeForm()
+    
+    grades = Grade.objects.all()
+    return render(request, 'admin/manage_classes.html', {'form': form, 'grades': grades})
+''' 
+@login_required
+def delete_subject(request, pk):
+    subject = get_object_or_404(Subject, pk=pk)
+    if request.method == 'POST':
+        subject.delete()
+        messages.success(request, 'Subject deleted successfully.')
+        return redirect('subject_list')
+    return render(request, 'admin/confirm_delete.html', {'object': subject})
+
+'''
+
+from django.urls import reverse
+
+@login_required
+def delete_curriculum(request, pk):
+    curriculum = get_object_or_404(Curriculum, pk=pk)
+    if request.method == 'POST':
+        curriculum.delete()
+        messages.success(request, 'Curriculum deleted successfully.')
+        return redirect('curriculum_list')
+    return render(request, 'admin/confirm_delete.html', {
+        'object': curriculum,
+        'object_name': 'curriculum',
+        'cancel_url': reverse('curriculum_list')
+    })
+
+@login_required
+def delete_attendance(request, pk):
+    attendance = get_object_or_404(Attendance, pk=pk)
+    if request.method == 'POST':
+        attendance.delete()
+        messages.success(request, 'Attendance record deleted successfully.')
+        return redirect('attendance_list')
+    return render(request, 'admin/confirm_delete.html', {
+        'object': attendance,
+        'object_name': 'attendance record',
+        'cancel_url': 'attendance_list'
+    })
+
+@login_required
+def delete_timetable(request, pk):
+    timetable = get_object_or_404(Timetable, pk=pk)
+    if request.method == 'POST':
+        timetable.delete()
+        messages.success(request, 'Timetable entry deleted successfully.')
+        return redirect('timetable_list')
+    return render(request, 'admin/confirm_delete.html', {
+        'object': timetable,
+        'object_name': 'timetable entry',
+        'cancel_url': reverse('timetable_list')
+    })
+
+@login_required
+def delete_teacher_assignment(request, pk):
+    assignment = get_object_or_404(TeacherAssignment, pk=pk)
+    if request.method == 'POST':
+        assignment.delete()
+        messages.success(request, 'Teacher assignment deleted successfully.')
+        return redirect('teacher_assignment_list')
+    return render(request, 'admin/confirm_delete.html', {
+        'object': assignment,
+        'object_name': 'teacher assignment',
+        'cancel_url': reverse('teacher_assignment_list')
+    })
+
+@login_required
+def delete_academic_calendar(request, pk):
+    event = get_object_or_404(AcademicCalendar, pk=pk)
+    if request.method == 'POST':
+        event.delete()
+        messages.success(request, 'Academic calendar event deleted successfully.')
+        return redirect('academic_calendar_list')
+    return render(request, 'admin/confirm_delete.html', {
+        'object': event,
+        'object_name': 'academic calendar event',
+        'cancel_url': reverse('academic_calendar_list')
+    })
+
+@login_required
+def delete_exam(request, pk):
+    exam = get_object_or_404(ExamType, pk=pk)
+    if request.method == 'POST':
+        exam.delete()
+        messages.success(request, 'Exam deleted successfully.')
+        return redirect('exam_list')
+    return render(request, 'admin/confirm_delete.html', {
+        'object': exam,
+        'object_name': 'exam',
+        'cancel_url': reverse('exam_list')
+    })
+
+@login_required
+def delete_subject(request, pk):
+    subject = get_object_or_404(Subject, pk=pk)
+    if request.method == 'POST':
+        subject.delete()
+        messages.success(request, 'Subject deleted successfully.')
+        return redirect('subject_list')
+    return render(request, 'admin/confirm_delete.html', {
+        'object': subject,
+        'object_name': 'subject',
+        'cancel_url': reverse('manage_subjects')
+    })
+
+@login_required
+def delete_grade(request, pk):
+    grade = get_object_or_404(Grade, pk=pk)
+    if request.method == 'POST':
+        grade.delete()
+        messages.success(request, 'Grade deleted successfully.')
+        return redirect('grade_list')
+    return render(request, 'admin/confirm_delete.html', {
+        'object': grade,
+        'object_name': 'grade',
+        'cancel_url': reverse('grade_list')
+    })

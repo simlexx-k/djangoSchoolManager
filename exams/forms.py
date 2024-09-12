@@ -63,3 +63,10 @@ class StandardizedTestScoreForm(forms.ModelForm):
     class Meta:
         model = StandardizedTestScore
         fields = ['learner', 'exam_type', 'test_name', 'score', 'date']
+
+from django import forms
+from .models import LearnerRegister, ExamType
+
+class LearnerExamTypeSelectionForm(forms.Form):
+    learner = forms.ModelChoiceField(queryset=LearnerRegister.objects.all(), label="Select Learner")
+    exam_type = forms.ModelChoiceField(queryset=ExamType.objects.all(), label="Select Exam Type")
