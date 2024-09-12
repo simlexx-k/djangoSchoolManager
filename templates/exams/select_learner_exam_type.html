@@ -1,9 +1,10 @@
 {% extends 'admin/base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-6">Select Learner and Exam Type</h1>
-    <form method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <form method="post" id="learner-exam-form" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
         {% csrf_token %}
         {% for field in form %}
             <div class="mb-4">
@@ -19,10 +20,37 @@
             </div>
         {% endfor %}
         <div class="flex items-center justify-between">
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+            <button id="submit-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
                 Continue
             </button>
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('learner-exam-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const learnerSelect = document.getElementById('id_learner');
+    const examTypeSelect = document.getElementById('id_exam_type');
+
+    function checkSelections() {
+        submitBtn.disabled = !(learnerSelect.value && examTypeSelect.value);
+    }
+
+    learnerSelect.addEventListener('change', checkSelections);
+    examTypeSelect.addEventListener('change', checkSelections);
+
+    checkSelections(); // Initial check
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (learnerSelect.value && examTypeSelect.value) {
+            this.submit();
+        }
+    });
+});
+</script>
 {% endblock %}

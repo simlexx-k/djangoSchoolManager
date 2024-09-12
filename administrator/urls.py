@@ -130,8 +130,7 @@ urlpatterns = [
     path('grades/delete/<int:pk>/', delete_grade, name='delete_grade'),
 
     # Progress Reports
-    path('progress-report/create/<int:learner_id>/<int:exam_type_id>/', create_progress_report,
-         name='create_progress_report'),
+    path('progress-report/create/<int:learner_id>/<int:exam_type_id>/', exam_views.create_progress_report, name='create_progress_report'),
     path('progress-report/create/', exam_views.select_learner_exam_type, name='select_learner_exam_type'),
 
     path('progress-report/view/<int:report_id>/', view_progress_report, name='view_progress_report'),

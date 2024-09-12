@@ -1,81 +1,129 @@
 {% extends 'admin/base.html' %}
+{% load static %}
+
 
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Generate Progress Report</h1>
-<h2 class="text-xl mb-4">{{ learner.name }} - {{ exam_type.name }}</h2>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Create Progress Report</h1>
 
-<form method="post" class="bg-white p-6 rounded shadow">
-    {% csrf_token %}
-    {{ form.non_field_errors }}
-    {% for field in form %}
-        <div class="mb-4">
-            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                {{ field.label }}
-            </label>
-            {{ field }}
-            {% if field.errors %}
-                {% for error in field.errors %}
-                    <p class="text-red-500 text-xs italic">{{ error }}</p>
-                {% endfor %}
-            {% endif %}
-        </div>
-    {% endfor %}
-    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-        Generate Report
-    </button>
-</form>
+    <form method="post" class="space-y-8" id="progress-report-form">
+        {% csrf_token %}
 
-<div class="mt-8">
-    <h3 class="text-lg font-semibold mb-2">Exam Results</h3>
-    <table class="w-full bg-white rounded shadow">
-        <thead>
-            <tr class="bg-gray-100">
-                <th class="p-2 text-left">Subject</th>
-                <th class="p-2 text-left">Score</th>
-                <th class="p-2 text-left">Grade</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for result in exam_results %}
-            <tr>
-                <td class="p-2">{{ result.subject.name }}</td>
-                <td class="p-2">{{ result.score }}</td>
-                <td class="p-2">{{ result.get_grade }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="3" class="p-2 text-center text-gray-500">No exam results available</td>
-            </tr>
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Select Learner and Exam Type</h3>
+            {% for field in learner_exam_form %}
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                        {% for error in field.errors %}
+                            <p class="text-red-500 text-xs italic">{{ error }}</p>
+                        {% endfor %}
+                    {% endif %}
+                </div>
             {% endfor %}
-        </tbody>
-    </table>
-</div>
+            <button type="button" id="validate-selection" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Validate Selection
+            </button>
+        </div>
 
-<div class="mt-8">
-    <h3 class="text-lg font-semibold mb-2">Skills Assessments</h3>
-    <ul class="bg-white rounded shadow divide-y">
-        {% for assessment in skills_assessments %}
-        <li class="p-2">
-            <span class="font-medium">{{ assessment.skill }}</span>: {{ assessment.get_rating_display }}
-        </li>
-        {% empty %}
-        <li class="p-2 text-center text-gray-500">No skills assessments available</li>
-        {% endfor %}
-    </ul>
-</div>
+        <div id="report-details" style="display: none;">
+            <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                <h3 class="text-xl font-semibold mb-4">Progress Report Details</h3>
+                {% include "exams/partials/form_fields.html" with form=progress_report_form %}
+            </div>
 
-<div class="mt-8">
-    <h3 class="text-lg font-semibold mb-2">Behavioral Assessments</h3>
-    <ul class="bg-white rounded shadow divide-y">
-        {% for assessment in behavioral_assessments %}
-        <li class="p-2">
-            <span class="font-medium">{{ assessment.category }}</span>: {{ assessment.get_rating_display }}
-            <p class="text-sm text-gray-600">{{ assessment.comment }}</p>
-        </li>
-        {% empty %}
-        <li class="p-2 text-center text-gray-500">No behavioral assessments available</li>
-        {% endfor %}
-    </ul>
-</div>
+            <!-- Rest of the formsets remain the same -->
+            <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+                <h3 class="text-xl font-semibold mb-4">Skills Assessment</h3>
+                {% include "exams/partials/formset.html" with formset=skills_formset %}
+            </div>
 
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Extracurricular Activities</h3>
+            {% include "exams/partials/formset.html" with formset=extracurricular_formset %}
+        </div>
+
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Teacher Comments</h3>
+            {% include "exams/partials/formset.html" with formset=teacher_comment_formset %}
+        </div>
+
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Learning Goals</h3>
+            {% include "exams/partials/formset.html" with formset=learning_goal_formset %}
+        </div>
+
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Study Habits</h3>
+            {% include "exams/partials/formset.html" with formset=study_habit_formset %}
+        </div>
+
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Social-Emotional Development</h3>
+            {% include "exams/partials/formset.html" with formset=social_emotional_formset %}
+        </div>
+
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Special Achievements</h3>
+            {% include "exams/partials/formset.html" with formset=special_achievement_formset %}
+        </div>
+
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Support Services</h3>
+            {% include "exams/partials/formset.html" with formset=support_service_formset %}
+        </div>
+
+        <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+            <h3 class="text-xl font-semibold mb-4">Standardized Test Scores</h3>
+            {% include "exams/partials/formset.html" with formset=standardized_test_formset %}
+        </div>
+
+            <div class="flex items-center justify-between">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                    Create Progress Report
+                </button>
+            </div>
+            <div id="submit-button" class="flex items-center justify-between mt-6" style="display: none;">
+                <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                    Create Progress Report
+                </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'exams/js/formset_handlers.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const validateBtn = document.getElementById('validate-selection');
+    const reportDetails = document.getElementById('report-details');
+    const submitButton = document.getElementById('submit-button');
+    const learnerSelect = document.getElementById('id_learner');
+    const examTypeSelect = document.getElementById('id_exam_type');
+
+    function checkSelections() {
+        if (learnerSelect.value && examTypeSelect.value) {
+            // AJAX request to validate selection and load formsets
+            fetch(`/validate-and-load-formsets/?learner=${learnerSelect.value}&exam_type=${examTypeSelect.value}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.valid) {
+                        reportDetails.innerHTML = data.html;
+                        reportDetails.style.display = 'block';
+                        submitButton.style.display = 'flex';
+                    } else {
+                        alert(data.error);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        } else {
+            alert('Please select both a learner and an exam type.');
+        }
+    });
+});
+</script>
 {% endblock %}
