@@ -1,0 +1,120 @@
+<!-- templates/exams/partials/progress_report_formsets.html -->
+
+<form id="progress-report-form" method="post">
+    {% csrf_token %}
+    
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Progress Report</h3>
+        {{ progress_report_form.as_p }}
+    </div>
+
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Skills Assessment</h3>
+        {{ skills_formset.management_form }}
+        {% for form in skills_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Skill</button>
+    </div>
+
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Behavioral Assessment</h3>
+        {{ behavioral_formset.management_form }}
+        {% for form in behavioral_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Behavior</button>
+    </div>
+
+    <!-- Repeat similar blocks for other formsets -->
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Extracurricular Activities</h3>
+        {{ extracurricular_formset.management_form }}
+        {% for form in extracurricular_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Extracurricular</button>
+    </div>
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Teacher Comments</h3>
+        {{ teacher_comment_formset.management_form }}
+        {% for form in teacher_comment_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Teacher Comment</button>
+    </div>
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Learning Goals</h3>
+        {{ learning_goal_formset.management_form }}
+        {% for form in learning_goal_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Learning Goal</button>
+    </div>  
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Study Habits</h3>
+        {{ study_habit_formset.management_form }}
+        {% for form in study_habit_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Study Habit</button>
+    </div>  
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Social Emotional Development</h3>
+        {{ social_emotional_formset.management_form }}
+        {% for form in social_emotional_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Social Emotional</button>
+    </div>  
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Special Achievements</h3>
+        {{ special_achievement_formset.management_form }}
+        {% for form in special_achievement_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Special Achievement</button>
+    </div>  
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Support Services</h3>
+        {{ support_service_formset.management_form }}
+        {% for form in support_service_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Support Service</button>
+    </div>  
+    <div class="mb-8">
+        <h3 class="text-xl font-semibold mb-4">Standardized Test Scores</h3>
+        {{ standardized_test_formset.management_form }}
+        {% for form in standardized_test_formset %}
+            <div class="formset-form mb-4">
+                {{ form.as_p }}
+            </div>
+        {% endfor %}
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add Test Score</button>
+    </div>
+
+    <div class="mt-8">
+        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            Submit Progress Report
+        </button>
+    </div>
+</form>

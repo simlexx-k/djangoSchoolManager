@@ -3,24 +3,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     addFormBtns.forEach(btn => {
         btn.addEventListener('click', function() {
-            const formset = this.closest('.formset');
-            const formCount = formset.querySelector('[name$=TOTAL_FORMS]');
-            const formNum = parseInt(formCount.value);
+            const formset = this.closest('.mb-8');
+            const totalForms = formset.querySelector('[name$=TOTAL_FORMS]');
             const newForm = formset.querySelector('.formset-form').cloneNode(true);
+            const formNum = parseInt(totalForms.value);
             
             newForm.innerHTML = newForm.innerHTML.replace(/-\d+-/g, `-${formNum}-`);
+            newForm.querySelectorAll('input:not([type=hidden]), select, textarea').forEach(input => {
+                input.value = '';
+            });
             
-            // Set learner and exam_type values
-            const learnerSelect = document.getElementById('id_learner');
-            const examTypeSelect = document.getElementById('id_exam_type');
-            const learnerInput = newForm.querySelector('input[name$="-learner"]');
-            const examTypeInput = newForm.querySelector('input[name$="-exam_type"]');
-            
-            if (learnerInput) learnerInput.value = learnerSelect.value;
-            if (examTypeInput) examTypeInput.value = examTypeSelect.value;
-            
-            formset.insertBefore(newForm, this);
-            formCount.value = formNum + 1;
+            this.insertAdjacentElement('beforebegin', newForm);
+            totalForms.value = formNum + 1;
         });
     });
 });

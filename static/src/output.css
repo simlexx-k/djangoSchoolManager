@@ -1691,6 +1691,10 @@ select {
   max-width: 1440px;
 }
 
+.max-w-6xl {
+  max-width: 72rem;
+}
+
 .flex-1 {
   flex: 1 1 0%;
 }
