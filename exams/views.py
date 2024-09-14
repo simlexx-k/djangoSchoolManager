@@ -44,87 +44,76 @@ def create_progress_report(request, learner_id=None, exam_type_id=None):
         if existing_report:
             return redirect('view_progress_report', report_id=existing_report.id)
         
-        #Define formsets
         SkillsAssessmentFormSet = modelformset_factory(SkillsAssessment, form=SkillsAssessmentForm, extra=1)
-        BehavioralAssessmentFormSet = modelformset_factory(BehavioralAssessment, form=BehavioralAssessmentForm, extra=1)
-        ExtraCurricularActivityFormSet = modelformset_factory(ExtraCurricularActivity, form=ExtraCurricularActivityForm, extra=1)
-        TeacherCommentFormSet = modelformset_factory(TeacherComment, form=TeacherCommentForm, extra=1)
-        LearningGoalFormSet = modelformset_factory(LearningGoal, form=LearningGoalForm, extra=1)
-        StudyHabitFormSet = modelformset_factory(StudyHabit, form=StudyHabitForm, extra=1)
-        SocialEmotionalDevelopmentFormSet = modelformset_factory(SocialEmotionalDevelopment, form=SocialEmotionalDevelopmentForm, extra=1)
-        SpecialAchievementFormSet = modelformset_factory(SpecialAchievement, form=SpecialAchievementForm, extra=1)
-        SupportServiceFormSet = modelformset_factory(SupportService, form=SupportServiceForm, extra=1)
-        StandardizedTestScoreFormSet = modelformset_factory(StandardizedTestScore, form=StandardizedTestScoreForm, extra=1)
-        
+        # Define all formsets
+        formsets = {
+            'skills': modelformset_factory(SkillsAssessment, form=SkillsAssessmentForm, extra=1),
+            'behavioral': modelformset_factory(BehavioralAssessment, form=BehavioralAssessmentForm, extra=1),
+            'extracurricular': modelformset_factory(ExtraCurricularActivity, form=ExtraCurricularActivityForm, extra=1),
+            'teacher_comment': modelformset_factory(TeacherComment, form=TeacherCommentForm, extra=1),
+            'learning_goal': modelformset_factory(LearningGoal, form=LearningGoalForm, extra=1),
+            'study_habit': modelformset_factory(StudyHabit, form=StudyHabitForm, extra=1),
+            'social_emotional': modelformset_factory(SocialEmotionalDevelopment, form=SocialEmotionalDevelopmentForm, extra=1),
+            'special_achievement': modelformset_factory(SpecialAchievement, form=SpecialAchievementForm, extra=1),
+            'support_service': modelformset_factory(SupportService, form=SupportServiceForm, extra=1),
+            'standardized_test': modelformset_factory(StandardizedTestScore, form=StandardizedTestScoreForm, extra=1),
+        }
+
         if request.method == 'POST':
-            # Handle form submission
             progress_report_form = ProgressReportForm(request.POST)
-            skills_formset = SkillsAssessmentFormSet(request.POST, prefix='skills')
-            behavioral_formset = BehavioralAssessmentFormSet(request.POST, prefix='behavioral')
-            extracurricular_formset = ExtraCurricularActivityFormSet(request.POST, prefix='extracurricular')
-            teacher_comment_formset = TeacherCommentFormSet(request.POST, prefix='teacher_comment')
-            learning_goal_formset = LearningGoalFormSet(request.POST, prefix='learning_goal')
-            study_habit_formset = StudyHabitFormSet(request.POST, prefix='study_habit')
-            social_emotional_formset = SocialEmotionalDevelopmentFormSet(request.POST, prefix='social_emotional')
-            special_achievement_formset = SpecialAchievementFormSet(request.POST, prefix='special_achievement')
-            support_service_formset = SupportServiceFormSet(request.POST, prefix='support_service')
-            standardized_test_formset = StandardizedTestScoreFormSet(request.POST, prefix='standardized_test')
+            formset_instances = {name: formset(request.POST, prefix=name) for name, formset in formsets.items()}
+            skills_report_form = SkillsAssessmentFormSet(request.POST, prefix='skills')
+            
+            if not skills_report_form.is_valid():
+                print("SkillsAssessment Formset Errors:")
+                for i, form in enumerate(skills_report_form):
+                    if form.errors:
+                        print(f"Form {i} errors:")
+                        for field, errors in form.errors.items():
+                            print(f"  {field}: {', '.join(errors)}")
 
-            if all([progress_report_form.is_valid(), skills_formset.is_valid(), behavioral_formset.is_valid(), extracurricular_formset.is_valid(), teacher_comment_formset.is_valid(), learning_goal_formset.is_valid(), study_habit_formset.is_valid(), social_emotional_formset.is_valid(), special_achievement_formset.is_valid(), support_service_formset.is_valid(), standardized_test_formset.is_valid()]):
-                progress_report = progress_report_form.save(commit=False)
-                progress_report.learner = learner
-                progress_report.exam_type = exam_type
-                progress_report.save()
+            forms_valid = progress_report_form.is_valid()
+            for name, formset in formset_instances.items():
+                if not formset.is_valid():
+                    forms_valid = False
+                    print(f"{name} formset errors:")
+                    for form in formset:
+                        print(form.errors)
 
-                for formset in [skills_formset, behavioral_formset, extracurricular_formset, teacher_comment_formset, learning_goal_formset, study_habit_formset, social_emotional_formset, special_achievement_formset, support_service_formset, standardized_test_formset]:
-                    instances = formset.save(commit=False)
-                    for instance in instances:
-                        instance.learner = learner
-                        instance.exam_type = exam_type
-                        instance.save()
+            if forms_valid:
+                try:
+                    progress_report = progress_report_form.save(commit=False)
+                    progress_report.learner = learner
+                    progress_report.exam_type = exam_type
+                    progress_report.save()
 
-                messages.success(request, 'Progress report created successfully.')
-                return redirect('view_progress_report', report_id=progress_report.id)
+                    for formset in formset_instances.values():
+                        instances = formset.save(commit=False)
+                        for instance in instances:
+                            instance.learner = learner
+                            instance.exam_type = exam_type
+                            instance.save()
+
+                    messages.success(request, 'Progress report created successfully.')
+                    return redirect('view_progress_report', report_id=progress_report.id)
+                except Exception as e:
+                    messages.error(request, f'An error occurred while saving the progress report: {str(e)}')
+            else:
+                messages.error(request, 'There was an error in your submission. Please check the form and try again.')
+                for name, formset in formset_instances.items():
+                    if not formset.is_valid():
+                        messages.error(request, f"{name.replace('_', ' ').title()} has incomplete or invalid information.")
         else:
             # Initialize forms and formsets with pre-populated learner and exam_type
             progress_report_form = ProgressReportForm(initial={'learner': learner, 'exam_type': exam_type})
             skills_report_form = SkillsAssessmentForm(initial={'learner': learner, 'exam_type': exam_type})
-            behavioral_report_form = BehavioralAssessmentForm(initial={'learner': learner, 'exam_type': exam_type})
-            extracurricular_report_form = ExtraCurricularActivityForm(initial={'learner': learner, 'exam_type': exam_type})
-            teacher_comment_report_form = TeacherCommentForm(initial={'learner': learner, 'exam_type': exam_type})
-            learning_goal_report_form = LearningGoalForm(initial={'learner': learner, 'exam_type': exam_type})
-            study_habit_report_form = StudyHabitForm(initial={'learner': learner, 'exam_type': exam_type})
-            social_emotional_report_form = SocialEmotionalDevelopmentForm(initial={'learner': learner, 'exam_type': exam_type})
-            special_achievement_report_form = SpecialAchievementForm(initial={'learner': learner, 'exam_type': exam_type})
-            support_service_report_form = SupportServiceForm(initial={'learner': learner, 'exam_type': exam_type})
-            standardized_test_report_form = StandardizedTestScoreForm(initial={'learner': learner, 'exam_type': exam_type})
-            # ... other formsets ...
-            skills_formset = SkillsAssessmentFormSet(queryset=SkillsAssessment.objects.none(), prefix='skills', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            SupportServiceFormSet = modelformset_factory(SupportService, form=SupportServiceForm, extra=1)
-            StandardizedTestScoreFormSet = modelformset_factory(StandardizedTestScore, form=StandardizedTestScoreForm, extra=1)
-            skills_formset = SkillsAssessmentFormSet(queryset=SkillsAssessment.objects.none(), prefix='skills', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            behavioral_formset = BehavioralAssessmentFormSet(queryset=BehavioralAssessment.objects.none(), prefix='behavioral', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            extracurricular_formset = ExtraCurricularActivityFormSet(queryset=ExtraCurricularActivity.objects.none(), prefix='extracurricular', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            teacher_comment_formset = TeacherCommentFormSet(queryset=TeacherComment.objects.none(), prefix='teacher_comment', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            learning_goal_formset = LearningGoalFormSet(queryset=LearningGoal.objects.none(), prefix='learning_goal', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            study_habit_formset = StudyHabitFormSet(queryset=StudyHabit.objects.none(), prefix='study_habit', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            social_emotional_formset = SocialEmotionalDevelopmentFormSet(queryset=SocialEmotionalDevelopment.objects.none(), prefix='social_emotional', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            special_achievement_formset = SpecialAchievementFormSet(queryset=SpecialAchievement.objects.none(), prefix='special_achievement', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            support_service_formset = SupportServiceFormSet(queryset=SupportService.objects.none(), prefix='support_service', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
-            standardized_test_formset = StandardizedTestScoreFormSet(queryset=StandardizedTestScore.objects.none(), prefix='standardized_test', form_kwargs={'initial': {'learner': learner, 'exam_type': exam_type}})
+            formset_instances = {name: formset(queryset=formset.model.objects.none(), prefix=name) 
+                                 for name, formset in formsets.items()}
 
         context = {
             'progress_report_form': progress_report_form,
-            'skills_formset': skills_formset,
-            'behavioral_formset': behavioral_formset,
-            'extracurricular_formset': extracurricular_formset,
-            'teacher_comment_formset': teacher_comment_formset,
-            'learning_goal_formset': learning_goal_formset,
-            'study_habit_formset': study_habit_formset,
-            'social_emotional_formset': social_emotional_formset,
-            'special_achievement_formset': special_achievement_formset,
-            'support_service_formset': support_service_formset,
-            'standardized_test_formset': standardized_test_formset,
+            'skills_report_form': skills_report_form,
+            'formsets': formset_instances,
             'learner': learner,
             'exam_type': exam_type,
         }
@@ -136,7 +125,7 @@ def create_progress_report(request, learner_id=None, exam_type_id=None):
         if learner_exam_form.is_valid():
             learner = learner_exam_form.cleaned_data['learner']
             exam_type = learner_exam_form.cleaned_data['exam_type']
-            return redirect('create_progress_report', learner_id=learner.id, exam_type_id=exam_type.id)
+            return redirect('create_progress_report', learner_id=learner.id, exam_type_id=exam_type.exam_id)
     else:
         learner_exam_form = LearnerExamTypeSelectionForm()
 

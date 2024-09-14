@@ -1,0 +1,11 @@
+<!-- templates/learners/add_class_level.html -->
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<h1>Add Class Level</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save</button>
+</form>
+{% endblock %}

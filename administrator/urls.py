@@ -18,6 +18,7 @@ from authenticator.views import logout_view
 from exams.views import create_progress_report, list_progress_reports, view_progress_report, add_skills_assessment, add_behavioral_assessment, learner_performance_chart, create_progress_report, list_progress_reports, view_progress_report, create_progress_report, list_progress_reports, view_progress_report, dashboard as exam_dashboard
 from . import views
 import exams.views as exam_views
+from learners.views import add_class_level
 # app_name = 'administrator'
 
 urlpatterns = [
@@ -76,8 +77,12 @@ urlpatterns = [
     path('attendance_list/', attendance_list, name='attendance_list'),
     path('manage_timetable/', manage_timetable, name='manage_timetable'),
     path('timetable_list/', timetable_list, name='timetable_list'),
+
+    #Teacher Management
+    path('teacher-add/', add_teacher, name='add_teacher'),
     path('assign_teachers/', assign_teachers, name='assign_teachers'),
     path('teacher_assignment_list/', teacher_assignment_list, name='teacher_assignment_list'),
+    
     path('manage_academic_calendar/', views.manage_academic_calendar, name='manage_academic_calendar'),
     path('academic_calendar_list/', academic_calendar_list, name='academic_calendar_list'),
     path('generate_progress_reports/', generate_progress_reports, name='generate_progress_reports'),
@@ -130,8 +135,8 @@ urlpatterns = [
     path('grades/delete/<int:pk>/', delete_grade, name='delete_grade'),
 
     # Progress Reports
-    path('progress-report/create/<int:learner_id>/<int:exam_type_id>/', exam_views.create_progress_report, name='create_progress_report'),
-    path('progress-report/create/', exam_views.select_learner_exam_type, name='select_learner_exam_type'),
+    path('progress-report/create/<int:learner_id>/<int:exam_type_id>/', create_progress_report, name='create_progress_report'),
+    path('progress-report/create/', exam_views.create_progress_report, name='select_learner_exam_type'),
 
     path('progress-report/view/<int:report_id>/', view_progress_report, name='view_progress_report'),
     path('progress-reports/', list_progress_reports, name='list_progress_reports'),

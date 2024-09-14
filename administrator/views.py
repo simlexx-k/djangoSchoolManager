@@ -194,9 +194,12 @@ def academic_management(request):
 def student_management(request):
     return render(request, 'admin/student_management.html')
 
+
+from .models import Teacher
 @login_required
 def teacher_management(request):
-    return render(request, 'admin/teacher_management.html')
+    teachers = Teacher.objects.all()
+    return render(request, 'admin/teacher_management.html', {'teachers': teachers})
 
 @login_required
 def send_notification(request):
@@ -2339,3 +2342,5 @@ def delete_grade(request, pk):
         'object_name': 'grade',
         'cancel_url': reverse('grade_list')
     })
+
+

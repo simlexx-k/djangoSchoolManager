@@ -4,7 +4,92 @@
 {% extends 'admin/base.html' %}
 {% load static %}
 {% block content %}
-<div class="p-8 bg-gray-100 dark:bg-gray-800 min-h-screen rounded-lg">
-    <h1 class="text-3xl font-bold mb-6">Teacher Management</h1>
+<div class="container mx-auto px-4 py-6">
+    <h1 class="text-2xl font-bold mb-4">Teacher Management</h1>
+
+    <!-- Filter and Export Options -->
+
+    <div class="flex justify-between mb-4">
+        <div>
+            <input type="text" placeholder="Search..." class="border border-gray-300 rounded-md p-2" />
+        </div>
+
+        <div>
+            <button class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Export</button>
+        </div>    
+        <div>
+        <button href="{% url 'add_teacher' %}" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 right-0 x-0">Add Teacher</button>
+        </div>
+    </div>
+    
+
+    <br>
+    <!-- Table -->
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
+            <thead>
+                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                    <th class="py-3 px-6 text-left">Name</th>
+                    <th class="py-3 px-6 text-left">Email</th>
+                    <th class="py-3 px-6 text-left">Class Teacher Status</th>
+                    <th class="py-3 px-6 text-left">Subjects Taught</th>
+                    <th class="py-3 px-6 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-600 text-sm font-light">
+                {% for teacher in teachers %}
+                <tr class="border-b border-gray-200 hover:bg-gray-100">
+                    <td class="py-3 px-6">{{ teacher.name }}</td>
+                    <td class="py-3 px-6">{{ teacher.email }}</td>
+                    <td class="py-3 px-6">{{ teacher.is_class_teacher|yesno:"Yes,NA" }}</td>
+                    <td class="py-3 px-6">{{ teacher.subjects.all|join:", " }}</td>
+                    <td class="py-3 px-6">
+                        <a href="{% url 'update_teacher' teacher.id %}" class="text-blue-500 hover:text-blue-700">Edit</a>
+                        <a href="{% url 'delete_teacher' teacher.id %}" class="text-red-500 hover:text-red-700 ml-2">Delete</a>
+                        <a href="{% url 'view_teacher' teacher.id %}" class="text-green-500 hover:text-green-700 ml-2">View</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-3">No teachers found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-between items-center mt-4">
+        <div>
+            <span class="text-gray-600">Showing 1 to 10 of 50 entries</span>
+        </div>
+        <div>
+            <button class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">Previous</button>
+            <button class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">Next</button>
+        </div>
+    </div>
 </div>
-{% endblock content %}
+
+<script>
+// Add this script to your template or a separate JS file
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.querySelector('input[type="text"]');
+    const tableRows = document.querySelectorAll('tbody tr');
+
+    searchInput.addEventListener('keyup', function() {
+        const filter = searchInput.value.toLowerCase();
+        tableRows.forEach(row => {
+            const cells = row.getElementsByTagName('td');
+            let match = false;
+            for (let i = 0; i < cells.length; i++) {
+                if (cells[i].textContent.toLowerCase().includes(filter)) {
+                    match = true;
+                    break;
+                }
+            }
+            row.style.display = match ? '' : 'none';
+        });
+    });
+});
+</script>
+{% endblock %}

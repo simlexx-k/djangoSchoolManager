@@ -28,4 +28,5 @@ urlpatterns = [
     path('accounts/register/', register, name='register'),
     path('control/', include("administrator.urls")),
     path('auth/', include("authenticator.urls")),
+    path('control/learners/', include("learners.urls")),
 ]

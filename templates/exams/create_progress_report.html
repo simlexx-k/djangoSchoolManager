@@ -4,6 +4,15 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8 max-w-6xl">
     <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Create Progress Report</h1>
+    {% if messages %}
+    <ul class="messages mb-4">
+        {% for message in messages %}
+        <li class="p-2 {% if message.tags %}{{ message.tags }}{% endif %} {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}bg-red-100 text-red-700{% elif message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}bg-green-100 text-green-700{% else %}bg-blue-100 text-blue-700{% endif %} rounded">
+            {{ message }}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
     {% if learner_exam_form %}
         <div id="learner-exam-selection" class="mb-8 w-full max-w-md mx-auto">
             <form id="learner-exam-form" method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -27,89 +36,122 @@
                     {{ progress_report_form.as_p }}
                 </div>
                 
-                <!-- Skills Assessment Formset -->
-                <div class="mb-8 bg-white p-6 rounded-md shadow">
-                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Skills Assessment</h3>
-                    {{ skills_formset.management_form }}
-                    <div id="skills-formset">
-                        {% for form in skills_formset %}
-                            <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
-                                {% for field in form.visible_fields %}
-                                    {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                        <div class="mb-2">
-                                            {{ field.label_tag }}
-                                            {{ field }}
-                                            {% if field.errors %}
-                                                <span class="text-red-500">{{ field.errors }}</span>
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
-                                {% for hidden in form.hidden_fields %}
-                                    {{ hidden }}
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Skill</button>
-                </div>
+                <!-- In your create_progress_report.html template -->
 
-                <!-- Behavioral Assessment Formset -->
-                <div class="mb-8 bg-white p-6 rounded-md shadow">
-                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Behavioral Assessment</h3>
-                    {{ behavioral_formset.management_form }}
-                    <div id="behavioral-formset">
-                        {% for form in behavioral_formset %}
-                            <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
-                                {% for field in form.visible_fields %}
-                                    {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                        <div class="mb-2">
-                                            {{ field.label_tag }}
-                                            {{ field }}
-                                            {% if field.errors %}
-                                                <span class="text-red-500">{{ field.errors }}</span>
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
-                                {% for hidden in form.hidden_fields %}
-                                    {{ hidden }}
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Behavior</button>
+    <!-- Skills Assessment Formset -->
+   <!-- <div class="mb-8 bg-white p-6 rounded-md shadow">
+        <h3 class="text-xl font-semibold mb-4 text-gray-700">Skills Assessment</h3>
+        {{ skills_formset.management_form }}
+        {% if skills_formset.non_form_errors %}
+            <div class="error-message bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                {{ skills_formset.non_form_errors }}
+            </div>
+        {% endif %}
+        <div id="skills-formset">
+            {% for form in skills_formset %}
+                <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
+                    {% for field in form.visible_fields %}
+                        <div class="mb-2">
+                            {{ field.label_tag }}
+                            {{ field }}
+                            {% if field.errors %}
+                                <span class="text-red-500">{{ field.errors }}</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    {% for hidden in form.hidden_fields %}
+                        {{ hidden }}
+                    {% endfor %}
                 </div>
-
-                <!-- Add other formsets here -->
-                <!-- Extra Curricular Activities -->
-                <div class="mb-8 bg-white p-6 rounded-md shadow">
-                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Extra Curricular Activities</h3>
-                    {{ extra_curricular_formset.management_form }}
-                    <div id="extra-curricular-formset">
-                        {% for form in extra_curricular_formset %}
-                            <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
-                                {% for field in form.visible_fields %}
-                                    {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                        <div class="mb-2">  
-                                            {{ field.label_tag }}
-                                            {{ field }}
-                                            {% if field.errors %}
-                                                <span class="text-red-500">{{ field.errors }}</span>
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
-                                {% endfor %}
-                                {% for hidden in form.hidden_fields %}
-                                    {{ hidden }}
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
+            {% endfor %}
+        </div>
+        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Skill</button>
+    </div> -->
+    <!-- Skills Assessment Formset -->
+     <!-- Skills Assessment Formset -->
+<div class="mb-8 bg-white p-6 rounded-md shadow">
+    <h3 class="text-xl font-semibold mb-4 text-gray-700">Skills Assessment</h3>
+    {{ skills_report_form.management_form }}  <!-- Ensure this is included -->
+    {% if skills_report_form.non_form_errors %}
+        <div class="error-message bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            {{ skills_report_form.non_form_errors }}
+        </div>
+    {% endif %}
+    <div id="skills-formset">
+        {% for form in skills_report_form %}
+            <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
+                {% for field in form.visible_fields %}
+                    <div class="mb-2">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.errors %}
+                            <span class="text-red-500">{{ field.errors }}</span>
+                        {% endif %}
                     </div>
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Activity</button>
-                </div>
+                {% endfor %}
+                {% for hidden in form.hidden_fields %}
+                    {{ hidden }}
+                {% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Skill</button>
+</div>
+    <!-- Behavioral Assessment Formset -->
+    <div class="mb-8 bg-white p-6 rounded-md shadow">
+        <h3 class="text-xl font-semibold mb-4 text-gray-700">Behavioral Assessment</h3>
+                        {{ behavioral_formset.management_form }}
+                        <div id="behavioral-formset">
+                            {% for form in behavioral_formset %}
+                                <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
+                                    {% for field in form.visible_fields %}
+                                        {% if field.name != 'learner' and field.name != 'exam_type' %}
+                                            <div class="mb-2">
+                                                {{ field.label_tag }}
+                                                {{ field }}
+                                                {% if field.errors %}
+                                                    <span class="text-red-500">{{ field.errors }}</span>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for hidden in form.hidden_fields %}
+                                        {{ hidden }}
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Behavior</button>
+                    </div>
 
-                <!-- Teacher Comments -->
+                    <!-- Extra Curricular Activities Formset -->
+                    <div class="mb-8 bg-white p-6 rounded-md shadow">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-700">Extra Curricular Activities</h3>
+                        {{ extracurricular_formset.management_form }}
+                        <div id="extracurricular-formset">
+                            {% for form in extracurricular_formset %}
+                                <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
+                                    {% for field in form.visible_fields %}
+                                        {% if field.name != 'learner' and field.name != 'exam_type' %}
+                                            <div class="mb-2">
+                                                {{ field.label_tag }}
+                                                {{ field }}
+                                                {% if field.errors %}
+                                                    <span class="text-red-500">{{ field.errors }}</span>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% for hidden in form.hidden_fields %}
+                                        {{ hidden }}
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Activity</button>
+                    </div>
+
+                <!-- Teacher Comments Formset -->
                 <div class="mb-8 bg-white p-6 rounded-md shadow">
                     <h3 class="text-xl font-semibold mb-4 text-gray-700">Teacher Comments</h3>
                     {{ teacher_comment_formset.management_form }}
@@ -118,7 +160,7 @@
                             <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
                                 {% for field in form.visible_fields %}
                                     {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                        <div class="mb-2">  
+                                        <div class="mb-2">
                                             {{ field.label_tag }}
                                             {{ field }}
                                             {% if field.errors %}
@@ -126,7 +168,7 @@
                                             {% endif %}
                                         </div>
                                     {% endif %}
-                                {% endfor %}    
+                                {% endfor %}
                                 {% for hidden in form.hidden_fields %}
                                     {{ hidden }}
                                 {% endfor %}
@@ -135,30 +177,35 @@
                     </div>
                     <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Comment</button>
                 </div>
+
+                <!-- Learning Goals Formset -->
                 <div class="mb-8 bg-white p-6 rounded-md shadow">
-                    <h3 class="text-xl font-semibold mb-4">Learning Goals</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Learning Goals</h3>
                     {{ learning_goal_formset.management_form }}
                     <div id="learning-goal-formset">
                         {% for form in learning_goal_formset %}
                             <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
-                            {% for field in form.visible_fields %}
-                                {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                    <div class="mb-2">    
-                                        {{ field.label_tag }}
-                                        {{ field }}
-                                        {% if field.errors %}
-                                            <span class="text-red-500">{{ field.errors }}</span>
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                            {% endfor %}    
-                            {% for hidden in form.hidden_fields %}
-                                {{ hidden }}
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Goal</button>
+                                {% for field in form.visible_fields %}
+                                    {% if field.name != 'learner' and field.name != 'exam_type' %}
+                                        <div class="mb-2">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <span class="text-red-500">{{ field.errors }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Learning Goal</button>
                 </div>
+
+                <!-- Study Habits Formset -->
                 <div class="mb-8 bg-white p-6 rounded-md shadow">
                     <h3 class="text-xl font-semibold mb-4 text-gray-700">Study Habits</h3>
                     {{ study_habit_formset.management_form }}
@@ -166,142 +213,132 @@
                         {% for form in study_habit_formset %}
                             <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
                                 {% for field in form.visible_fields %}
-                                {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                    <div class="mb-2">    
-                                        {{ field.label_tag }}   
-                                        {{ field }}
-                                        {% if field.errors %}
-                                            <span class="text-red-500">{{ field.errors }}</span>
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                            {% for hidden in form.hidden_fields %}  
-                                {{ hidden }}
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Habit</button>
+                                    {% if field.name != 'learner' and field.name != 'exam_type' %}
+                                        <div class="mb-2">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <span class="text-red-500">{{ field.errors }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Study Habit</button>
                 </div>
+
+                <!-- Social Emotional Development Formset -->
                 <div class="mb-8 bg-white p-6 rounded-md shadow">
-                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Social Emotional Development</h3>    
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Social Emotional Development</h3>
                     {{ social_emotional_formset.management_form }}
-                    {% for form in social_emotional_formset %}
-                        <div class="formset-form mb-4">
-                            {% for field in form.visible_fields %}
-                                {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                    <div class="mb-2">    
-                                        {{ field.label_tag }}
-                                        {{ field }} 
-                                        {% if field.errors %}
-                                            <span class="text-red-500">{{ field.errors }}</span>
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                            {% for hidden in form.hidden_fields %}  
-                                {{ hidden }}    
-                            {% endfor %}
-                        </div>
-                    {% endfor %}
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Development</button>
+                    <div id="social-emotional-formset">
+                        {% for form in social_emotional_formset %}
+                            <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
+                                {% for field in form.visible_fields %}
+                                    {% if field.name != 'learner' and field.name != 'exam_type' %}
+                                        <div class="mb-2">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <span class="text-red-500">{{ field.errors }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Social Emotional Development</button>
                 </div>
-                <div class="mb-8">
-                    <h3 class="text-xl font-semibold mb-4">Special Achievements</h3>
+
+                <!-- Special Achievements Formset -->
+                <div class="mb-8 bg-white p-6 rounded-md shadow">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Special Achievements</h3>
                     {{ special_achievement_formset.management_form }}
-                    {% for form in special_achievement_formset %}   
-                        <div class="formset-form mb-4">
-                            {% for field in form.visible_fields %}
-                                {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                    <div class="mb-2">    
-                                        {{ field.label_tag }}
-                                        {{ field }} 
-                                        {% if field.errors %}
-                                            <span class="text-red-500">{{ field.errors }}</span>
-                                        {% endif %} 
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                            {% for hidden in form.hidden_fields %}  
-                                {{ hidden }}    
-                            {% endfor %}
-                        </div>
-                    {% endfor %}    
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Achievement</button>
+                    <div id="special-achievement-formset">
+                        {% for form in special_achievement_formset %}
+                            <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
+                                {% for field in form.visible_fields %}
+                                    {% if field.name != 'learner' and field.name != 'exam_type' %}
+                                        <div class="mb-2">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <span class="text-red-500">{{ field.errors }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Special Achievement</button>
                 </div>
-                <div class="mb-8">
-                    <h3 class="text-xl font-semibold mb-4">Support Services</h3>
+
+                <!-- Support Services Formset -->
+                <div class="mb-8 bg-white p-6 rounded-md shadow">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Support Services</h3>
                     {{ support_service_formset.management_form }}
-                    {% for form in support_service_formset %}
-                        <div class="formset-form mb-4">
-                            {% for field in form.visible_fields %}  
-                                {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                    <div class="mb-2">    
-                                        {{ field.label_tag }}
-                                        {{ field }} 
-                                        {% if field.errors %}
-                                            <span class="text-red-500">{{ field.errors }}</span>
-                                        {% endif %} 
-                                    </div>
-                                {% endif %} 
-                            {% endfor %}
-                            {% for hidden in form.hidden_fields %}  
-                                {{ hidden }}    
-                            {% endfor %}
-                        </div>
-                    {% endfor %}    
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Service</button>
-                </div>  
-                <div class="mb-8">
-                    <h3 class="text-xl font-semibold mb-4">Standardized Test Scores</h3>
-                    {{ standardized_test_score_formset.management_form }}
-                    {% for form in standardized_test_score_formset %}
-                        <div class="formset-form mb-4">
-                            {% for field in form.visible_fields %}
-                                {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                    <div class="mb-2">      
-                                        {{ field.label_tag }}
-                                        {{ field }} 
-                                        {% if field.errors %}
-                                            <span class="text-red-500">{{ field.errors }}</span>
-                                        {% endif %} 
-                                    </div>
-                                {% endif %} 
-                            {% endfor %}    
-                            {% for hidden in form.hidden_fields %}  
-                                {{ hidden }}    
-                            {% endfor %}
-                        </div>
-                    {% endfor %}    
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Score</button>
+                    <div id="support-service-formset">
+                        {% for form in support_service_formset %}
+                            <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
+                                {% for field in form.visible_fields %}
+                                    {% if field.name != 'learner' and field.name != 'exam_type' %}
+                                        <div class="mb-2">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <span class="text-red-500">{{ field.errors }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Support Service</button>
                 </div>
-                <div class="mb-8">
-                    <h3 class="text-xl font-semibold mb-4">Attendance</h3>  
-                    {{ attendance_formset.management_form }}
-                    {% for form in attendance_formset %}
-                        <div class="formset-form mb-4">
-                            {% for field in form.visible_fields %}
-                                {% if field.name != 'learner' and field.name != 'exam_type' %}
-                                    <div class="mb-2">      
-                                        {{ field.label_tag }}
-                                        {{ field }}  
-                                        {% if field.errors %}
-                                            <span class="text-red-500">{{ field.errors }}</span>
-                                        {% endif %} 
-                                    </div>
-                                {% endif %} 
-                            {% endfor %}    
-                            {% for hidden in form.hidden_fields %}  
-                                {{ hidden }}    
-                            {% endfor %}
-                        </div>
-                    {% endfor %}    
-                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Attendance</button>
+
+                <!-- Standardized Test Scores Formset -->
+                <div class="mb-8 bg-white p-6 rounded-md shadow">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-700">Standardized Test Scores</h3>
+                    {{ standardized_test_formset.management_form }}
+                    <div id="standardized-test-formset">
+                        {% for form in standardized_test_formset %}
+                            <div class="formset-form mb-4 p-4 bg-gray-50 rounded">
+                                {% for field in form.visible_fields %}
+                                    {% if field.name != 'learner' and field.name != 'exam_type' %}
+                                        <div class="mb-2">
+                                            {{ field.label_tag }}
+                                            {{ field }}
+                                            {% if field.errors %}
+                                                <span class="text-red-500">{{ field.errors }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                {% for hidden in form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="add-form-btn bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">Add Standardized Test Score</button>
                 </div>
-                <div class="mb-8">
-                    <h3 class="text-xl font-semibold mb-4">Learner Total Score</h3>
-                    {{ learner_total_score_form.as_p }}
-                </div>  
 
                 <div class="flex justify-center mt-8">
                     <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-lg">
@@ -314,6 +351,97 @@
 </div>
 {% endblock %}
 
+
 {% block extra_js %}
-<script src="{% static 'exams/js/formset_handlers.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const formsets = document.querySelectorAll('[id$="-formset"]');
+    
+    formsets.forEach(formset => {
+        const addBtn = formset.nextElementSibling;
+        const totalForms = formset.querySelector('[name$=TOTAL_FORMS]');
+        
+        addBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const formCount = formset.querySelectorAll('.formset-form').length;
+            const newForm = formset.querySelector('.formset-form').cloneNode(true);
+            const regex = new RegExp('(\\w+)-\\d+', 'g');
+            
+            newForm.innerHTML = newForm.innerHTML.replace(regex, `$1-${formCount}`);
+            newForm.querySelectorAll('input, select, textarea').forEach(input => {
+                input.value = '';
+                input.id = input.id.replace(regex, `$1-${formCount}`);
+                input.name = input.name.replace(regex, `$1-${formCount}`);
+            });
+            
+            // Update labels
+            newForm.querySelectorAll('label').forEach(label => {
+                label.setAttribute('for', label.getAttribute('for').replace(regex, `$1-${formCount}`));
+            });
+            
+            formset.insertBefore(newForm, addBtn);
+            totalForms.value = formCount + 1;
+            
+            // Add delete button to the new form
+            addDeleteButton(newForm);
+        });
+        
+        // Add delete buttons to existing forms
+        formset.querySelectorAll('.formset-form').forEach(addDeleteButton);
+    });
+    
+    function addDeleteButton(form) {
+        if (!form.querySelector('.delete-form-btn')) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'delete-form-btn bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded mt-2';
+            deleteBtn.onclick = function(e) {
+                e.preventDefault();
+                form.remove();
+                updateFormIndices(form.closest('[id$="-formset"]'));
+            };
+            form.appendChild(deleteBtn);
+        }
+    }
+    
+    function updateFormIndices(formset) {
+        const forms = formset.querySelectorAll('.formset-form');
+        const totalForms = formset.querySelector('[name$=TOTAL_FORMS]');
+        forms.forEach((form, index) => {
+            form.querySelectorAll('input, select, textarea').forEach(input => {
+                input.id = input.id.replace(/-\d+/, `-${index}`);
+                input.name = input.name.replace(/-\d+/, `-${index}`);
+            });
+            form.querySelectorAll('label').forEach(label => {
+                label.setAttribute('for', label.getAttribute('for').replace(/-\d+/, `-${index}`));
+            });
+        });
+        totalForms.value = forms.length;
+    }
+
+    // Form submission handling
+    const progressReportForm = document.getElementById('progress-report-form');
+    if (progressReportForm) {
+        progressReportForm.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Basic form validation
+            this.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.classList.add('border-red-500');
+                } else {
+                    field.classList.remove('border-red-500');
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill in all required fields.');
+            }
+        });
+    }
+});
+</script>
+
 {% endblock %}
