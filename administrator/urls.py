@@ -80,6 +80,9 @@ urlpatterns = [
 
     #Teacher Management
     path('teacher-add/', add_teacher, name='add_teacher'),
+    path('teacher_update/<int:teacher_id>/', views.edit_teacher, name='teacher_update'),
+    path('teacher_delete/<int:teacher_id>/', views.delete_teacher, name='teacher_delete'),
+    path('teacher_view/<int:teacher_id>/', views.view_teacher, name='teacher_view'),
     path('assign_teachers/', assign_teachers, name='assign_teachers'),
     path('teacher_assignment_list/', teacher_assignment_list, name='teacher_assignment_list'),
     

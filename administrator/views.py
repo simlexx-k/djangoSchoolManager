@@ -195,11 +195,6 @@ def student_management(request):
     return render(request, 'admin/student_management.html')
 
 
-from .models import Teacher
-@login_required
-def teacher_management(request):
-    teachers = Teacher.objects.all()
-    return render(request, 'admin/teacher_management.html', {'teachers': teachers})
 
 @login_required
 def send_notification(request):
@@ -2344,3 +2339,48 @@ def delete_grade(request, pk):
     })
 
 
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .models import Teacher  
+
+
+@login_required
+def teacher_management(request):
+    teachers = Teacher.objects.all()
+    teachers_list = list(teachers.values('id', 'name', 'email', 'subjects', 'employee_id','is_class_teacher','phone_number'))
+    return render(request, 'admin/teacher_management.html', {'teachers_json': teachers_list})
+
+@login_required
+def view_teacher(request, teacher_id):
+    teacher = get_object_or_404(Teacher, pk=teacher_id)
+    return render(request, 'administrator/view_teacher.html', {'teacher': teacher})
+
+from .forms import TeacherForm  # Assuming you have a form for the Teacher model
+
+@login_required
+def edit_teacher(request, teacher_id):
+    teacher = get_object_or_404(Teacher, pk=teacher_id)
+    if request.method == 'POST':
+        form = TeacherForm(request.POST, instance=teacher)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Teacher details updated successfully.')
+            return redirect('teacher_management')  # Redirect to the teacher management page
+    else:
+        form = TeacherForm(instance=teacher)
+    return render(request, 'administrator/edit_teacher.html', {'form': form, 'teacher': teacher})
+
+@login_required
+def delete_teacher(request, teacher_id):
+    teacher = get_object_or_404(Teacher, id=teacher_id)
+    if request.method == 'POST':
+        teacher.delete()
+        return redirect('admin/teacher_management')  # Redirect to the teacher management page after deletion
+
+    # Pass the necessary context to the global confirm_delete template
+    context = {
+        'object_name': 'teacher',
+        'object': teacher.name,  # Pass the teacher's name for confirmation
+        'cancel_url': reverse('teacher_management')  # URL to redirect if cancellation occurs
+    }
+    return render(request, 'admin/confirm_delete.html', context)

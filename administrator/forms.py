@@ -144,14 +144,24 @@ class AcademicCalendarForm(forms.ModelForm):
             'end_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
+from django import forms
+from administrator.models import Teacher
+from exams.models import Subject
+
 class TeacherForm(forms.ModelForm):
+    subject = forms.ModelChoiceField(queryset=Subject.objects.all())  # Ensure this is correct
+    subjects = forms.ModelMultipleChoiceField(  # Check this line
+        queryset=Subject.objects.all(),  # Ensure this is correct
+        widget=forms.CheckboxSelectMultiple()
+    )
+    
     class Meta:
         model = Teacher
-        fields = ['name', 'employee_id', 'date_of_birth', 'contact_number', 'email', 'date_joined']
-        widgets = {
-            'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
-            'date_joined': forms.DateInput(attrs={'type': 'date'}),
-        }
+        fields = ['employee_id', 'name', 'email', 'is_class_teacher', 'subjects', 'phone_number', 'address', 'date_of_birth', 'date_joined']
+
+    def __init__(self, *args, **kwargs):
+        super(TeacherForm, self).__init__(*args, **kwargs)
+        self.fields['subjects'].queryset = Subject.objects.all()  # Ensure this is correct
 
 class GradeForm(forms.ModelForm):
     class Meta:

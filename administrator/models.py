@@ -79,9 +79,12 @@ class Teacher(models.Model):
     name = models.CharField(max_length=100)
     employee_id = models.CharField(max_length=20, unique=True)
     date_of_birth = models.DateField()
-    contact_number = models.CharField(max_length=20)
     email = models.EmailField()
     date_joined = models.DateField()
+    is_class_teacher = models.BooleanField(default=False)
+    subjects = models.ManyToManyField(Subject, related_name='teachers')
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
     
     def __str__(self):
         return f"{self.name} ({self.employee_id})"

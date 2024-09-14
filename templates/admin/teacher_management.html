@@ -1,8 +1,57 @@
-<head>
-    <title>Teacher Management</title>
-</head>
 {% extends 'admin/base.html' %}
 {% load static %}
+
+{% load custom_filters %}
+
+<head>
+    <title>Teacher Management</title>    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    {%block extra_css%}
+    <style>
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0, 0, 0, 0.5); /* Black w/ opacity */
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto; /* 10% from the top and centered */
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%; /* Could be more or less, depending on screen size */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        </style>
+    {%endblock%}
+    {% block extra_js %}
+    
+        var teachers = {{ teachers_json|safe }};
+    
+    {% endblock %}
+</head>
+
 {% block content %}
 <div class="container mx-auto px-4 py-6">
     <h1 class="text-2xl font-bold mb-4">Teacher Management</h1>
@@ -29,24 +78,33 @@
         <table class="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
             <thead>
                 <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                    
+                    <th class="py-3 px-6 text-left">EMP ID</th>
                     <th class="py-3 px-6 text-left">Name</th>
                     <th class="py-3 px-6 text-left">Email</th>
-                    <th class="py-3 px-6 text-left">Class Teacher Status</th>
-                    <th class="py-3 px-6 text-left">Subjects Taught</th>
+                    <th class="py-3 px-6 text-left">Class Teacher</th>
+                    <th class="py-3 px-6 text-left">Subjects</th>
                     <th class="py-3 px-6 text-left">Actions</th>
                 </tr>
             </thead>
             <tbody class="text-gray-600 text-sm font-light">
                 {% for teacher in teachers %}
                 <tr class="border-b border-gray-200 hover:bg-gray-100">
+                    <td class="py-3 px-6">{{ teacher.employee_id }}</td>
                     <td class="py-3 px-6">{{ teacher.name }}</td>
                     <td class="py-3 px-6">{{ teacher.email }}</td>
                     <td class="py-3 px-6">{{ teacher.is_class_teacher|yesno:"Yes,NA" }}</td>
                     <td class="py-3 px-6">{{ teacher.subjects.all|join:", " }}</td>
                     <td class="py-3 px-6">
-                        <a href="{% url 'update_teacher' teacher.id %}" class="text-blue-500 hover:text-blue-700">Edit</a>
-                        <a href="{% url 'delete_teacher' teacher.id %}" class="text-red-500 hover:text-red-700 ml-2">Delete</a>
-                        <a href="{% url 'view_teacher' teacher.id %}" class="text-green-500 hover:text-green-700 ml-2">View</a>
+                        <a href="#" onclick="openEditModal({{ teacher.id }}, '{{ teacher.name }}', '{{ teacher.email }}', {{ teacher.subjects.all|jsonify }})" class="text-blue-500 hover:text-blue-700">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'teacher_delete' teacher.id %}" class="text-red-500 hover:text-red-700 ml-2">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                        <a href="#" onclick="openViewModal('{{ teacher.id }}', '{{ teacher.name }}', '{{ teacher.email }}', {{ teacher.subjects.all|jsonify }})" class="text-green-500 hover:text-green-700 ml-2">
+                            <i class="fas fa-eye"></i> View
+                        </a>
                     </td>
                 </tr>
                 {% empty %}
@@ -69,6 +127,90 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('editModal')">&times;</span>
+        <h2 class="text-xl font-bold mb-4">Edit Teacher</h2>
+        <form id="editTeacherForm" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="teacher_id" id="editTeacherId">
+            <div class="mb-4">
+                <label for="name" class="block text-sm font-medium text-gray-700">Name:</label>
+                <input type="text" name="name" id="editName" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+            </div>
+            <div class="mb-4">
+                <label for="email" class="block text-sm font-medium text-gray-700">Email:</label>
+                <input type="email" name="email" id="editEmail" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+            </div>
+            <div class="mb-4">
+                <label for="subjects" class="block text-sm font-medium text-gray-700">Subjects:</label>
+                <select name="subjects" id="editSubjects" class="mt-1 block w-full border border-gray-300 rounded-md p-2" multiple>
+                    <!-- Populate with subjects -->
+                </select>
+            </div>
+            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                Save Changes
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- View Modal -->
+<div id="viewModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('viewModal')">&times;</span>
+        <h2 class="text-xl font-bold mb-4">View Teacher</h2>
+        <div id="viewTeacherDetails" class="text-gray-700">
+            <!-- Teacher details will be populated here -->
+        </div>
+    </div>
+</div>
+
+
+<!-- JavaScript for Modals -->
+<script>
+function openEditModal(id, name, email, subjects) {
+    document.getElementById('editTeacherId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editEmail').value = email;
+    
+    // Populate subjects (assuming subjects is an array of subject IDs)
+    const subjectsSelect = document.getElementById('editSubjects');
+    subjectsSelect.innerHTML = ''; // Clear existing options
+    subjects.forEach(subject => {
+        const option = document.createElement('option');
+        option.value = subject.id; // Assuming subject has an id property
+        option.textContent = subject.name; // Assuming subject has a name property
+        subjectsSelect.appendChild(option);
+    });
+
+    document.getElementById('editModal').style.display = 'block'; // Show the modal
+}
+
+function openViewModal(id, name, email, subjects) {
+    document.getElementById('viewTeacherDetails').innerHTML = `
+        <p><strong>ID:</strong> ${id}</p>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subjects:</strong> ${subjects.map(subject => subject.name).join(', ')}</p>
+    `;
+    document.getElementById('viewModal').style.display = 'block'; // Show the modal
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none'; // Hide the modal
+}
+
+// Close modals when clicking outside of them
+window.onclick = function(event) {
+    if (event.target.className === 'modal') {
+        closeModal(event.target.id);
+    }
+}
+</script>
+
 
 <script>
 // Add this script to your template or a separate JS file
