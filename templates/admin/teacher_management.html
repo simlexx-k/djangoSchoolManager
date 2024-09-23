@@ -45,11 +45,7 @@
         }
         </style>
     {%endblock%}
-    {% block extra_js %}
-    
-        var teachers = {{ teachers_json|safe }};
-    
-    {% endblock %}
+
 </head>
 
 {% block content %}
@@ -68,6 +64,9 @@
         </div>    
         <div>
         <button href="{% url 'add_teacher' %}" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 right-0 x-0">Add Teacher</button>
+        </div>
+        <div>
+            <button onclick="openAddTeacherModal()" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 right-0 x-0">Add via Modal</button>
         </div>
     </div>
     
@@ -168,6 +167,81 @@
     </div>
 </div>
 
+<!-- Add Teacher Modal -->
+<div id="addTeacherModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('addTeacherModal')">&times;</span>
+        <h2 class="text-xl font-bold mb-4">Add Teacher</h2>
+        
+        <form id="addTeacherForm" method="POST" action="{% url 'add_teacher' %}">
+            {% csrf_token %}
+            <!-- Step 1 -->
+            <div id="step1" class="step">
+                <h3 class="text-lg font-semibold mb-2">Step 1: Personal Information</h3>
+                <div class="mb-4">
+                    <label for="name" class="block text-sm font-medium text-gray-700">Name:</label>
+                    <input type="text" name="name" id="addName" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+                    <span id="addNameError" class="text-red-500 text-sm"></span> <!-- Error message -->
+                </div>
+                <div class="mb-4">
+                    <label for="employee_id" class="block text-sm font-medium text-gray-700">Employee ID:</label>
+                    <input type="text" name="employee_id" id="addEmployeeId" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+                    <span id="addEmployeeIdError" class="text-red-500 text-sm"></span> <!-- Error message -->
+                </div>
+                <div class="mb-4">
+                    <label for="date_of_birth" class="block text-sm font-medium text-gray-700">Date of Birth:</label>
+                    <input type="date" name="date_of_birth" id="addDateOfBirth" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+                    <span id="addDateOfBirthError" class="text-red-500 text-sm"></span> <!-- Error message -->
+                </div>
+                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" onclick="nextStep(2)">Next</button>
+            </div>
+
+            <!-- Step 2 -->
+            <div id="step2" class="step hidden">
+                <h3 class="text-lg font-semibold mb-2">Step 2: Contact Information</h3>
+                <div class="mb-4">
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email:</label>
+                    <input type="email" name="email" id="addEmail" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+                    <span id="addEmailError" class="text-red-500 text-sm"></span> <!-- Error message -->
+                </div>
+                <div class="mb-4">
+                    <label for="phone_number" class="block text-sm font-medium text-gray-700">Phone Number:</label>
+                    <input type="tel" name="phone_number" id="addPhoneNumber" class="mt-1 block w-full border border-gray-300 rounded-md p-2" placeholder="Optional">
+                    <span id="addPhoneNumberError" class="text-red-500 text-sm"></span> <!-- Error message -->
+                </div>
+                <div class="mb-4">
+                    <label for="date_joined" class="block text-sm font-medium text-gray-700">Date Joined:</label>
+                    <input type="date" name="date_joined" id="addDateJoined" class="mt-1 block w-full border border-gray-300 rounded-md p-2" required>
+                    <span id="addDateJoinedError" class="text-red-500 text-sm"></span> <!-- Error message -->
+                </div>
+                <button type="button" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400" onclick="prevStep(1)">Previous</button>
+                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" onclick="nextStep(3)">Next</button>
+            </div>
+
+            <!-- Step 3 -->
+            <div id="step3" class="step hidden">
+                <h3 class="text-lg font-semibold mb-2">Step 3: Additional Information</h3>
+                <div class="mb-4">
+                    <label for="is_class_teacher" class="block text-sm font-medium text-gray-700">Class Teacher:</label>
+                    <input type="checkbox" name="is_class_teacher" id="addIsClassTeacher">
+                </div>
+                <div class="mb-4">
+                    <label for="subjects" class="block text-sm font-medium text-gray-700">Subjects:</label>
+                    <select name="subjects" id="addSubjects" class="mt-1 block w-full border border-gray-300 rounded-md p-2" multiple>
+                        {% for subject in subjects %}
+                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% empty %}
+                            <option value="" disabled>No subjects available</option>
+                        {% endfor %}
+                    </select>
+                    <span id="addSubjectsError" class="text-red-500 text-sm"></span> <!-- Error message -->
+                </div>
+                <button type="button" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400" onclick="prevStep(2)">Previous</button>
+                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Add Teacher</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <!-- JavaScript for Modals -->
 <script>
@@ -175,8 +249,18 @@ function openEditModal(id, name, email, subjects) {
     document.getElementById('editTeacherId').value = id;
     document.getElementById('editName').value = name;
     document.getElementById('editEmail').value = email;
+    document.getElementById('editSubjects').value = subjects;
+    // document.getElementById('phone').value = phone;
+    // document.getElementById('address').value = address;
+    // document.getElementById('gender').value = gender;
+    // document.getElementById('dob').value = dob;
+    // document.getElementById('qualification').value = qualification;
+    // document.getElementById('experience').value = experience;
+    // document.getElementById('photo').value = photo;
+    // document.getElementById('status').value = status;
+    // document.getElementById('password').value = password;
     
-    // Populate subjects (assuming subjects is an array of subject IDs)
+    Populate subjects (assuming subjects is an array of subject IDs)
     const subjectsSelect = document.getElementById('editSubjects');
     subjectsSelect.innerHTML = ''; // Clear existing options
     subjects.forEach(subject => {
@@ -185,6 +269,7 @@ function openEditModal(id, name, email, subjects) {
         option.textContent = subject.name; // Assuming subject has a name property
         subjectsSelect.appendChild(option);
     });
+   
 
     document.getElementById('editModal').style.display = 'block'; // Show the modal
 }
@@ -198,6 +283,8 @@ function openViewModal(id, name, email, subjects) {
     `;
     document.getElementById('viewModal').style.display = 'block'; // Show the modal
 }
+
+// <p><strong>Subjects:</strong> ${subjects.map(subject => subject.name).join(', ')}
 
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none'; // Hide the modal
@@ -231,6 +318,122 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             row.style.display = match ? '' : 'none';
         });
+    });
+});
+</script>
+
+<script>
+function openAddTeacherModal() {
+    document.getElementById('addTeacherModal').style.display = 'block'; // Show the modal
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none'; // Hide the modal
+}
+
+// Close modals when clicking outside of them
+window.onclick = function(event) {
+    if (event.target.className === 'modal') {
+        closeModal(event.target.id);
+    }
+}
+
+function nextStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.step').forEach(function(element) {
+        element.classList.add('hidden');
+    });
+    // Show the current step
+    document.getElementById('step' + step).classList.remove('hidden');
+}
+
+function prevStep(step) {
+    // Hide all steps
+    document.querySelectorAll('.step').forEach(function(element) {
+        element.classList.add('hidden');
+    });
+    // Show the previous step
+    document.getElementById('step' + step).classList.remove('hidden');
+}
+
+// Function to validate fields and show error messages
+function validateField(field) {
+    const errorMessage = document.getElementById(field.id + 'Error');
+    errorMessage.textContent = ''; // Clear previous error message
+
+    if (field.value.trim() === '') {
+        errorMessage.textContent = 'This field is required.';
+        return false;
+    }
+
+    if (field.type === 'email' && !/\S+@\S+\.\S+/.test(field.value)) {
+        errorMessage.textContent = 'Please enter a valid email address.';
+        return false;
+    }
+
+    if (field.id === 'addSubjects' && field.selectedOptions.length === 0) {
+        errorMessage.textContent = 'Please select at least one subject.';
+        return false;
+    }
+
+    return true;
+}
+
+// Handle form submission
+document.getElementById('addTeacherForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission
+
+    // Validate all fields
+    const fields = [
+        document.getElementById('addName'),
+        document.getElementById('addEmployeeId'),
+        document.getElementById('addDateOfBirth'),
+        document.getElementById('addEmail'),
+        document.getElementById('addPhoneNumber'),
+        document.getElementById('addDateJoined'),
+        document.getElementById('addSubjects') // Include subjects for validation
+    ];
+
+    let isValid = true;
+    fields.forEach(field => {
+        if (!validateField(field)) {
+            isValid = false;
+        }
+    });
+
+    if (!isValid) {
+        return; // Stop submission if there are validation errors
+    }
+
+    const formData = new FormData(this); // Get form data
+
+    fetch("{% url 'add_teacher' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest' // Indicate that this is an AJAX request
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('addTeacherModal');
+            alert('Teacher added successfully!'); // Replace with a better UI message
+            // Optionally, refresh the teacher list or update the UI
+        } else {
+            alert('Error: ' + data.error); // Replace with a better UI message
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.'); // Replace with a better UI message
+    });
+});
+
+// Add event listeners for live validation
+document.querySelectorAll('#addTeacherForm input, #addTeacherForm select').forEach(field => {
+    field.addEventListener('input', function() {
+        validateField(field);
     });
 });
 </script>

@@ -4,7 +4,6 @@ from learners.models import FeesModel
 from exams.models import ExamResult, ExamType, Subject
 from learners.models import LearnerRegister, Grade
 from django import forms
-from exams.models import Subject
 from learners.models import Grade
 
 
@@ -149,10 +148,11 @@ from administrator.models import Teacher
 from exams.models import Subject
 
 class TeacherForm(forms.ModelForm):
-    subject = forms.ModelChoiceField(queryset=Subject.objects.all())  # Ensure this is correct
+    model = Teacher
+    subjects = forms.ModelChoiceField(queryset=Subject.objects.all())  # Ensure this is correct
     subjects = forms.ModelMultipleChoiceField(  # Check this line
         queryset=Subject.objects.all(),  # Ensure this is correct
-        widget=forms.CheckboxSelectMultiple()
+        widget= forms.CheckboxSelectMultiple()
     )
     
     class Meta:

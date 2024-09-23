@@ -28,6 +28,7 @@ from zipfile import ZipFile
 from .forms import ExamResultForm, GradeSelectionForm
 from django.shortcuts import render, redirect
 from .forms import SubjectForm, SubjectAssignmentForm, GradeSubjectForm
+from .forms import TeacherForm
 
 # Create your views here.
 
@@ -211,7 +212,16 @@ def add_student(request):
 
 @login_required
 def add_teacher(request):
-    return render(request, 'admin/add_teacher.html')
+    if request.method == 'POST':
+        form = TeacherForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Teacher added successfully.')
+            return redirect('teacher_management')  # Redirect to the teacher management page
+    else:
+        form = TeacherForm()
+    
+    return render(request, 'admin/add_teacher.html', {'form': form})
 
 
 @login_required
@@ -2342,33 +2352,55 @@ def delete_grade(request, pk):
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from .models import Teacher  
-
+from django.core.serializers import serialize
 
 @login_required
 def teacher_management(request):
+    subjects = Subject.objects.all()
     teachers = Teacher.objects.all()
     teachers_list = list(teachers.values('id', 'name', 'email', 'subjects', 'employee_id','is_class_teacher','phone_number'))
-    return render(request, 'admin/teacher_management.html', {'teachers_json': teachers_list})
+    teachers_json = serialize('json', teachers)
+    return render(request, 'admin/teacher_management.html', {'teachers_json': teachers_json, 'teachers': teachers_list, 'subjects': subjects})
 
 @login_required
 def view_teacher(request, teacher_id):
     teacher = get_object_or_404(Teacher, pk=teacher_id)
-    return render(request, 'administrator/view_teacher.html', {'teacher': teacher})
+    return render(request, 'admin/view_teacher.html', {'teacher': teacher})
+
+
+from django.http import JsonResponse
+from django.shortcuts import render
+from .forms import TeacherForm
+#from .models import Subject
+from exams.models import Subject
+
+def add_teacher(request):
+    subjects = Subject.objects.all()
+    if request.method == 'POST':
+        form = TeacherForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'error': form.errors.as_json()})
+    return render(request, 'admin/add_teacher.html', {'subjects': subjects, 'form': TeacherForm()})
+
 
 from .forms import TeacherForm  # Assuming you have a form for the Teacher model
 
 @login_required
 def edit_teacher(request, teacher_id):
     teacher = get_object_or_404(Teacher, pk=teacher_id)
+    subjects = Subject.objects.all()
     if request.method == 'POST':
         form = TeacherForm(request.POST, instance=teacher)
         if form.is_valid():
             form.save()
             messages.success(request, 'Teacher details updated successfully.')
-            return redirect('teacher_management')  # Redirect to the teacher management page
+            return redirect('teacher_management', {'subjects': subjects})  # Redirect to the teacher management page
     else:
         form = TeacherForm(instance=teacher)
-    return render(request, 'administrator/edit_teacher.html', {'form': form, 'teacher': teacher})
+    return render(request, 'admin/edit_teacher.html', {'form': form, 'teacher': teacher})
 
 @login_required
 def delete_teacher(request, teacher_id):
