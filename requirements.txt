@@ -1,5 +1,6 @@
 asgiref==3.8.1
 chardet==5.2.0
+chartjs==1.2
 Django==5.1.1
 django-appconf==1.0.6
 django-chartjs==2.3.0
