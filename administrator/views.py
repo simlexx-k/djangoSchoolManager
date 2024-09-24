@@ -1008,7 +1008,7 @@ from datetime import datetime
 from reportlab.graphics.charts.legends import Legend
 from reportlab.graphics.shapes import Circle
 
-
+@login_required
 def generate_class_report(request, grade_id):
     grade = get_object_or_404(Grade, id=grade_id)
     exam_type_id = request.GET.get('exam_type')
@@ -1050,7 +1050,7 @@ def generate_class_report(request, grade_id):
     # Calculate total scores and ranks
     total_scores = []
     for learner in learners:
-        learner_scores = ExamResult.objects.filter(learner_id=learner, exam_type=exam_type)
+        learner_scores = ExamResult.objects.filter(learner_id=learner.learner_id, exam_type=exam_type)
         total_score = learner_scores.aggregate(Sum('score'))['score__sum'] or 0
         total_scores.append((learner, total_score))
 
@@ -1219,8 +1219,8 @@ def generate_class_report(request, grade_id):
     response['Content-Disposition'] = f'attachment; filename="{grade.grade_name}_{exam_type.name}_class_report.pdf"'
     response.write(pdf)
     return response
+   
 
-@login_required
 def get_grade(score):
     if score >= 80:
         return 'A'
