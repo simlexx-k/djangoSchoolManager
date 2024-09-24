@@ -90,13 +90,55 @@
 
                 studentInfo.innerHTML = html;
                 studentInfo.classList.remove('hidden');
+                showToast('Student information fetched successfully', 'success');
             })
             .catch(error => {
                 console.error('Error:', error);
                 const studentInfo = document.getElementById('studentInfo');
-                studentInfo.innerHTML = '<p class="text-red-500">Error fetching student information. Please try again.</p>';
+                showToast('Error fetching student information. Please try again.', 'error');
                 studentInfo.classList.remove('hidden');
             });
     });
+ 
+    function showToast(message, type) {
+        // Create a new toast element
+        const toast = document.createElement('div');
+        toast.className = `toast bg-white dark:bg-gray-800 border-l-4 border-${type === 'success' ? 'green' : 'red'}-500 rounded-lg shadow-md p-4 mb-4 hidden`;
+        toast.innerHTML = `
+            <div class="flex items-center">
+                <div class="py-1">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white">
+                        ${message}
+                    </p>
+                </div>
+            </div>
+        `;
+    
+        // Add the toast to the container
+        const toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            // Create toast container if it doesn't exist
+            const newToastContainer = document.createElement('div');
+            newToastContainer.id = 'toast-container';
+            newToastContainer.className = 'fixed top-5 right-5 z-50';
+            document.body.appendChild(newToastContainer);
+            toastContainer = newToastContainer;
+        }
+        toastContainer.appendChild(toast);
+    
+        // Show the toast with animation
+        setTimeout(() => {
+            toast.classList.remove('hidden');
+            toast.classList.add('animate__animated', 'animate__fadeInRight');
+            setTimeout(() => {
+                toast.classList.remove('animate__fadeInRight');
+                toast.classList.add('animate__fadeOutRight');
+                setTimeout(() => {
+                    toast.remove();
+                }, 1000);
+            }, 5000);
+        }, 100);
+    }
+
 </script>
 {% endblock content %}
