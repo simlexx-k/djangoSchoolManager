@@ -3,7 +3,100 @@
 </head>
 {% extends 'admin/base.html' %}
 {% load static %}
-{% block content %}
-<div class="p-8 bg-gray-100 dark:bg-gray-800 min-h-screen rounded-lg">
+{% block title %}Parent Dashboard{% endblock %}
 
+{% block content %}
+<div class="min-h-screen bg-gray-100 dark:bg-gray-800 py-6 flex flex-col justify-center sm:py-12">
+    <div class="relative py-3 sm:max-w-xl sm:mx-auto">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-300 to-blue-600 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
+        <div class="relative px-4 py-10 bg-white dark:bg-gray-700 shadow-lg sm:rounded-3xl sm:p-20">
+            <div class="max-w-md mx-auto">
+                <div>
+                    <h1 class="text-2xl font-semibold text-center text-gray-800 dark:text-white">Parent Dashboard</h1>
+                </div>
+                <div class="divide-y divide-gray-200">
+                    <div class="py-8 text-base leading-6 space-y-4 text-gray-700 dark:text-gray-300 sm:text-lg sm:leading-7">
+                        <p>Enter your child's Student ID (Admission Number) to access their information.</p>
+                        <form id="studentInfoForm" class="space-y-4">
+                            <div>
+                                <label for="student_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Student ID</label>
+                                <input type="text" id="student_id" name="student_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                            </div>
+                            <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                View Information
+                            </button>
+                        </form>
+                    </div>
+                    <div id="studentInfo" class="py-8 text-base leading-6 space-y-4 text-gray-700 dark:text-gray-300 sm:text-lg sm:leading-7 hidden">
+                        <!-- Student information will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('studentInfoForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const studentId = document.getElementById('student_id').value;
+        
+        fetch(`/control/api/student-info/${studentId}/`)
+            .then(response => response.json())
+            .then(data => {
+                const studentInfo = document.getElementById('studentInfo');
+                let html = `
+                    <h2 class="text-xl font-semibold mb-4">Student Information</h2>
+                    <p><strong>Name:</strong> ${data.name}</p>
+                    <p><strong>Grade:</strong> ${data.grade}</p>
+                    <h3 class="text-lg font-semibold mt-4 mb-2">Exam Results</h3>
+                `;
+
+                data.exam_results.forEach(exam => {
+                    html += `
+                        <div class="mb-4 p-4 bg-gray-100 rounded">
+                            <h4 class="font-semibold">${exam.exam_name}</h4>
+                            <p>Total Score: ${exam.total_score} out of ${exam.max_possible_score}</p>
+                            <p>Average Score: ${exam.average_score}</p>
+                            <p>Rank: ${exam.rank !== null ? `${exam.rank} out of ${exam.total_students}` : 'N/A'}</p>
+                            <table class="w-full mt-2">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left">Subject</th>
+                                        <th class="text-left">Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${exam.subjects.map(subject => `
+                                        <tr>
+                                            <td>${subject.name}</td>
+                                            <td>${subject.score} / 100</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                });
+
+                html += `
+                    <h3 class="text-lg font-semibold mt-4 mb-2">Fee Records</h3>
+                    <ul>
+                        ${data.fee_records.map(record => `
+                            <li>${record.fee_type}: ${record.amount} (Status: ${record.status})</li>
+                        `).join('')}
+                    </ul>
+                `;
+
+                studentInfo.innerHTML = html;
+                studentInfo.classList.remove('hidden');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const studentInfo = document.getElementById('studentInfo');
+                studentInfo.innerHTML = '<p class="text-red-500">Error fetching student information. Please try again.</p>';
+                studentInfo.classList.remove('hidden');
+            });
+    });
+</script>
 {% endblock content %}

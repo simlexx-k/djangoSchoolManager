@@ -1,0 +1,24 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Delete Fee Record{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Delete Fee Record</h1>
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <p class="mb-4">Are you sure you want to delete the fee record for {{ fee_record.learner.name }} ({{ fee_record.fee_type.name }})?</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="flex items-center justify-between">
+                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    Confirm Delete
+                </button>
+                <a href="{% url 'fee_management' %}" class="text-blue-500 hover:text-blue-800">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

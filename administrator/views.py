@@ -2565,3 +2565,77 @@ def exam_result_delete(request, result_id):
         messages.success(request, 'Exam result deleted successfully.')
         return redirect('exam_result_list')
     return render(request, 'admin/exam_result_confirm_delete.html', {'result': result})
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.db.models import Sum, Avg, Count
+from learners.models import LearnerRegister
+from exams.models import ExamResult, ExamType
+from fees.models import FeeRecord
+
+@require_GET
+def get_student_info(request, student_id):
+    try:
+        student = LearnerRegister.objects.get(learner_id=student_id)
+        exam_results = ExamResult.objects.filter(learner_id=student).select_related('exam_type', 'subject')
+        fee_records = FeeRecord.objects.filter(learner_id=student)
+
+        # Group exam results by exam type
+        exam_data = {}
+        for result in exam_results:
+            if result.exam_type.name not in exam_data:
+                exam_data[result.exam_type.name] = {
+                    'subjects': [],
+                    'total_score': 0,
+                    'average_score': 0,
+                    'rank': None,
+                    'total_students': 0,
+                    'max_possible_score': 0,
+                }
+            exam_data[result.exam_type.name]['subjects'].append({
+                'name': result.subject.name,
+                'score': result.score,
+            })
+            exam_data[result.exam_type.name]['total_score'] += result.score
+            exam_data[result.exam_type.name]['max_possible_score'] += 100  # Assuming max score per subject is 100
+
+        # Calculate average score, rank, and total students for each exam
+        for exam_name, data in exam_data.items():
+            num_subjects = len(data['subjects'])
+            data['average_score'] = round(data['total_score'] / num_subjects, 2) if num_subjects > 0 else 0
+
+            # Calculate rank and total students
+            all_scores = ExamResult.objects.filter(exam_type__name=exam_name, learner_id__grade=student.grade) \
+                .values('learner_id').annotate(total_score=Sum('score')).order_by('-total_score')
+            data['total_students'] = all_scores.count()
+            student_rank = next((index for (index, d) in enumerate(all_scores) if d["learner_id"] == student.id), None)
+            data['rank'] = student_rank + 1 if student_rank is not None else None
+
+        data = {
+            'name': student.name,
+            'grade': student.grade.grade_name,
+            'exam_results': [
+                {
+                    'exam_name': exam_name,
+                    'subjects': data['subjects'],
+                    'total_score': data['total_score'],
+                    'max_possible_score': data['max_possible_score'],
+                    'average_score': data['average_score'],
+                    'rank': data['rank'],
+                    'total_students': data['total_students'],
+                } for exam_name, data in exam_data.items()
+            ],
+            'fee_records': [
+                {
+                    'fee_type': record.fee_type.name,
+                    'amount': str(record.amount),
+                    'status': record.status
+                } for record in fee_records
+            ]
+        }
+        return JsonResponse(data)
+    except LearnerRegister.DoesNotExist:
+        return JsonResponse({'error': 'Student not found'}, status=404)
+    
+def parent_dashboard(request):
+    return render(request, 'admin/parent_dashboard.html')

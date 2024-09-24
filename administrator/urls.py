@@ -19,6 +19,7 @@ from exams.views import create_progress_report, list_progress_reports, view_prog
 from . import views
 import exams.views as exam_views
 from learners.views import add_class_level
+import fees.views as fees_views
 # app_name = 'administrator'
 
 urlpatterns = [
@@ -173,5 +174,16 @@ urlpatterns = [
     path('add-support-service/<int:learner_id>/<int:exam_type_id>/', exam_views.add_support_service, name='add_support_service'),
     path('add-standardized-test-score/<int:learner_id>/<int:exam_type_id>/', exam_views.add_standardized_test_score, name='add_standardized_test_score'),
 
+     #Parent Dashboard
+    path('parent-dashboard/', views.parent_dashboard, name='parent_dashboard'),
+    path('api/student-info/<str:student_id>/', views.get_student_info, name='get_student_info'),
+
+
+     #Fee Management
+     path('fees/', fees_views.fee_management, name='fee_management'),
+     path('fees/add/', fees_views.add_fee_record, name='add_fee_record'),
+     path('fees/<int:pk>/edit/', fees_views.edit_fee_record, name='edit_fee_record'),
+     path('fees/<int:pk>/delete/', fees_views.delete_fee_record, name='delete_fee_record'),
+     path('student/<str:student_id>/fees/', fees_views.student_fees, name='student_fees'),
 
 ]

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'exams.apps.ExamsConfig',
     'administrator.apps.AdministratorConfig',
     'authenticator.apps.AuthenticatorConfig',
+    'fees.apps.FeesConfig',
     'compressor',
     'chartjs',
     

@@ -1,0 +1,78 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Fee Management{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Fee Management</h1>
+        <a href="{% url 'add_fee_record' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Add New Fee Record
+        </a>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <table class="min-w-full leading-normal">
+            <thead>
+                <tr>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Student
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Fee Type
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Amount
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Due Date
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Status
+                    </th>
+                    <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        Actions
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fee_record in fee_records %}
+                <tr>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <a href="{% url 'student_fees' fee_record.learner.learner_id %}" class="text-blue-600 hover:text-blue-800">
+                            {{ fee_record.learner.name }}
+                        </a>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        {{ fee_record.fee_type.name }}
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        {{ fee_record.amount }}
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        {{ fee_record.due_date }}
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <span class="relative inline-block px-3 py-1 font-semibold {% if fee_record.status == 'PAID' %}text-green-900{% elif fee_record.status == 'PARTIAL' %}text-yellow-900{% else %}text-red-900{% endif %} leading-tight">
+                            <span aria-hidden class="absolute inset-0 {% if fee_record.status == 'PAID' %}bg-green-200{% elif fee_record.status == 'PARTIAL' %}bg-yellow-200{% else %}bg-red-200{% endif %} opacity-50 rounded-full"></span>
+                            <span class="relative">{{ fee_record.get_status_display }}</span>
+                        </span>
+                    </td>
+                    <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <a href="{% url 'edit_fee_record' fee_record.id %}" class="text-indigo-600 hover:text-indigo-900 mr-4">Edit</a>
+                        <a href="{% url 'delete_fee_record' fee_record.id %}" class="text-red-600 hover:text-red-900">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">
+                        No fee records found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
