@@ -22,6 +22,7 @@ from learners.views import add_class_level
 # app_name = 'administrator'
 
 urlpatterns = [
+   
     path('dashboard/', dashboard, name="admin_dashboard"),
     path('take_attendance/', take_attendance, name="take_attendance"),
     path('send_notification/', send_notification, name="send_notification"),
@@ -41,7 +42,8 @@ urlpatterns = [
     path('control/api/reports/student/<int:student_id>/', generate_student_report, name='generate_student_report'),
     path('exam-result-entry/', exam_result_entry, name='exam_result_entry'),
     path('bulk-exam-result-entry/', bulk_exam_result_entry, name='bulk_exam_result_entry'),
-    path('bulk-exam-result-entry/<int:grade_id>/', bulk_exam_result_entry_grade, name='bulk_exam_result_entry_grade'),
+    #path('bulk-exam-result-entry/<int:grade_id>/', bulk_exam_result_entry_grade, name='bulk_exam_result_entry_grade'),
+    path('bulk-exam-result-entry/<int:grade_id>/<int:exam_type_id>/', views.bulk_exam_result_entry_grade, name='bulk_exam_result_entry_grade'),
     # path('create-subject', views.create_subject, name='create_subject'),
     path('assign-subjects/', assign_subjects_to_grade, name='assign_subjects'),
     path('grade-subjects/', grade_subject_list, name='grade_subject_list'),
@@ -120,6 +122,7 @@ urlpatterns = [
     path('academic-calendar/delete/<int:pk>/', delete_academic_calendar, name='delete_academic_calendar'),
 
     # Exams
+    path('exam-results/', views.exam_results_dashboard, name='exam_results_dashboard'),
     path('exams/', exam_list, name='exam_list'),
     path('exams/add/', manage_exams, name='manage_exams'),
     path('exams/edit/<int:pk>/', edit_exam, name='edit_exam'),

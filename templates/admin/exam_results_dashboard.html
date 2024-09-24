@@ -1,0 +1,37 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Exam Results Management</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Individual Exam Result Entry -->
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-600">Individual Result Entry</h2>
+            <p class="mb-6 text-gray-600">Enter exam results for individual students.</p>
+            <a href="{% url 'exam_result_entry' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                Enter Individual Results
+            </a>
+        </div>
+
+        <!-- Bulk Exam Result Entry -->
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-green-600">Bulk Result Entry</h2>
+            <p class="mb-6 text-gray-600">Enter exam results for multiple students at once.</p>
+            <a href="{% url 'bulk_exam_result_entry' %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                Enter Bulk Results
+            </a>
+        </div>
+
+        <!-- View Exam Results -->
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-purple-600">View Results</h2>
+            <p class="mb-6 text-gray-600">View and manage existing exam results.</p>
+            <a href="{% url 'exam_result_list' %}" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
+                View Results
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

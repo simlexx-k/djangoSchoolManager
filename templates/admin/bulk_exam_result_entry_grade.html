@@ -1,14 +1,12 @@
-<head>
-    <title>Bulk Exam Result Entry - Admin Dashboard</title>
-</head>
 {% extends 'admin/base.html' %}
 {% load custom_filters %}
+
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css">
 <style>
     .sticky-table-container {
         max-height: 70vh;
-        overflow-y: auto;
+        overflow: auto;
         position: relative;
     }
     .sticky-table {
@@ -19,14 +17,14 @@
         position: sticky;
         top: 0;
         z-index: 2;
-        
+        background-color: #332D2D;
     }
     .sticky-table td:first-child,
     .sticky-table th:first-child {
         position: sticky;
         left: 0;
         z-index: 1;
-        
+        background-color: #f8f9fa;
     }
     .sticky-table th:first-child {
         z-index: 3;
@@ -39,53 +37,60 @@
     .sticky-table input[type="number"] {
         width: 60px;
     }
+    .sticky-table td:first-child {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+    @media (max-width: 640px) {
+        .sticky-table-container {
+            max-height: none;
+        }
+        .sticky-table th,
+        .sticky-table td:first-child {
+            position: sticky;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <h2 class="text-3xl font-bold mb-6 p-4 bg-gray-50 dark:bg-gray-900 dark:text-white border-t-2 border-white">Bulk Exam Result Entry for {{ grade.grade_name }}</h2>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Bulk Exam Result Entry</h1>
+    <h2 class="text-2xl font-semibold mb-4 text-gray-700 dark:text-gray-200">
+        Grade: {{ grade.grade_name }} | Exam: {{ exam_type.name }} ({{ exam_type.date_administered|date:"d/m/Y" }})
+    </h2>
 
-    <form method="post">
+    <form method="post" class="space-y-6">
         {% csrf_token %}
+        <input type="hidden" name="exam_type" value="{{ exam_type.exam_id }}">
 
-        <div class="flex flex-col rounded-lg shadow overflow-hidden">
-            <div class="flex inline-block w-full rounded-lg bg-gray-50 dark:bg-gray-700 p-4">
-                <div class="flex-inline justify-between rounded-lg dark:text-white">
-                    <label class="" for="exam_type">Exam Type:</label>
-                    <select class="rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white" name="exam_type" required>
-                        {% for exam_type in exam_types %}
-                            <option class="rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white" value="{{ exam_type.exam_id }}">{{ exam_type.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="flex-inline justify-between">
-                    <label class="rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white" for="date_examined">Date Examined:</label>
-                        <input class="rounded-lg bg-gray-50 dark:bg-gray-700 dark:text-white" type="date" name="date_examined" required>
-                </div>   
-            </div>
-            <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
-            <div class="inline-block min-w-full py-2 sm:px-6 lg:px-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <div class="sticky-table-container">
-                <table class="table table-bordered min-w-full text-left text-sm font-light text-surface dark:text-white sticky-table" id="dataTable" width="100%" cellspacing="0">
-                    <thead class="sticky top-0 border-b border-neutral-200 bg-[#332D2D] font-medium text-white dark:border-white/10">
+                <table id="dataTable" class="sticky-table w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" class="px-6 py-4">Learner</th>
+                            <th scope="col" class="px-6 py-3">Learner</th>
                             {% for subject in subjects %}
-                                <th scope="col" class=" px-6 py-4">{{ subject.name }}</th>
+                                <th scope="col" class="px-6 py-3">{{ subject.name }}</th>
                             {% endfor %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for learner in learners %}
-                        <tr class="border-b border-neutral-200 dark:border-white/10">
-                            <td class="whitespace-nowrap px-6 py-4 font-medium">{{ learner.name }}</td>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                {{ learner.name }}
+                            </td>
                             {% for subject in subjects %}
-                                <td class="whitespace-nowrap  px-6 py-4">
+                                <td class="px-6 py-4">
                                     {% if learner.id in existing_scores and subject.subject_id in existing_scores|get_item:learner.id %}
-                                        <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" type="number" name="score_{{ learner.id }}_{{ subject.subject_id }}" value="{{ existing_scores|get_item:learner.id|get_item:subject.subject_id }}" readonly>
+                                        <input type="number" name="score_{{ learner.id }}_{{ subject.subject_id }}" 
+                                               value="{{ existing_scores|get_item:learner.id|get_item:subject.subject_id }}" 
+                                               readonly class="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
                                     {% else %}
-                                        <input class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" type="number" name="score_{{ learner.id }}_{{ subject.subject_id }}" min="0" max="100" step="1">
+                                        <input type="number" name="score_{{ learner.id }}_{{ subject.subject_id }}" 
+                                               min="0" max="100" step="1" 
+                                               class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
                                     {% endif %}
                                 </td>
                             {% endfor %}
@@ -93,11 +98,12 @@
                         {% endfor %}
                     </tbody>
                 </table>
-                </div>
             </div>
-        </div>        
-            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">Submit Results</button>
         </div>
+
+        <button type="submit" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+            Submit Results
+        </button>
     </form>
 </div>
 {% endblock %}
@@ -115,6 +121,11 @@ $(document).ready(function() {
         ],
         "language": {
             "search": "Search students:"
+        },
+        "responsive": true,
+        "scrollX": true,
+        "fixedColumns": {
+            leftColumns: 1
         }
     });
 
@@ -135,7 +146,7 @@ $(document).ready(function() {
     );
 
     // Add a button to toggle between all students and students with missing marks
-    $('<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2 mb-2">Show Only Missing Marks</button>')
+    $('<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2 mb-2 mr-2">Show Only Missing Marks</button>')
         .prependTo('#dataTable_wrapper')
         .on('click', function() {
             $(this).toggleClass('active');

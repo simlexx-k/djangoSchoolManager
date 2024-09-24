@@ -1677,24 +1677,23 @@ def bulk_exam_result_entry(request):
         grade_form = GradeSelectionForm(request.POST)
         if grade_form.is_valid():
             grade = grade_form.cleaned_data['grade']
-            return redirect('bulk_exam_result_entry_grade', grade_id=grade.id)
+            exam_type_id = request.POST.get('exam_type')
+            exam_type = get_object_or_404(ExamType, exam_id=exam_type_id)
+            return redirect('bulk_exam_result_entry_grade', grade_id=grade.id, exam_type_id=exam_type.exam_id)
     else:
         grade_form = GradeSelectionForm()
     
-    return render(request, 'admin/bulk_exam_result_entry.html', {'grade_form': grade_form})
+    exam_types = ExamType.objects.all()
+    return render(request, 'admin/bulk_exam_result_entry.html', {'grade_form': grade_form, 'exam_types': exam_types})
 
 @login_required
-def bulk_exam_result_entry_grade(request, grade_id):
+def bulk_exam_result_entry_grade(request, grade_id, exam_type_id):
     grade = get_object_or_404(Grade, id=grade_id)
+    exam_type = get_object_or_404(ExamType, exam_id=exam_type_id)
     learners = LearnerRegister.objects.filter(grade=grade)
     subjects = grade.subjects.all()
-    exam_types = ExamType.objects.all()
 
     if request.method == 'POST':
-        exam_type_id = request.POST.get('exam_type')
-        exam_type = get_object_or_404(ExamType, exam_id=exam_type_id)
-        date_examined = request.POST.get('date_examined')
-
         for learner in learners:
             for subject in subjects:
                 score = request.POST.get(f'score_{learner.id}_{subject.subject_id}')
@@ -1705,7 +1704,7 @@ def bulk_exam_result_entry_grade(request, grade_id):
                         subject=subject,
                         defaults={
                             'score': float(score),
-                            'date_examined': date_examined
+                            'date_examined': exam_type.date_administered
                         }
                     )
         
@@ -1718,7 +1717,7 @@ def bulk_exam_result_entry_grade(request, grade_id):
         learner_scores = {}
         for subject in subjects:
             try:
-                result = ExamResult.objects.get(learner_id=learner, subject=subject)
+                result = ExamResult.objects.get(learner_id=learner, subject=subject, exam_type=exam_type)
                 learner_scores[subject.subject_id] = result.score
             except ExamResult.DoesNotExist:
                 pass
@@ -1727,9 +1726,9 @@ def bulk_exam_result_entry_grade(request, grade_id):
 
     context = {
         'grade': grade,
+        'exam_type': exam_type,
         'learners': learners,
         'subjects': subjects,
-        'exam_types': exam_types,
         'existing_scores': existing_scores,
     }
     return render(request, 'admin/bulk_exam_result_entry_grade.html', context)
@@ -2431,3 +2430,7 @@ def delete_teacher(request, teacher_id):
         'cancel_url': reverse('teacher_management')  # URL to redirect if cancellation occurs
     }
     return render(request, 'admin/confirm_delete.html', context)
+
+@login_required
+def exam_results_dashboard(request):
+    return render(request, 'admin/exam_results_dashboard.html')

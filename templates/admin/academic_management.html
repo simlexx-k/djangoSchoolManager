@@ -5,86 +5,91 @@
 {% load static %}
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Academic Management Dashboard</h1>
+    <h1 class="text-4xl font-bold mb-8 text-gray-800">Academic Management Dashboard</h1>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <!-- Curriculum Management -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Curriculum Management</h2>
-            <p class="mb-4">Manage school curricula, subjects, and grade-specific content.</p>
-            <a href="{% url 'curriculum_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-indigo-600">Curriculum Management</h2>
+            <p class="mb-6 text-gray-600">Manage school curricula, subjects, and grade-specific content.</p>
+            <a href="{% url 'curriculum_list' %}" class="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
                 Manage Curriculum
             </a>
         </div>
 
         <!-- Attendance Management -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Attendance Management</h2>
-            <p class="mb-4">Record and track student attendance across all grades.</p>
-            <a href="{% url 'attendance_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-green-600">Attendance Management</h2>
+            <p class="mb-6 text-gray-600">Record and track student attendance across all grades.</p>
+            <a href="{% url 'attendance_list' %}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
                 Manage Attendance
             </a>
         </div>
 
         <!-- Timetable Management -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Timetable Management</h2>
-            <p class="mb-4">Create and manage class schedules for all grades and subjects.</p>
-            <a href="{% url 'timetable_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-600">Timetable Management</h2>
+            <p class="mb-6 text-gray-600">Create and manage class schedules for all grades and subjects.</p>
+            <a href="{% url 'timetable_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
                 Manage Timetable
             </a>
         </div>
 
         <!-- Teacher Assignment -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Teacher Assignment</h2>
-            <p class="mb-4">Assign teachers to specific grades and subjects.</p>
-            <a href="{% url 'teacher_management' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-purple-600">Teacher Assignment</h2>
+            <p class="mb-6 text-gray-600">Assign teachers to specific grades and subjects.</p>
+            <a href="{% url 'teacher_management' %}" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
                 Assign Teachers
             </a>
         </div>
 
         <!-- Academic Calendar -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Academic Calendar</h2>
-            <p class="mb-4">Manage important dates, events, and holidays for the school year.</p>
-            <a href="{% url 'academic_calendar_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-yellow-600">Academic Calendar</h2>
+            <p class="mb-6 text-gray-600">Manage important dates, events, and holidays for the school year.</p>
+            <a href="{% url 'academic_calendar_list' %}" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
                 Manage Calendar
             </a>
         </div>
 
         <!-- Exam Management -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Exam Management</h2>
-            <p class="mb-4">Schedule exams, record results, and generate reports.</p>
-            <a href="{% url 'exam_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Manage Exams
-            </a>
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-red-600">Exam Management</h2>
+            <p class="mb-6 text-gray-600">Schedule exams, record results, and generate reports.</p>
+            <div class="space-y-2">
+                <a href="{% url 'exam_list' %}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out block text-center">
+                    Manage Exams
+                </a>
+                <a href="{% url 'exam_results_dashboard' %}" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out block text-center">
+                    Manage Exam Results
+                </a>
+            </div>
         </div>
 
         <!-- Progress Reports -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Progress Reports</h2>
-            <p class="mb-4">Generate and manage student progress reports.</p>
-            <a href="{% url 'exam_dashboard' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-pink-600">Progress Reports</h2>
+            <p class="mb-6 text-gray-600">Generate and manage student progress reports.</p>
+            <a href="{% url 'exam_dashboard' %}" class="bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
                 Generate Reports
             </a>
         </div>
 
         <!-- Subject Management -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Subject Management</h2>
-            <p class="mb-4">Manage subjects offered in the school curriculum.</p>
-            <a href="{% url 'subject_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-teal-600">Subject Management</h2>
+            <p class="mb-6 text-gray-600">Manage subjects offered in the school curriculum.</p>
+            <a href="{% url 'subject_list' %}" class="bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
                 Manage Subjects
             </a>
         </div>
 
         <!-- Grade Management -->
-        <div class="bg-white shadow-md rounded-lg p-6">
-            <h2 class="text-xl font-semibold mb-4">Grade Management</h2>
-            <p class="mb-4">Manage grade levels and associated information.</p>
-            <a href="{% url 'grade_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <div class="bg-white shadow-lg rounded-lg p-6 transition duration-300 ease-in-out transform hover:scale-105">
+            <h2 class="text-2xl font-semibold mb-4 text-orange-600">Grade Management</h2>
+            <p class="mb-6 text-gray-600">Manage grade levels and associated information.</p>
+            <a href="{% url 'grade_list' %}" class="bg-orange-500 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out">
                 Manage Grades
             </a>
         </div>
