@@ -2,12 +2,125 @@
     <title>Exam Result Entry - Admin Dashboard</title>
 </head>
 {% extends 'admin/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    @media (max-width: 640px) {
+        .container {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+    }
+    .subject-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<h2>Enter Exam Result</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Submit</button>
-</form>
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Enter Exam Result</h1>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 md:p-8">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            {{ form.non_field_errors }}
+            
+            <div class="flex flex-col">
+                <label for="{{ form.exam_type.id_for_label }}" class="mb-2 font-medium text-gray-700 dark:text-gray-300">
+                    {{ form.exam_type.label }}
+                </label>
+                {{ form.exam_type }}
+            </div>
+
+            <div class="flex flex-col">
+                <label for="{{ form.grade.id_for_label }}" class="mb-2 font-medium text-gray-700 dark:text-gray-300">
+                    {{ form.grade.label }}
+                </label>
+                {{ form.grade }}
+            </div>
+
+            <button type="button" id="loadSubjectsAndLearners" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                Load Subjects and Learners
+            </button>
+
+            <div id="learner_container" class="flex flex-col" style="display: none;">
+                <label for="{{ form.learner.id_for_label }}" class="mb-2 font-medium text-gray-700 dark:text-gray-300">
+                    {{ form.learner.label }}
+                </label>
+                {{ form.learner }}
+            </div>
+
+            <div id="subject_grid" class="subject-grid" style="display: none;">
+                <!-- Subjects will be dynamically added here -->
+            </div>
+
+            <button type="submit" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                Submit Results
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    const gradeSelect = $('#{{ form.grade.id_for_label }}');
+    const learnerContainer = $('#learner_container');
+    const learnerSelect = $('#{{ form.learner.id_for_label }}');
+    const subjectGrid = $('#subject_grid');
+    const loadButton = $('#loadSubjectsAndLearners');
+
+    loadButton.click(function() {
+        const gradeId = gradeSelect.val();
+        if (gradeId) {
+            $.ajax({
+                url: '{% url "get_subjects_and_learners" %}',
+                data: { 'grade_id': gradeId },
+                dataType: 'json',
+                success: function(data) {
+                    // Populate learners
+                    learnerSelect.empty().append($('<option>').text('Select a learner').val(''));
+                    $.each(data.learners, function(i, learner) {
+                        learnerSelect.append($('<option>').text(learner.learner_id + ' - ' + learner.name).val(learner.id));
+                    });
+                    learnerContainer.show();
+
+                    // Populate subjects
+                    subjectGrid.empty();
+                    $.each(data.subjects, function(i, subject) {
+                        const subjectDiv = $('<div>').addClass('flex flex-col');
+                        const label = $('<label>').attr('for', 'subject_' + subject.id)
+                                                  .addClass('mb-2 font-medium text-gray-700 dark:text-gray-300')
+                                                  .text(subject.name);
+                        const input = $('<input>').attr({
+                            type: 'number',
+                            name: 'subject_' + subject.id,
+                            id: 'subject_' + subject.id,
+                            min: 0,
+                            max: 100,
+                            step: 0.01
+                        }).addClass('w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500 dark:bg-gray-700 dark:text-white dark:border-gray-600');
+                        subjectDiv.append(label, input);
+                        subjectGrid.append(subjectDiv);
+                    });
+                    subjectGrid.show();
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX error: " + status + ": " + error);
+                    alert('Error loading subjects and learners. Please check the console for details.');
+                }
+            });
+        } else {
+            alert('Please select a grade first.');
+        }
+    });
+});
+</script>
 {% endblock %}

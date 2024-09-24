@@ -24,7 +24,7 @@
         <form method="post" class="space-y-4">
             {% csrf_token %}
             <div class="flex flex-col">
-                <label for="{{ grade_form.grade.id_for_label }}" class="mb-2 font-medium text-gray-700 dark:text-gray-300">
+                <label for="{{ grade_form.grade.id_for_label }}" class="mb-2 font-medium text-gray-700 dark:text-gray-300 rounded-lg">
                     {{ grade_form.grade.label }}
                 </label>
                 {{ grade_form.grade }}

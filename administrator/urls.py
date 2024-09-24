@@ -123,6 +123,12 @@ urlpatterns = [
 
     # Exams
     path('exam-results/', views.exam_results_dashboard, name='exam_results_dashboard'),
+    path('exam-results/<int:result_id>/', views.exam_result_detail, name='exam_result_detail'),
+    path('exam-results/<int:result_id>/edit/', views.exam_result_edit, name='exam_result_edit'),
+    path('exam-results/<int:result_id>/delete/', views.exam_result_delete, name='exam_result_delete'),
+    path('api/learners-by-grade/<int:grade_id>/', views.learners_by_grade, name='learners_by_grade'),
+    path('api/subjects-by-grade/<int:grade_id>/', views.subjects_by_grade, name='subjects_by_grade'),
+    path('get-subjects-and-learners/', views.get_subjects_and_learners, name='get_subjects_and_learners'),
     path('exams/', exam_list, name='exam_list'),
     path('exams/add/', manage_exams, name='manage_exams'),
     path('exams/edit/<int:pk>/', edit_exam, name='edit_exam'),

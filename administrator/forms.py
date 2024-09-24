@@ -18,17 +18,34 @@ class FeePaymentForm(forms.ModelForm):
 
 class ExamResultForm(forms.ModelForm):
     exam_type = forms.ModelChoiceField(queryset=ExamType.objects.all())
-    learner = forms.ModelChoiceField(queryset=LearnerRegister.objects.all())
+    grade = forms.ModelChoiceField(queryset=Grade.objects.all())
+    #learner = forms.ModelChoiceField(queryset=LearnerRegister.objects.all())
     subject = forms.ModelChoiceField(queryset=Subject.objects.all())
 
     class Meta:
         model = ExamResult
-        fields = ['learner_id', 'exam_type', 'subject', 'score', 'date_examined']
+        fields = ['exam_type', 'learner_id', 'subject', 'score']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['learner'].label_from_instance = lambda obj: f"{obj.learner_id} - {obj.name}"
-        self.fields['subject'].label_from_instance = lambda obj: f"{obj.name}"
+        self.fields['learner_id'].label_from_instance = lambda obj: f"{obj.learner_id} - {obj.name}"
+        
+        if 'instance' in kwargs and kwargs['instance']:
+            self.fields['grade'].initial = kwargs['instance'].learner_id.grade
+        
+        if 'data' in kwargs and 'grade' in kwargs['data']:
+            grade_id = kwargs['data'].get('grade')
+            self.fields['learner_id'].queryset = LearnerRegister.objects.filter(grade_id=grade_id)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        grade = cleaned_data.get('grade')
+        learner_id = cleaned_data.get('learner_id')
+        
+        if grade and learner_id and learner_id.grade != grade:
+            raise forms.ValidationError("The selected learner is not in the selected grade.")
+        
+        return cleaned_data
 
 
 class GradeSelectionForm(forms.Form):

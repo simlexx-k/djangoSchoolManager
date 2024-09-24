@@ -1,0 +1,35 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 md:p-8">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Exam Result Detail</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <p class="text-gray-600 dark:text-gray-400"><strong>Learner:</strong> {{ result.learner.name }}</p>
+                <p class="text-gray-600 dark:text-gray-400"><strong>Grade:</strong> {{ result.learner.grade.grade_name }}</p>
+                <p class="text-gray-600 dark:text-gray-400"><strong>Exam Type:</strong> {{ result.exam_type.name }}</p>
+            </div>
+            <div>
+                <p class="text-gray-600 dark:text-gray-400"><strong>Subject:</strong> {{ result.subject.name }}</p>
+                <p class="text-gray-600 dark:text-gray-400"><strong>Score:</strong> {{ result.score }}</p>
+                <p class="text-gray-600 dark:text-gray-400"><strong>Date Examined:</strong> {{ result.date_examined }}</p>
+            </div>
+        </div>
+        
+        <div class="mt-8 flex space-x-4">
+            <a href="{% url 'exam_result_edit' result.id %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-opacity-50">
+                Edit
+            </a>
+            <a href="{% url 'exam_result_delete' result.id %}" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">
+                Delete
+            </a>
+            <a href="{% url 'exam_result_list' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50">
+                Back to List
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

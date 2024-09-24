@@ -1658,18 +1658,62 @@ def get_students_by_grade(request):
     students = LearnerRegister.objects.filter(grade_id=grade_id).values('id', 'name')
     return JsonResponse(list(students), safe=False)
 
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from .forms import ExamResultForm
+from exams.models import ExamResult, Subject
+from learners.models import LearnerRegister
+
 @login_required
 def exam_result_entry(request):
     if request.method == 'POST':
         form = ExamResultForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Exam result added successfully.')
+            exam_type = form.cleaned_data['exam_type']
+            learner = form.cleaned_data['learner']
+            
+            for key, value in request.POST.items():
+                if key.startswith('subject_') and value:
+                    subject_id = int(key.split('_')[1])
+                    subject = Subject.objects.get(id=subject_id)
+                    score = float(value)
+                    
+                    ExamResult.objects.update_or_create(
+                        exam_type=exam_type,
+                        learner=learner,
+                        subject=subject,
+                        defaults={'score': score}
+                    )
+            
+            messages.success(request, 'Exam results submitted successfully.')
             return redirect('exam_result_entry')
     else:
         form = ExamResultForm()
     
-    return render(request, 'admin/exam_result_entry.html', {'form': form})
+    context = {
+        'form': form,
+    }
+    return render(request, 'admin/exam_result_entry.html', context)
+
+@login_required
+def get_subjects_and_learners(request):
+    grade_id = request.GET.get('grade_id')
+    if grade_id:
+        subjects = Subject.objects.filter(grades__id=grade_id).values('id', 'name')
+        learners = LearnerRegister.objects.filter(grade_id=grade_id).values('id', 'name', 'learner_id')
+        return JsonResponse({'subjects': list(subjects), 'learners': list(learners)})
+    return JsonResponse({'subjects': [], 'learners': []})
+
+@login_required
+def get_subjects_and_learners(request):
+    grade_id = request.GET.get('grade_id')
+    if grade_id:
+        subjects = Subject.objects.filter(grades__id=grade_id).values('id', 'name')
+        learners = LearnerRegister.objects.filter(grade_id=grade_id).values('id', 'name', 'learner_id')
+        return JsonResponse({'subjects': list(subjects), 'learners': list(learners)})
+    return JsonResponse({'subjects': [], 'learners': []})
 
 @login_required
 def bulk_exam_result_entry(request):
@@ -2434,3 +2478,90 @@ def delete_teacher(request, teacher_id):
 @login_required
 def exam_results_dashboard(request):
     return render(request, 'admin/exam_results_dashboard.html')
+
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import Grade, LearnerRegister, Subject
+
+@login_required
+def learners_by_grade(request, grade_id):
+    grade = Grade.objects.get(id=grade_id)
+    learners = LearnerRegister.objects.filter(grade=grade)
+    data = [{'id': learner.id, 'name': learner.name} for learner in learners]
+    return JsonResponse(data, safe=False)
+
+@login_required
+def subjects_by_grade(request, grade_id):
+    grade = Grade.objects.get(id=grade_id)
+    subjects = Subject.objects.filter(grade=grade)
+    data = [{'id': subject.id, 'name': subject.name} for subject in subjects]
+    return JsonResponse(data, safe=False)
+
+    from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from exams.models import ExamResult, ExamType
+from learners.models import Grade
+
+@login_required
+def exam_result_list(request):
+    grades = Grade.objects.all()
+    exam_types = ExamType.objects.all()
+    
+    selected_grade = request.GET.get('grade')
+    selected_exam_type = request.GET.get('exam_type')
+    
+    results = ExamResult.objects.all()
+    
+    if selected_grade:
+        results = results.filter(learner_id__grade__id=selected_grade)
+    
+    if selected_exam_type:
+        results = results.filter(exam_type__id=selected_exam_type)
+    
+    results = results.select_related('learner_id', 'subject', 'exam_type')
+    
+    context = {
+        'grades': grades,
+        'exam_types': exam_types,
+        'results': results,
+        'selected_grade': selected_grade,
+        'selected_exam_type': selected_exam_type,
+    }
+    
+    return render(request, 'admin/exam_result_list.html', context)
+
+@login_required
+def exam_result_detail(request, result_id):
+    result = get_object_or_404(ExamResult, id=result_id)
+    return render(request, 'admin/exam_result_detail.html', {'result': result})
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .forms import ExamResultForm
+from exams.models import ExamResult
+
+@login_required
+def exam_result_edit(request, result_id):
+    result = get_object_or_404(ExamResult, id=result_id)
+    if request.method == 'POST':
+        form = ExamResultForm(request.POST, instance=result)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Exam result updated successfully.')
+            return redirect('exam_result_list')
+        else:
+            messages.error(request, 'Failed to update exam result. Please check the form.')
+    else:
+        form = ExamResultForm(instance=result)
+    
+    return render(request, 'admin/exam_result_form.html', {'form': form, 'result': result})
+
+@login_required
+def exam_result_delete(request, result_id):
+    result = get_object_or_404(ExamResult, id=result_id)
+    if request.method == 'POST':
+        result.delete()
+        messages.success(request, 'Exam result deleted successfully.')
+        return redirect('exam_result_list')
+    return render(request, 'admin/exam_result_confirm_delete.html', {'result': result})
