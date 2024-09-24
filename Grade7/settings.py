@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'administrator.apps.AdministratorConfig',
     'authenticator.apps.AuthenticatorConfig',
     'compressor',
+    'chartjs',
     
 ]
 
