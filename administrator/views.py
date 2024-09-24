@@ -1050,13 +1050,20 @@ def generate_class_report(request, grade_id):
     # Calculate total scores and ranks
     total_scores = []
     for learner in learners:
-        learner_scores = ExamResult.objects.filter(learner_id=learner.learner_id, exam_type=exam_type)
+        learner_scores = ExamResult.objects.filter(learner_id=learner, exam_type=exam_type)
         total_score = learner_scores.aggregate(Sum('score'))['score__sum'] or 0
         total_scores.append((learner, total_score))
 
     # Sort learners by total score
     total_scores.sort(key=lambda x: x[1], reverse=True)
 
+    # Initialize the grade distribution dictionary
+    grade_distribution = {
+        'EE': 0,
+        'ME': 0,
+        'AE': 0,
+        'BE': 0
+    }
     # Update class summary with calculated values
     if total_scores:
         class_summary[1][1] = f"{sum(score for _, score in total_scores) / len(total_scores):.2f}"
@@ -1190,12 +1197,22 @@ def generate_class_report(request, grade_id):
     elements.append(combined_table)
     elements.append(Spacer(1, 0.5*inch))
    
+    # Determine the grade for the learner's total score
+    mean_score = total_score / len(subjects) if subjects else 0
+    grade_score = get_grade(mean_score)  # Get the grade based on the mean score
+
     # Grade Distribution
-    elements.append(Paragraph("Grade Distribution", styles['Heading2']))
-    grade_distribution = {grade: 0 for grade in ['A', 'B', 'C', 'D', 'E']}
-    for _, total_score in total_scores:
-        grade_score = get_grade(total_score / len(subjects))
-        grade_distribution[grade_score] += 1
+    '''
+        elements.append(Paragraph("Grade Distribution", styles['Heading2']))
+        grade_distribution = {grade: 0 for grade in ['A', 'B', 'C', 'D', 'E']}
+        for _, total_score in total_scores:
+            grade_score = get_grade(total_score / len(subjects))
+            grade_distribution[grade_score] += 1
+
+
+    '''
+ # Increment the grade distribution count
+    grade_distribution[grade_score] += 1  # This line will now work correctly
 
     pie = Pie()
     pie.x = 150
@@ -1222,16 +1239,14 @@ def generate_class_report(request, grade_id):
    
 
 def get_grade(score):
-    if score >= 80:
-        return 'A'
-    elif score >= 65:
-        return 'B'
+    if score >= 75:
+        return 'EE'  # Exceeding Expectations
     elif score >= 50:
-        return 'C'
-    elif score >= 40:
-        return 'D'
+        return 'ME'  # Meeting Expectations
+    elif score >= 25:
+        return 'AE'  # Approaching Expectations
     else:
-        return 'E'
+        return 'BE'  # Below Expectations
     
 
 from io import BytesIO
