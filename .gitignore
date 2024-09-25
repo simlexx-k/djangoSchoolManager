@@ -1,4 +1,9 @@
 node_modules
 /.venv
+dbase-examresult.sql
+db.sqlite3
+dbase.sql
+backup-db
+gensql
 Grade7/settings.py
 Grade7/db.sqlite3
