@@ -70,7 +70,13 @@ class FeesModel(models.Model):
 class School(models.Model):
     name = models.CharField(max_length=100)
     principal_remark = models.TextField(blank=True)
-    # ... other school-related fields ...
+    address = models.TextField(default='Address')
+    contact_email = models.EmailField(default='Email')
+    contact_phone = models.CharField(max_length=20, default='0712345678')
+    logo = models.ImageField(upload_to='school_logos/', default='static/src/img/masabaLogo.png')
+    
+    def __str__(self):
+        return self.name
 
 from administrator.models import Teacher
 

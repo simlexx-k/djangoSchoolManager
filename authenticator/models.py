@@ -32,6 +32,7 @@ class CustomUser(AbstractUser):
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='student')
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
     custom_permissions = models.ManyToManyField(CustomPermission, blank=True)
+    school = models.ForeignKey('learners.School', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"{self.username} ({self.get_user_type_display()})"

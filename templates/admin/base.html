@@ -73,6 +73,11 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'profile' %}">Profile</a>
                         </li>
+                        {% if user.is_superuser %}
+                        <li><a href="{% url 'manage_roles' %}">Manage Roles</a></li>
+                        <li><a href="{% url 'assign_role' %}">Assign Roles</a></li>
+                        <li><a href="{% url 'manage_school' %}">Manage School</a></li> 
+                        {% endif %}
                     </ul>
                 </div>
             </div>
