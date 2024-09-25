@@ -136,10 +136,10 @@ urlpatterns = [
     path('exams/delete/<int:pk>/', delete_exam, name='delete_exam'),
 
     # Subjects
-    path('subjects/', subject_list, name='subject_list'),
-    path('subjects/add/', manage_subjects, name='manage_subjects'),
-    path('subjects/edit/<int:pk>/', edit_subject, name='edit_subject'),
-    path('subjects/delete/<int:pk>/', delete_subject, name='delete_subject'),
+    path('subjects/', views.manage_subjects, name='manage_subjects'),
+    path('subjects/add/', views.add_edit_subject, name='add_subject'),
+    path('subjects/<int:subject_id>/edit/', views.add_edit_subject, name='edit_subject'),
+    path('subjects/<int:subject_id>/delete/', views.delete_subject, name='delete_subject'),
 
     # Grades (Classes)
     path('grades/', grade_list, name='grade_list'),

@@ -1856,30 +1856,55 @@ def curriculum_list(request):
     curricula = Curriculum.objects.all()
     return render(request, 'admin/curriculum_list.html', {'curricula': curricula})
 
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .forms import SubjectForm, SubjectGradeForm
+from exams.models import Subject
+
 @login_required
-def manage_subjects(request, pk=None):
-    if pk:
-        subject = get_object_or_404(Subject, pk=pk)
-        edit_mode = True
+def manage_subjects(request):
+    subjects = Subject.objects.all().prefetch_related('grades')
+    context = {
+        'subjects': subjects,
+    }
+    return render(request, 'admin/manage_subjects.html', context)
+
+@login_required
+def add_edit_subject(request, subject_id=None):
+    if subject_id:
+        subject = get_object_or_404(Subject, id=subject_id)
+        form = SubjectForm(request.POST or None, instance=subject)
+        grade_form = SubjectGradeForm(request.POST or None, instance=subject)
     else:
         subject = None
-        edit_mode = False
+        form = SubjectForm(request.POST or None)
+        grade_form = SubjectGradeForm(request.POST or None)
 
     if request.method == 'POST':
-        form = SubjectForm(request.POST, instance=subject)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Subject saved successfully.')
-            return redirect('subject_list')
-    else:
-        form = SubjectForm(instance=subject)
+        if form.is_valid() and grade_form.is_valid():
+            subject = form.save()
+            grade_form.save(commit=False)
+            subject.grades.set(grade_form.cleaned_data['grades'])
+            messages.success(request, f'Subject {"updated" if subject_id else "created"} successfully.')
+            return redirect('manage_subjects')
 
-    subjects = Subject.objects.all().order_by('name')
-    return render(request, 'admin/manage_subjects.html', {
+    context = {
         'form': form,
-        'subjects': subjects,
-        'edit_mode': edit_mode
-    })
+        'grade_form': grade_form,
+        'subject': subject,
+    }
+    return render(request, 'admin/add_edit_subject.html', context)
+
+@login_required
+def delete_subject(request, subject_id):
+    subject = get_object_or_404(Subject, id=subject_id)
+    if request.method == 'POST':
+        subject.delete()
+        messages.success(request, 'Subject deleted successfully.')
+        return redirect('manage_subjects')
+    return render(request, 'admin/confirm_delete_subject.html', {'subject': subject})
+
 
 @login_required
 def subject_list(request):

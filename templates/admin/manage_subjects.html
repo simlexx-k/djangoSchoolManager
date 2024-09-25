@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">{% if edit_mode %}Edit Subject{% else %}Add New Subject{% endif %}</h1>
+    <h1 class="text-3xl font-bold mb-6">Manage Subjects</h1>
     
     {% if messages %}
     <div class="mb-4">
@@ -15,46 +15,7 @@
     </div>
     {% endif %}
 
-    <div class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-        <form method="post">
-            {% csrf_token %}
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ form.name.id_for_label }}">
-                    Subject Name
-                </label>
-                {{ form.name }}
-                {% if form.name.errors %}
-                    <p class="text-red-500 text-xs italic">{{ form.name.errors.0 }}</p>
-                {% endif %}
-            </div>
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ form.code.id_for_label }}">
-                    Subject Code
-                </label>
-                {{ form.code }}
-                {% if form.code.errors %}
-                    <p class="text-red-500 text-xs italic">{{ form.code.errors.0 }}</p>
-                {% endif %}
-            </div>
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="{{ form.description.id_for_label }}">
-                    Description
-                </label>
-                {{ form.description }}
-                {% if form.description.errors %}
-                    <p class="text-red-500 text-xs italic">{{ form.description.errors.0 }}</p>
-                {% endif %}
-            </div>
-            <div class="flex items-center justify-between">
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
-                    {% if edit_mode %}Update Subject{% else %}Add Subject{% endif %}
-                </button>
-                <a class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800" href="{% url 'subject_list' %}">
-                    Cancel
-                </a>
-            </div>
-        </form>
-    </div>
+    <a href="{% url 'add_subject' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">Add New Subject</a>
 
     <h2 class="text-2xl font-bold mb-4">Existing Subjects</h2>
     <table class="table-auto w-full">
@@ -63,6 +24,7 @@
                 <th class="px-4 py-2">Name</th>
                 <th class="px-4 py-2">Code</th>
                 <th class="px-4 py-2">Description</th>
+                <th class="px-4 py-2">Grades</th>
                 <th class="px-4 py-2">Actions</th>
             </tr>
         </thead>
@@ -73,13 +35,18 @@
                 <td class="border px-4 py-2">{{ subject.code }}</td>
                 <td class="border px-4 py-2">{{ subject.description|truncatewords:10 }}</td>
                 <td class="border px-4 py-2">
-                    <a href="{% url 'edit_subject' subject.subject_id %}" class="text-blue-500 hover:text-blue-800">Edit</a>
-                    <a href="{% url 'delete_subject' subject.subject_id %}" class="text-red-500 hover:text-red-800 ml-2">Delete</a>
+                    {% for grade in subject.grades.all %}
+                        {{ grade.grade_name }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                </td>
+                <td class="border px-4 py-2">
+                    <a href="{% url 'edit_subject' id=subject.id %}" class="text-blue-500 hover:text-blue-800">Edit</a>
+                    <a href="{% url 'delete_subject' id=subject.id %}" class="text-red-500 hover:text-red-800 ml-2">Delete</a>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="4" class="border px-4 py-2 text-center">No subjects found.</td>
+                <td colspan="5" class="border px-4 py-2 text-center">No subjects found.</td>
             </tr>
             {% endfor %}
         </tbody>

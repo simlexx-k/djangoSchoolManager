@@ -60,6 +60,27 @@ class SubjectForm(forms.ModelForm):
             'grades': forms.CheckboxSelectMultiple(),
         }
 
+from django import forms
+from exams.models import Subject, Grade
+
+'''
+class SubjectForm(forms.ModelForm):
+    class Meta:
+        model = Subject
+        fields = ['name', 'code', 'description']
+
+
+'''
+class SubjectGradeForm(forms.ModelForm):
+    grades = forms.ModelMultipleChoiceField(
+        queryset=Grade.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+
+    class Meta:
+        model = Subject
+        fields = ['grades']
 
 class SubjectAssignmentForm(forms.Form):
     grade = forms.ModelChoiceField(queryset=Grade.objects.all())
