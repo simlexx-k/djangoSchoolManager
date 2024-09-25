@@ -1856,24 +1856,33 @@ def curriculum_list(request):
     curricula = Curriculum.objects.all()
     return render(request, 'admin/curriculum_list.html', {'curricula': curricula})
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .forms import SubjectForm, SubjectGradeForm
+from django.shortcuts import render
 from exams.models import Subject
-
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from .forms import SubjectForm, SubjectGradeForm
 @login_required
 def manage_subjects(request):
     subjects = Subject.objects.all().prefetch_related('grades')
+    subject_list = [
+        {
+            'id': subject.subject_id,
+            'name': subject.name,
+            #'code': subject.code,
+            #'description': subject.description,
+            'grades': [grade.grade_name for grade in subject.grades.all()]
+        }
+        for subject in subjects
+    ]
     context = {
-        'subjects': subjects,
+        'subjects': subject_list,
     }
     return render(request, 'admin/manage_subjects.html', context)
 
 @login_required
 def add_edit_subject(request, subject_id=None):
     if subject_id:
-        subject = get_object_or_404(Subject, id=subject_id)
+        subject = get_object_or_404(Subject, subject_id=subject_id)
         form = SubjectForm(request.POST or None, instance=subject)
         grade_form = SubjectGradeForm(request.POST or None, instance=subject)
     else:
