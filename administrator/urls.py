@@ -137,6 +137,7 @@ urlpatterns = [
 
     # Subjects
     path('subjects/', views.manage_subjects, name='manage_subjects'),
+    path('subject-list/', views.subject_list, name='subject_list'),
     path('subjects/add/', views.add_edit_subject, name='add_subject'),
     path('subjects/<int:subject_id>/edit/', views.add_edit_subject, name='edit_subject'),
     path('subjects/<int:subject_id>/delete/', views.delete_subject, name='delete_subject'),
