@@ -1,0 +1,56 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">Active Sessions</h2>
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Agent</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Activity</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for session in sessions %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ session.ip_address }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ session.user_agent }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">{{ session.last_activity }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if session.session_key != request.session.session_key %}
+                        <form method="post" action="{% url 'terminate_session' session.session_key %}">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-600 hover:text-red-900">Terminate</button>
+                        </form>
+                        {% else %}
+                        <span class="text-green-600">Current Session</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="mt-6">
+        <form method="post" action="{% url 'terminate_all_sessions' %}">
+            {% csrf_token %}
+            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+                Terminate All Other Sessions
+            </button>
+        </form>
+    </div>
+</div>
+
+{% if messages %}
+<div class="fixed bottom-0 right-0 m-6">
+    {% for message in messages %}
+        <div class="bg-{{ message.tags }}-100 border-l-4 border-{{ message.tags }}-500 text-{{ message.tags }}-700 p-4 mb-4" role="alert">
+            <p>{{ message }}</p>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

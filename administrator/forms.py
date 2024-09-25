@@ -226,3 +226,16 @@ class ProgressReportForm(forms.Form):
     grade = forms.ModelChoiceField(queryset=Grade.objects.all())
     exam_type = forms.ModelChoiceField(queryset=ExamType.objects.all())
 
+
+from django import forms
+from authenticator.models import CustomUser, UserProfile
+
+class CustomUserUpdateForm(forms.ModelForm):
+    class Meta:
+        model = CustomUser
+        fields = ['first_name', 'last_name', 'email']
+
+class UserProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        fields = ['bio', 'date_of_birth', 'profile_picture']

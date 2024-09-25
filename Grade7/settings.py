@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'fees.apps.FeesConfig',
     'compressor',
     'chartjs',
+    'widget_tweaks',
     
 ]
 
@@ -66,6 +67,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'authenticator.middleware.SessionManagementMiddleware',
 ]
 
 ROOT_URLCONF = 'Grade7.urls'
@@ -95,8 +97,15 @@ WSGI_APPLICATION = 'Grade7.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': "django.db.backends.mysql",
+        'NAME': "katalys2_schoolmanager",
+        'HOST': "katalyst.co.ke",
+        'PORT': 3306,
+        'USER': "katalys2_schoolmanager",
+        'PASSWORD': "N3ZtdmV_4_Us_Gt",
+        'OPTIONS': {
+           'init_command': "SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'",
+       }
     }
 }
 
@@ -149,3 +158,9 @@ COMPRESS_ENABLED = True
 STATICFILES_FINDERS = ('compressor.finders.CompressorFinder',)
 
 AUTH_USER_MODEL = 'authenticator.CustomUser'
+
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 3600  # 1 hour in seconds
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True

@@ -1,0 +1,81 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">User Profile</h2>
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="md:flex">
+            <!-- Left column: Account Information -->
+            <div class="md:w-1/3 bg-gray-50 p-6">
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">Account Information</h3>
+                <div class="mb-4">
+                    {% if user.userprofile.profile_picture %}
+                        <img src="{{ user.userprofile.profile_picture.url }}" alt="Profile Picture" class="w-32 h-32 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-lg">
+                    {% else %}
+                        <div class="w-32 h-32 rounded-full mx-auto mb-4 bg-gray-300 flex items-center justify-center text-gray-500">
+                            <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+                        </div>
+                    {% endif %}
+                </div>
+                <p class="mb-2"><span class="font-semibold">Username:</span> {{ user.username }}</p>
+                <p class="mb-2"><span class="font-semibold">Email:</span> {{ user.email }}</p>
+                <p class="mb-2"><span class="font-semibold">User Type:</span> {{ user_type }}</p>
+                <p class="mb-2"><span class="font-semibold">Role:</span> {{ role.name|default:"Not Assigned" }}</p>
+            </div>
+
+            <!-- Right column: Update Profile and Change Password -->
+            <div class="md:w-2/3 p-6">
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Update Profile</h3>
+                    <form method="post" enctype="multipart/form-data" class="space-y-4">
+                        {% csrf_token %}
+                        {% for field in u_form %}
+                            <div>
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                                {{ field|add_class:"mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" }}
+                            </div>
+                        {% endfor %}
+                        {% for field in p_form %}
+                            <div>
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                                {{ field|add_class:"mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" }}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" name="update_profile" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+                            Update Profile
+                        </button>
+                    </form>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-4">Change Password</h3>
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        {% for field in password_form %}
+                            <div>
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                                {{ field|add_class:"mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50" }}
+                            </div>
+                        {% endfor %}
+                        <button type="submit" name="change_password" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-150 ease-in-out">
+                            Change Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <a href="{% url 'view_sessions' %}" class="text-blue-600 hover:text-blue-800">View Active Sessions</a>
+</div>
+
+{% if messages %}
+<div class="fixed bottom-0 right-0 m-6">
+    {% for message in messages %}
+        <div class="bg-{{ message.tags }}-100 border-l-4 border-{{ message.tags }}-500 text-{{ message.tags }}-700 p-4 mb-4" role="alert">
+            <p>{{ message }}</p>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

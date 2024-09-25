@@ -187,4 +187,11 @@ urlpatterns = [
      path('fees/<int:pk>/delete/', fees_views.delete_fee_record, name='delete_fee_record'),
      path('student/<str:student_id>/fees/', fees_views.student_fees, name='student_fees'),
 
+     #Profile Management
+     path('profile/', views.profile, name='profile'),
+
+     #Session Management
+     path('sessions/', views.view_sessions, name='view_sessions'),
+     path('sessions/terminate/<str:session_key>/', views.terminate_session, name='terminate_session'),
+     path('sessions/terminate-all/', views.terminate_all_sessions, name='terminate_all_sessions'),
 ]

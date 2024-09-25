@@ -2676,3 +2676,83 @@ def get_student_info(request, student_id):
     
 def parent_dashboard(request):
     return render(request, 'admin/parent_dashboard.html')
+
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+from django.contrib import messages
+from .forms import CustomUserUpdateForm, UserProfileUpdateForm
+from authenticator.models import UserProfile
+
+@login_required
+def profile(request):
+    try:
+        user_profile = request.user.userprofile
+    except UserProfile.DoesNotExist:
+        user_profile = UserProfile.objects.create(user=request.user)
+
+    if request.method == 'POST':
+        u_form = CustomUserUpdateForm(request.POST, instance=request.user)
+        p_form = UserProfileUpdateForm(request.POST, request.FILES, instance=user_profile)
+        password_form = PasswordChangeForm(request.user, request.POST)
+
+        if 'update_profile' in request.POST:
+            if u_form.is_valid() and p_form.is_valid():
+                u_form.save()
+                p_form.save()
+                messages.success(request, 'Your profile was successfully updated!')
+                return redirect('profile')
+        elif 'change_password' in request.POST:
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)  # Important!
+                messages.success(request, 'Your password was successfully updated!')
+                return redirect('profile')
+    else:
+        u_form = CustomUserUpdateForm(instance=request.user)
+        p_form = UserProfileUpdateForm(instance=user_profile)
+        password_form = PasswordChangeForm(request.user)
+    
+    context = {
+        'u_form': u_form,
+        'p_form': p_form,
+        'password_form': password_form,
+        'user_type': request.user.get_user_type_display(),
+        'role': request.user.role,
+    }
+    return render(request, 'users/profile.html', context)
+
+# authenticator/views.py
+
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from authenticator.models import UserSession
+
+@login_required
+def view_sessions(request):
+    user_sessions = UserSession.objects.filter(user=request.user)
+    return render(request, 'users/sessions.html', {'sessions': user_sessions})
+
+@login_required
+def terminate_session(request, session_key):
+    if request.method == 'POST':
+        try:
+            session = UserSession.objects.get(user=request.user, session_key=session_key)
+            if session.session_key != request.session.session_key:
+                session.delete()
+                messages.success(request, 'Session terminated successfully.')
+            else:
+                messages.error(request, 'You cannot terminate your current session.')
+        except UserSession.DoesNotExist:
+            messages.error(request, 'Session not found.')
+    return redirect('view_sessions')
+
+@login_required
+def terminate_all_sessions(request):
+    if request.method == 'POST':
+        UserSession.objects.filter(user=request.user).exclude(session_key=request.session.session_key).delete()
+        messages.success(request, 'All other sessions terminated successfully.')
+    return redirect('view_sessions')
