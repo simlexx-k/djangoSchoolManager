@@ -1679,6 +1679,10 @@ select {
   min-width: 100%;
 }
 
+.min-w-\[200px\] {
+  min-width: 200px;
+}
+
 .max-w-2xl {
   max-width: 42rem;
 }
@@ -3942,6 +3946,10 @@ select {
     margin-bottom: 0;
   }
 
+  .md\:mt-0 {
+    margin-top: 0;
+  }
+
   .md\:flex {
     display: flex;
   }
@@ -3985,6 +3993,10 @@ select {
 
   .md\:flex-row {
     flex-direction: row;
+  }
+
+  .md\:flex-wrap {
+    flex-wrap: wrap;
   }
 
   .md\:items-center {

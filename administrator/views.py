@@ -2531,37 +2531,40 @@ def subjects_by_grade(request, grade_id):
     data = [{'id': subject.id, 'name': subject.name} for subject in subjects]
     return JsonResponse(data, safe=False)
 
-    from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from exams.models import ExamResult, ExamType
-from learners.models import Grade
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from exams.models import ExamResult, Grade, ExamType, Subject
 
-@login_required
 def exam_result_list(request):
+    results = ExamResult.objects.all().order_by('-id')
     grades = Grade.objects.all()
     exam_types = ExamType.objects.all()
-    
+    subjects = Subject.objects.all()
+
     selected_grade = request.GET.get('grade')
     selected_exam_type = request.GET.get('exam_type')
-    
-    results = ExamResult.objects.all()
-    
+    selected_subject = request.GET.get('subject')
+
     if selected_grade:
-        results = results.filter(learner_id__grade__id=selected_grade)
-    
+        results = results.filter(learner_id__grade_id=selected_grade)
     if selected_exam_type:
-        results = results.filter(exam_type__id=selected_exam_type)
-    
-    results = results.select_related('learner_id', 'subject', 'exam_type')
-    
+        results = results.filter(exam_type_id=selected_exam_type)
+    if selected_subject:
+        results = results.filter(subject_id=selected_subject)
+
+    paginator = Paginator(results, 20)  # Show 20 results per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     context = {
+        'results': page_obj,
         'grades': grades,
         'exam_types': exam_types,
-        'results': results,
+        'subjects': subjects,
         'selected_grade': selected_grade,
         'selected_exam_type': selected_exam_type,
+        'selected_subject': selected_subject,
     }
-    
     return render(request, 'admin/exam_result_list.html', context)
 
 @login_required

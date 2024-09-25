@@ -1,2 +1,4 @@
 node_modules
 /.venv
+Grade7/settings.py
+Grade7/db.sqlite3
