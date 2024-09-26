@@ -1983,6 +1983,12 @@ select {
   margin-bottom: calc(2.5rem * var(--tw-space-y-reverse));
 }
 
+.space-x-6 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 0;
+  margin-right: calc(1.5rem * var(--tw-space-x-reverse));
+  margin-left: calc(1.5rem * calc(1 - var(--tw-space-x-reverse)));
+}
+
 .divide-y > :not([hidden]) ~ :not([hidden]) {
   --tw-divide-y-reverse: 0;
   border-top-width: calc(1px * calc(1 - var(--tw-divide-y-reverse)));
@@ -3318,6 +3324,11 @@ select {
   color: rgb(107 114 128 / var(--tw-text-opacity));
 }
 
+.hover\:text-gray-300:hover {
+  --tw-text-opacity: 1;
+  color: rgb(209 213 219 / var(--tw-text-opacity));
+}
+
 .hover\:underline:hover {
   text-decoration-line: underline;
 }
@@ -3959,6 +3970,10 @@ select {
     padding-bottom: 4rem;
   }
 
+  .sm\:pt-24 {
+    padding-top: 6rem;
+  }
+
   .sm\:text-center {
     text-align: center;
   }
@@ -4127,6 +4142,10 @@ select {
 
   .md\:pb-20 {
     padding-bottom: 5rem;
+  }
+
+  .md\:pt-32 {
+    padding-top: 8rem;
   }
 
   .md\:text-6xl {
@@ -4355,12 +4374,28 @@ select {
 }
 
 @media (min-width: 1440px) {
+  .xl\:col-span-1 {
+    grid-column: span 1 / span 1;
+  }
+
   .xl\:mt-28 {
     margin-top: 7rem;
   }
 
   .xl\:inline {
     display: inline;
+  }
+
+  .xl\:grid {
+    display: grid;
+  }
+
+  .xl\:grid-cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .xl\:gap-8 {
+    gap: 2rem;
   }
 
   .xl\:pb-32 {
