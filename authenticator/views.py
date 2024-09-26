@@ -187,13 +187,13 @@ def edit_user(request, user_id):
             user = user_form.save()
             permissions_form.save()
             messages.success(request, f"User {user.username} updated successfully.")
-            return redirect('user_list')
+            return redirect('manage_users')
     else:
         user_form = CustomUserEditForm(instance=user)
         permissions_form = UserPermissionsForm(instance=user)
     
     roles = Role.objects.all()
-    all_permissions = Permission.objects.all()
+    all_permissions = Permission.objects.all().order_by('content_type__app_label', 'content_type__model', 'codename')
     
     context = {
         'user_form': user_form,
@@ -203,6 +203,7 @@ def edit_user(request, user_id):
         'all_permissions': all_permissions,
     }
     return render(request, 'super-admin/edit_user.html', context)
+
 @login_required
 @user_passes_test(is_superuser)
 def delete_user(request, user_id):
