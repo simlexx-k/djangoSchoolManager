@@ -33,7 +33,7 @@ class CustomUser(AbstractUser):
     role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True, blank=True)
     custom_permissions = models.ManyToManyField(CustomPermission, blank=True)
     school = models.ForeignKey('learners.School', on_delete=models.SET_NULL, null=True, blank=True)
-
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     def __str__(self):
         return f"{self.username} ({self.get_user_type_display()})"
 

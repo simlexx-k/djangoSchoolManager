@@ -1,0 +1,77 @@
+{% extends 'super-admin/base.html' %}
+{% load static %}
+
+{% block title %}Edit User - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8 text-gray-800">Edit User: {{ user.username }}</h1>
+    <div class="bg-white shadow-md rounded-lg overflow-hidden">
+        <form method="post" enctype="multipart/form-data" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- User Information Section -->
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-semibold text-gray-700 border-b pb-2">User Information</h2>
+                    
+                    <!-- Profile Picture -->
+                    <div class="flex items-center space-x-6">
+                        <div class="shrink-0">
+                            {% if user.profile_picture %}
+                                <img class="h-24 w-24 object-cover rounded-full border-4 border-gray-200" src="{{ user.profile_picture.url }}" alt="Current profile picture">
+                            {% else %}
+                                <img class="h-24 w-24 object-cover rounded-full border-4 border-gray-200" src="{% static 'images/default-avatar.png' %}" alt="Default profile picture">
+                            {% endif %}
+                        </div>
+                        <label class="block">
+                            <span class="sr-only">Choose profile photo</span>
+                            <input type="file" name="profile_picture" class="block w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-full file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-blue-50 file:text-blue-700
+                                hover:file:bg-blue-100
+                            "/>
+                        </label>
+                    </div>
+
+                    {% for field in user_form %}
+                        {% if field.name != 'profile_picture' %}
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700" for="{{ field.id_for_label }}">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                                {% if field.help_text %}
+                                    <p class="text-gray-600 text-xs">{{ field.help_text }}</p>
+                                {% endif %}
+                                {% for error in field.errors %}
+                                    <p class="text-red-500 text-xs">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- User Permissions Section -->
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-semibold text-gray-700 border-b pb-2">User Permissions</h2>
+                    <div class="space-y-4">
+                        {{ permissions_form.as_p }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-4 mt-8">
+                <a href="{% url 'user_list' %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Cancel
+                </a>
+                <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

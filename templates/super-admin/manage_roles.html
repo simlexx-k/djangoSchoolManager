@@ -1,0 +1,40 @@
+<!-- templates/admin/manage_roles.html -->
+{% extends 'super-admin/base.html' %}
+{% load form_tags %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-3xl font-bold text-gray-800">Manage Roles</h2>
+        <a href="{% url 'add_role' %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105">
+            Add New Role
+        </a>
+    </div>
+    <div class="overflow-x-auto bg-white rounded-lg shadow overflow-y-auto relative">
+        <table class="border-collapse table-auto w-full whitespace-no-wrap bg-white table-striped relative">
+            <thead>
+                <tr class="text-left">
+                    <th class="bg-gray-100 sticky top-0 border-b border-gray-200 px-6 py-3 text-gray-600 font-bold tracking-wider uppercase text-xs">Name</th>
+                    <th class="bg-gray-100 sticky top-0 border-b border-gray-200 px-6 py-3 text-gray-600 font-bold tracking-wider uppercase text-xs">Description</th>
+                    <th class="bg-gray-100 sticky top-0 border-b border-gray-200 px-6 py-3 text-gray-600 font-bold tracking-wider uppercase text-xs">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for role in roles %}
+                <tr>
+                    <td class="border-dashed border-t border-gray-200 px-6 py-4">{{ role.name }}</td>
+                    <td class="border-dashed border-t border-gray-200 px-6 py-4">{{ role.description|truncatewords:10 }}</td>
+                    <td class="border-dashed border-t border-gray-200 px-6 py-4">
+                        <a href="{% url 'edit_role' role.id %}" class="text-indigo-600 hover:text-indigo-900 mr-2 transition duration-300 ease-in-out">Edit</a>
+                        <a href="{% url 'delete_role' role.id %}" class="text-red-600 hover:text-red-900 transition duration-300 ease-in-out">Delete</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="border-dashed border-t border-gray-200 px-6 py-4 text-center text-gray-500">No roles found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
