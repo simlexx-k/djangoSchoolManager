@@ -1,0 +1,27 @@
+{% extends 'admin/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Subjects</h1>
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <ul class="divide-y divide-gray-200">
+            {% for subject in subjects %}
+            <li class="px-6 py-4">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">
+                            {{ subject.name }}
+                        </p>
+                        <p class="text-sm text-gray-500 truncate">
+                            Code: {{ subject.code }}
+                        </p>
+                    </div>
+                </div>
+            </li>
+            {% empty %}
+            <li class="px-6 py-4">No subjects found.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

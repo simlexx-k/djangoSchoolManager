@@ -4,8 +4,9 @@ from django.contrib import messages
 from .forms import CustomAuthenticationForm, AssignRoleForm, SchoolDetailsForm, RoleForm
 from administrator.views import dashboard
 from .models import CustomUser, Role
-from learners.models import School
-from django.contrib.auth.decorators import user_passes_test
+from learners.models import School, LearnerRegister
+from teachers.models import Teacher
+from django.contrib.auth.decorators import user_passes_test, login_required
 
 # Create your views here.
 
@@ -19,7 +20,12 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 messages.info(request, f"You are now logged in as {username}.")
-                return redirect(dashboard)  # Redirect to administrator app
+                if user.is_superuser:
+                    return redirect('super_admin_dashboard')
+                elif hasattr(user, 'teacher'):
+                    return redirect('teacher_dashboard')
+                else:
+                    return redirect(dashboard)  # Redirect to administrator app
             else:
                 messages.error(request,"Invalid username or password.")
         else:
@@ -105,3 +111,25 @@ def delete_role(request, role_id):
         messages.success(request, 'Role deleted successfully.')
         return redirect('manage_roles')
     return render(request, 'admin/delete_role.html', {'role': role})
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def super_admin_dashboard(request):
+    total_students = LearnerRegister.objects.count()
+    total_teachers = Teacher.objects.count()
+    total_users = CustomUser.objects.count()
+    total_roles = Role.objects.count()
+    school = School.objects.first()
+    recent_users = CustomUser.objects.order_by('-date_joined')[:5]
+    recent_roles = Role.objects.order_by('-id')[:5]
+
+    context = {
+        'total_students': total_students,
+        'total_teachers': total_teachers,
+        'total_users': total_users,
+        'total_roles': total_roles,
+        'school': school,
+        'recent_users': recent_users,
+        'recent_roles': recent_roles,
+    }
+    return render(request, 'admin/super_admin_dashboard.html', context)

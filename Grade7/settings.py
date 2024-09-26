@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     'compressor',
     'chartjs',
     'widget_tweaks',
-    
+    'teachers.apps.TeachersConfig',
 ]
 
 MIDDLEWARE = [

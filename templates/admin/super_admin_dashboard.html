@@ -1,0 +1,84 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Super Admin Dashboard</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Overview Cards -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Students</h2>
+            <p class="text-3xl font-bold">{{ total_students }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Teachers</h2>
+            <p class="text-3xl font-bold">{{ total_teachers }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Users</h2>
+            <p class="text-3xl font-bold">{{ total_users }}</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Roles</h2>
+            <p class="text-3xl font-bold">{{ total_roles }}</p>
+        </div>
+    </div>
+
+    <div class="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Recent Users -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-2xl font-bold mb-4">Recent Users</h2>
+            <ul>
+                {% for user in recent_users %}
+                    <li class="mb-2">{{ user.username }} - {{ user.date_joined|date:"M d, Y" }}</li>
+                {% empty %}
+                    <li>No recent users</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- Recent Roles -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-2xl font-bold mb-4">Recent Roles</h2>
+            <ul>
+                {% for role in recent_roles %}
+                    <li class="mb-2">{{ role.name }}</li>
+                {% empty %}
+                    <li>No recent roles</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="mt-12">
+        <h2 class="text-2xl font-bold mb-6">Quick Actions</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <a href="{% url 'manage_roles' %}" class="bg-indigo-600 text-white rounded-lg p-6 hover:bg-indigo-700 transition duration-300">
+                <h3 class="text-xl font-semibold mb-2">Manage Roles</h3>
+                <p>Add, edit, or delete user roles</p>
+            </a>
+            <a href="{% url 'assign_role' %}" class="bg-green-600 text-white rounded-lg p-6 hover:bg-green-700 transition duration-300">
+                <h3 class="text-xl font-semibold mb-2">Assign Roles</h3>
+                <p>Assign roles to users</p>
+            </a>
+            <a href="{% url 'manage_school' %}" class="bg-blue-600 text-white rounded-lg p-6 hover:bg-blue-700 transition duration-300">
+                <h3 class="text-xl font-semibold mb-2">Manage School</h3>
+                <p>Update school information</p>
+            </a>
+        </div>
+    </div>
+
+    {% if school %}
+    <div class="mt-12">
+        <h2 class="text-2xl font-bold mb-6">School Information</h2>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-xl font-semibold mb-4">{{ school.name }}</h3>
+            <p><strong>Address:</strong> {{ school.address }}</p>
+            <p><strong>Contact Email:</strong> {{ school.contact_email }}</p>
+            <p><strong>Contact Phone:</strong> {{ school.contact_phone }}</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -82,7 +82,7 @@ class Teacher(models.Model):
     email = models.EmailField()
     date_joined = models.DateField()
     is_class_teacher = models.BooleanField(default=False)
-    subjects = models.ManyToManyField(Subject, related_name='teachers')
+    subjects = models.ManyToManyField(Subject, related_name='admin_teachers')
     phone_number = models.CharField(max_length=15, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
     
