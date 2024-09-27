@@ -1082,6 +1082,61 @@ def generate_class_report(request, grade_id):
     elements.append(summary_table)
     elements.append(Spacer(1, 0.25*inch))
 
+    # Grade Distribution
+    elements.append(Paragraph("Grade Distribution", styles['Heading2']))
+    grade_distribution = Counter()
+    for _, total_score in total_scores:
+        grade_score = get_grade(total_score / len(subjects))
+        grade_distribution[grade_score] += 1
+
+    # Create pie chart
+    drawing = Drawing(400, 200)
+    pie = Pie()
+    pie.x = 100
+    pie.y = 0
+    pie.width = 150
+    pie.height = 150
+    pie.data = list(grade_distribution.values())
+    pie.labels = list(grade_distribution.keys())
+
+    # Customize colors
+    pie_colors = [colors.red, colors.green, colors.blue, colors.yellow, colors.orange, colors.purple]
+    for i, slice in enumerate(pie.slices):
+        slice.fillColor = pie_colors[i % len(pie_colors)]
+
+    drawing.add(pie)
+
+    # Add legend
+    legend = Legend()
+    legend.x = 270
+    legend.y = 50
+    legend.dx = 8
+    legend.dy = 8
+    legend.fontName = 'Helvetica'
+    legend.fontSize = 7
+    legend.boxAnchor = 'w'
+    legend.columnMaximum = 10
+    legend.strokeWidth = 0.5
+    legend.strokeColor = colors.black
+    legend.deltax = 75
+    legend.deltay = 10
+    legend.autoXPadding = 5
+    legend.yGap = 0
+    legend.dxTextSpace = 5
+    legend.alignment = 'right'
+    legend.dividerLines = 1|2|4
+    legend.dividerOffsY = 4.5
+    legend.subCols.rpad = 30
+
+    total_students = sum(grade_distribution.values())
+    legend_labels = [f"{grade} ({count}, {count/total_students:.1%})" for grade, count in grade_distribution.items()]
+    legend.colorNamePairs = list(zip(pie_colors[:len(grade_distribution)], legend_labels))
+
+    drawing.add(legend)
+
+    elements.append(drawing)
+    elements.append(Spacer(1, 0.5*inch))
+
     # Create the main results table
     data = [['Rank', 'Student Name'] + [subject.name for subject in subjects] + ['Total Score', 'Mean Score', 'Grade']]
 
@@ -1195,78 +1250,10 @@ def generate_class_report(request, grade_id):
     elements.append(combined_table)
     elements.append(Spacer(1, 0.5*inch))
    
-    # Grade Distribution
-    elements.append(Paragraph("Grade Distribution", styles['Heading2']))
-    
-    # Calculate grades and count in a single pass
-    grade_distribution = Counter()
-    total_score = 0
-    for learner_score in total_scores:
-        total_score += learner_score[1]
-        grade_score = get_grade(learner_score[1] / len(subjects))
-        grade_distribution[grade_score] += 1
-
-    # Sort the grade distribution
-    grade_distribution = dict(sorted(grade_distribution.items()))
-
-    # Create pie chart
-    drawing = Drawing(400, 200)
-    pie = Pie()
-    pie.x = 150
-    pie.y = 65
-    pie.width = 130
-    pie.height = 130
-    pie.data = list(grade_distribution.values())
-    pie.labels = [f"{grade} ({count})" for grade, count in grade_distribution.items()]
-    pie.slices.strokeWidth = 0.5
-
-    # Customize colors
-    pie_colors = [colors.red, colors.orange, colors.yellow, colors.green, colors.blue, colors.indigo, colors.violet]
-    for i, slice in enumerate(pie.slices):
-        slice.fillColor = pie_colors[i % len(pie_colors)]
-
-    drawing.add(pie)
-
-    # Add legend
-    legend = Legend()
-    legend.x = 300
-    legend.y = 150
-    legend.alignment = 'right'
-    legend.columnMaximum = 8
-    total_students = sum(grade_distribution.values())
-    legend.colorNamePairs = [(pie_colors[i % len(pie_colors)], 
-                              (f"{grade} ({count}, {count/total_students:.1%})"))
-                             for i, (grade, count) in enumerate(grade_distribution.items())]
-
-    drawing.add(legend)
-    elements.append(drawing)
-    elements.append(Spacer(1, 0.5*inch))
-
-    # Add a table with grade distribution data
-    data = [['Grade', 'Count', 'Percentage']]
-    for grade, count in grade_distribution.items():
-        percentage = (count / total_students) * 100
-        data.append([grade, str(count), f"{percentage:.2f}%"])
-
-    grade_table = Table(data)
-    grade_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,-1), 8),
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),
-        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
-        ('GRID', (0,0), (-1,-1), 1, colors.black),
-    ]))
-
-    elements.append(grade_table)
-
     # Build PDF
     doc.build(elements)
     pdf = buffer.getvalue()
     buffer.close()
-
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{grade.grade_name}_{exam_type.name}_class_report.pdf"'
     response.write(pdf)
