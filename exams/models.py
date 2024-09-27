@@ -53,17 +53,6 @@ class ExamResult(models.Model):
     def __str__(self):
         return f"{self.learner_id} - {self.subject}: {self.score}"
 
-    def get_grade(self):
-        if self.score >= 80:
-            return 'A'
-        elif self.score >= 70:
-            return 'B'
-        elif self.score >= 60:
-            return 'C'
-        elif self.score >= 50:
-            return 'D'
-        else:
-            return 'F'
 
 
 class LearnerTotalScore(models.Model):

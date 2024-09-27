@@ -34,7 +34,7 @@
                             <svg class="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path></svg>
                         </div>
                         <input type="text" id="desktop-search-input" class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2" placeholder="Search...">
-                        <div id="search-results" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                        <div id="search-results" class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm" style="display: none;">
                             <!-- Search results will be dynamically inserted here -->
                         </div>
                     </div>
@@ -188,13 +188,17 @@
         // Search functionality
         const searchInputs = document.querySelectorAll('.search-input');
         const searchResultsContainer = document.getElementById('search-results');
-    
+
+        console.log('Search inputs found:', searchInputs.length);
+        console.log('Search results container:', searchResultsContainer);
+
         searchInputs.forEach(input => {
             input.addEventListener('input', debounce(function() {
+                console.log('Input event triggered with value:', this.value);
                 performSearch(this.value);
             }, 300));
         });
-    
+
         function debounce(func, delay) {
             let debounceTimer;
             return function() {
@@ -204,13 +208,16 @@
                 debounceTimer = setTimeout(() => func.apply(context, args), delay);
             }
         }
-    
+
         function performSearch(query) {
+            console.log('Performing search with query:', query);
             if (query.length < 2) {
+                console.log('Query too short, clearing results');
                 searchResultsContainer.innerHTML = '';
+                searchResultsContainer.style.display = 'none';
                 return;
             }
-    
+
             fetch(`/auth/super-admin/search/?q=${encodeURIComponent(query)}`, {
                 method: 'GET',
                 headers: {
@@ -218,38 +225,46 @@
                     'X-CSRFToken': getCookie('csrftoken')
                 },
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('Received response:', response);
+                return response.json();
+            })
             .then(data => {
+                console.log('Parsed data:', data);
                 displaySearchResults(data);
             })
             .catch(error => {
                 console.error('Error:', error);
             });
         }
-    
+
         function displaySearchResults(results) {
+            console.log('Displaying search results:', results);
             searchResultsContainer.innerHTML = '';
+            
             if (results.length === 0) {
                 searchResultsContainer.innerHTML = '<p class="text-gray-500 p-2">No results found.</p>';
-                return;
+            } else {
+                const ul = document.createElement('ul');
+                ul.className = 'divide-y divide-gray-200';
+                results.forEach(result => {
+                    const li = document.createElement('li');
+                    li.className = 'p-2 hover:bg-gray-100';
+                    li.innerHTML = `
+                        <a href="${result.url}" class="block">
+                            <p class="text-sm font-medium text-gray-900">${result.title}</p>
+                            <p class="text-sm text-gray-500">${result.type}</p>
+                        </a>
+                    `;
+                    ul.appendChild(li);
+                });
+                searchResultsContainer.appendChild(ul);
             }
-    
-            const ul = document.createElement('ul');
-            ul.className = 'divide-y divide-gray-200';
-            results.forEach(result => {
-                const li = document.createElement('li');
-                li.className = 'p-2 hover:bg-gray-100';
-                li.innerHTML = `
-                    <a href="${result.url}" class="block">
-                        <p class="text-sm font-medium text-gray-900">${result.title}</p>
-                        <p class="text-sm text-gray-500">${result.type}</p>
-                    </a>
-                `;
-                ul.appendChild(li);
-            });
-            searchResultsContainer.appendChild(ul);
+            
+            searchResultsContainer.style.display = 'block';
+            console.log('Search results container HTML:', searchResultsContainer.innerHTML);
         }
-    
+
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {

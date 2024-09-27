@@ -29,7 +29,7 @@ from .forms import ExamResultForm, GradeSelectionForm
 from django.shortcuts import render, redirect
 from .forms import SubjectForm, SubjectAssignmentForm, GradeSubjectForm
 from .forms import TeacherForm
-
+from .utils import get_grade
 # Create your views here.
 
 @login_required
@@ -1237,16 +1237,6 @@ def generate_class_report(request, grade_id):
     response.write(pdf)
     return response
    
-
-def get_grade(score):
-    if score >= 75:
-        return 'EE'  # Exceeding Expectations
-    elif score >= 50:
-        return 'ME'  # Meeting Expectations
-    elif score >= 25:
-        return 'AE'  # Approaching Expectations
-    else:
-        return 'BE'  # Below Expectations
     
 
 from io import BytesIO
@@ -1475,7 +1465,7 @@ from reportlab.graphics.shapes import Drawing
 from reportlab.graphics.charts.barcharts import VerticalBarChart
 from learners.models import LearnerRegister, Grade, School
 from exams.models import ExamType, ExamResult, LearnerTotalScore, Subject
-
+from .utils import get_grade
 @login_required
 def generate_all_student_report(request):
     grade_id = request.GET.get('grade_id')
@@ -1503,7 +1493,7 @@ def generate_all_student_report(request):
     
     return response
 
-@login_required
+
 def generate_student_report_pdf(student, exam_type):
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=portrait(letter), topMargin=0.1*inch, bottomMargin=0.1*inch)
