@@ -1,4 +1,4 @@
-from typing import OrderedDict
+from typing import Counter, OrderedDict
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
@@ -1197,15 +1197,19 @@ def generate_class_report(request, grade_id):
    
     # Grade Distribution
     elements.append(Paragraph("Grade Distribution", styles['Heading2']))
-    grade_distribution = OrderedDict()
-    for _, total_score in total_scores:
-        grade_score = get_grade(total_score / len(subjects))
-        grade_distribution[grade_score] = grade_distribution.get(grade_score, 0) + 1
+    
+    # Calculate grades and count in a single pass
+    grade_distribution = Counter()
+    total_score = 0
+    for learner_score in total_scores:
+        total_score += learner_score[1]
+        grade_score = get_grade(learner_score[1] / len(subjects))
+        grade_distribution[grade_score] += 1
 
     # Sort the grade distribution
-    grade_distribution = OrderedDict(sorted(grade_distribution.items(), key=lambda x: x[0]))
+    grade_distribution = dict(sorted(grade_distribution.items()))
 
-    # Create exploding pie chart
+    # Create pie chart
     drawing = Drawing(400, 200)
     pie = Pie()
     pie.x = 150
@@ -1216,34 +1220,30 @@ def generate_class_report(request, grade_id):
     pie.labels = [f"{grade} ({count})" for grade, count in grade_distribution.items()]
     pie.slices.strokeWidth = 0.5
 
-    # Add explode effect
-    if pie.data:
-        pie.slices[0].popout = 20
-        if len(pie.data) > 1:
-            pie.slices[1].popout = 10
-
-    # Customize colors and add a legend
+    # Customize colors
     pie_colors = [colors.red, colors.orange, colors.yellow, colors.green, colors.blue, colors.indigo, colors.violet]
     for i, slice in enumerate(pie.slices):
         slice.fillColor = pie_colors[i % len(pie_colors)]
 
+    drawing.add(pie)
+
+    # Add legend
     legend = Legend()
     legend.x = 300
     legend.y = 150
     legend.alignment = 'right'
     legend.columnMaximum = 8
-    legend.colorNamePairs = [(pie_colors[i % len(pie_colors)], (label, '%0.2f%%' % (100.0 * value / sum(pie.data))))
-                             for i, (label, value) in enumerate(zip(pie.labels, pie.data))]
+    total_students = sum(grade_distribution.values())
+    legend.colorNamePairs = [(pie_colors[i % len(pie_colors)], 
+                              (f"{grade} ({count}, {count/total_students:.1%})"))
+                             for i, (grade, count) in enumerate(grade_distribution.items())]
 
-    drawing.add(pie)
     drawing.add(legend)
-
     elements.append(drawing)
     elements.append(Spacer(1, 0.5*inch))
 
     # Add a table with grade distribution data
     data = [['Grade', 'Count', 'Percentage']]
-    total_students = sum(grade_distribution.values())
     for grade, count in grade_distribution.items():
         percentage = (count / total_students) * 100
         data.append([grade, str(count), f"{percentage:.2f}%"])
