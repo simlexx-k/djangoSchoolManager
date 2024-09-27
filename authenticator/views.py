@@ -244,3 +244,62 @@ def create_user(request):
     else:
         form = CustomUserCreationForm()
     return render(request, 'super-admin/create_user.html', {'form': form})
+
+from django.http import JsonResponse
+from django.db.models import Q
+from django.urls import reverse, NoReverseMatch
+from django.contrib.auth.decorators import user_passes_test
+from .models import CustomUser, Role
+from learners.models import School
+
+@user_passes_test(lambda u: u.is_superuser)
+def super_admin_search(request):
+    query = request.GET.get('q', '')
+    results = []
+
+    if len(query) >= 2:
+        # Search in Users
+        users = CustomUser.objects.filter(
+            Q(username__icontains=query) | 
+            Q(email__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        )[:5]
+        for user in users:
+            try:
+                url = reverse('user_detail', args=[user.id])
+            except NoReverseMatch:
+                url = f"/auth/super-admin/users/{user.id}/"  # Fallback URL
+            results.append({
+                'title': f"{user.get_full_name()} ({user.username})",
+                'url': url,
+                'type': 'User'
+            })
+
+        # Search in Roles
+        roles = Role.objects.filter(name__icontains=query)[:5]
+        for role in roles:
+            try:
+                url = reverse('role_detail', args=[role.id])
+            except NoReverseMatch:
+                url = f"/auth/super-admin/roles/{role.id}/"  # Fallback URL
+            results.append({
+                'title': role.name,
+                'url': url,
+                'type': 'Role'
+            })
+
+        # Search in Schools
+        schools = School.objects.filter(name__icontains=query)[:5]
+        for school in schools:
+            try:
+                url = reverse('school_detail', args=[school.id])
+            except NoReverseMatch:
+                url = f"/auth/super-admin/schools/{school.id}/"  # Fallback URL
+            results.append({
+                'title': school.name,
+                'url': url,
+                'type': 'School'
+            })
+
+    return JsonResponse(results, safe=False)
