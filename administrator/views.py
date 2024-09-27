@@ -1007,6 +1007,9 @@ from exams.models import ExamType, ExamResult, LearnerTotalScore, Subject
 from datetime import datetime
 from reportlab.graphics.charts.legends import Legend
 from reportlab.graphics.shapes import Circle
+from .utils import get_grade
+from reportlab.lib import colors
+from collections import defaultdict
 
 @login_required
 def generate_class_report(request, grade_id):
@@ -1202,30 +1205,69 @@ def generate_class_report(request, grade_id):
     grade_score = get_grade(mean_score)  # Get the grade based on the mean score
 
     # Grade Distribution
-    '''
-        elements.append(Paragraph("Grade Distribution", styles['Heading2']))
-        grade_distribution = {grade: 0 for grade in ['A', 'B', 'C', 'D', 'E']}
-        for _, total_score in total_scores:
-            grade_score = get_grade(total_score / len(subjects))
-            grade_distribution[grade_score] += 1
+    elements.append(Paragraph("Grade Distribution", styles['Heading2']))
+    grade_distribution = defaultdict(int)  # Use defaultdict instead of a fixed dictionary
+    for _, total_score in total_scores:
+        grade_score = get_grade(total_score / len(subjects))
+        grade_distribution[grade_score] += 1
 
-
-    '''
- # Increment the grade distribution count
-    grade_distribution[grade_score] += 1  # This line will now work correctly
-
+    # Create exploding pie chart
+    drawing = Drawing(400, 200)
     pie = Pie()
     pie.x = 150
     pie.y = 65
     pie.width = 130
     pie.height = 130
-    pie.data = list(grade_distribution.values())
-    pie.labels = list(grade_distribution.keys())
+    pie.data = [value for value in grade_distribution.values() if value > 0]
+    pie.labels = [f"{grade} ({count})" for grade, count in grade_distribution.items() if count > 0]
     pie.slices.strokeWidth = 0.5
-    drawing = Drawing(400, 200)
+
+     # Add explode effect
+    if pie.data:
+        pie.slices[0].popout = 20
+        if len(pie.data) > 1:
+            pie.slices[1].popout = 10
+
+    # Customize colors and add a legend
+    pie_colors = [colors.red, colors.green, colors.blue, colors.yellow, colors.orange]
+    for i, slice in enumerate(pie.slices):
+        slice.fillColor = pie_colors[i % len(pie_colors)]
+
+    legend = Legend()
+    legend.x = 300
+    legend.y = 150
+    legend.alignment = 'right'
+    legend.columnMaximum = 8
+    legend.colorNamePairs = [(pie_colors[i % len(pie_colors)], (label, '%0.2f%%' % (100.0 * value / sum(pie.data))))
+                             for i, (label, value) in enumerate(zip(pie.labels, pie.data))]
+
     drawing.add(pie)
+    drawing.add(legend)
+
     elements.append(drawing)
     elements.append(Spacer(1, 0.5*inch))
+
+    # Add a table with grade distribution data
+    data = [['Grade', 'Count', 'Percentage']]
+    total_students = sum(grade_distribution.values())
+    for grade, count in grade_distribution.items():
+        if count > 0:
+            percentage = (count / total_students) * 100
+            data.append([grade, str(count), f"{percentage:.2f}%"])
+
+    grade_table = Table(data)
+    grade_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+        ('GRID', (0,0), (-1,-1), 1, colors.black),
+    ]))
+
+    elements.append(grade_table)
 
     # Build PDF
     doc.build(elements)
