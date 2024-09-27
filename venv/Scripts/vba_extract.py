@@ -1,4 +1,4 @@
-#!D:\software\Grade7\venv\Scripts\python.exe
+#!D:\Projects\schoolmanager\venv\Scripts\python.exe
 
 ##############################################################################
 #

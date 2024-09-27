@@ -6,3 +6,4 @@ dbase.sql
 backup-db
 gensql
 Grade7/db.sqlite3
+venv

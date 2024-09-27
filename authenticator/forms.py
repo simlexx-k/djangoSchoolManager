@@ -41,10 +41,9 @@ from .models import Role
 class RoleForm(forms.ModelForm):
     class Meta:
         model = Role
-        fields = ['name', 'description']
+        fields = ['name', 'description', 'permissions']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-input'}),
-            'description': forms.Textarea(attrs={'class': 'form-textarea', 'rows': 3}),
+            'permissions': forms.CheckboxSelectMultiple(),
         }
 
 class CustomUserForm(UserChangeForm):

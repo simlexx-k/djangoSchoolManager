@@ -50,7 +50,7 @@ def assign_role(request):
             user = form.cleaned_data['user']
             role = form.cleaned_data['role']
             user.role = role
-            user.save()
+            user.save()  # This will trigger update_user_permissions
             messages.success(request, f"Role {role.name} assigned to {user.username}")
             return redirect('assign_role')
     else:
@@ -83,8 +83,8 @@ def add_role(request):
     if request.method == 'POST':
         form = RoleForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Role added successfully.')
+            role = form.save()
+            messages.success(request, f'Role "{role.name}" added successfully.')
             return redirect('manage_roles')
     else:
         form = RoleForm()
@@ -96,8 +96,10 @@ def edit_role(request, role_id):
     if request.method == 'POST':
         form = RoleForm(request.POST, instance=role)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Role updated successfully.')
+            role = form.save()
+            # Update permissions for all users with this role
+            CustomUser.objects.filter(role=role).update()
+            messages.success(request, f'Role "{role.name}" updated successfully.')
             return redirect('manage_roles')
     else:
         form = RoleForm(instance=role)
