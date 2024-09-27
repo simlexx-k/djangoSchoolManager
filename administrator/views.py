@@ -1,3 +1,4 @@
+from typing import OrderedDict
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
@@ -1010,6 +1011,7 @@ from reportlab.graphics.shapes import Circle
 from .utils import get_grade
 from reportlab.lib import colors
 from collections import defaultdict
+from collections import OrderedDict
 
 @login_required
 def generate_class_report(request, grade_id):
@@ -1060,13 +1062,6 @@ def generate_class_report(request, grade_id):
     # Sort learners by total score
     total_scores.sort(key=lambda x: x[1], reverse=True)
 
-    # Initialize the grade distribution dictionary
-    grade_distribution = {
-        'EE': 0,
-        'ME': 0,
-        'AE': 0,
-        'BE': 0
-    }
     # Update class summary with calculated values
     if total_scores:
         class_summary[1][1] = f"{sum(score for _, score in total_scores) / len(total_scores):.2f}"
@@ -1200,16 +1195,15 @@ def generate_class_report(request, grade_id):
     elements.append(combined_table)
     elements.append(Spacer(1, 0.5*inch))
    
-    # Determine the grade for the learner's total score
-    mean_score = total_score / len(subjects) if subjects else 0
-    grade_score = get_grade(mean_score)  # Get the grade based on the mean score
-
     # Grade Distribution
     elements.append(Paragraph("Grade Distribution", styles['Heading2']))
-    grade_distribution = defaultdict(int)  # Use defaultdict instead of a fixed dictionary
+    grade_distribution = OrderedDict()
     for _, total_score in total_scores:
         grade_score = get_grade(total_score / len(subjects))
-        grade_distribution[grade_score] += 1
+        grade_distribution[grade_score] = grade_distribution.get(grade_score, 0) + 1
+
+    # Sort the grade distribution
+    grade_distribution = OrderedDict(sorted(grade_distribution.items(), key=lambda x: x[0]))
 
     # Create exploding pie chart
     drawing = Drawing(400, 200)
@@ -1218,18 +1212,18 @@ def generate_class_report(request, grade_id):
     pie.y = 65
     pie.width = 130
     pie.height = 130
-    pie.data = [value for value in grade_distribution.values() if value > 0]
-    pie.labels = [f"{grade} ({count})" for grade, count in grade_distribution.items() if count > 0]
+    pie.data = list(grade_distribution.values())
+    pie.labels = [f"{grade} ({count})" for grade, count in grade_distribution.items()]
     pie.slices.strokeWidth = 0.5
 
-     # Add explode effect
+    # Add explode effect
     if pie.data:
         pie.slices[0].popout = 20
         if len(pie.data) > 1:
             pie.slices[1].popout = 10
 
     # Customize colors and add a legend
-    pie_colors = [colors.red, colors.green, colors.blue, colors.yellow, colors.orange]
+    pie_colors = [colors.red, colors.orange, colors.yellow, colors.green, colors.blue, colors.indigo, colors.violet]
     for i, slice in enumerate(pie.slices):
         slice.fillColor = pie_colors[i % len(pie_colors)]
 
@@ -1251,9 +1245,8 @@ def generate_class_report(request, grade_id):
     data = [['Grade', 'Count', 'Percentage']]
     total_students = sum(grade_distribution.values())
     for grade, count in grade_distribution.items():
-        if count > 0:
-            percentage = (count / total_students) * 100
-            data.append([grade, str(count), f"{percentage:.2f}%"])
+        percentage = (count / total_students) * 100
+        data.append([grade, str(count), f"{percentage:.2f}%"])
 
     grade_table = Table(data)
     grade_table.setStyle(TableStyle([
