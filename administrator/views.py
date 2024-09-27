@@ -1052,14 +1052,24 @@ def generate_class_report(request, grade_id):
         [str(learners.count()), '', '', '']
     ]
     
-    # Calculate total scores and ranks
+    # Calculate total scores and grade distribution
     total_scores = []
-    for learner in learners:
-        learner_scores = ExamResult.objects.filter(learner_id=learner, exam_type=exam_type)
-        total_score = learner_scores.aggregate(Sum('score'))['score__sum'] or 0
-        total_scores.append((learner, total_score))
+    grade_distribution = Counter()
 
-    # Sort learners by total score
+    for learner in learners:
+        results = ExamResult.objects.filter(
+            learner_id=learner,
+            exam_type=exam_type
+        )
+        total_score = results.aggregate(Sum('score'))['score__sum'] or 0
+        total_scores.append((learner, total_score))
+        
+        # Calculate grade based on average score
+        avg_score = total_score / len(subjects) if len(subjects) > 0 else 0
+        grade_score = get_grade(avg_score)
+        grade_distribution[grade_score] += 1
+
+    # Sort total_scores by score in descending order
     total_scores.sort(key=lambda x: x[1], reverse=True)
 
     # Update class summary with calculated values
@@ -1082,59 +1092,27 @@ def generate_class_report(request, grade_id):
     elements.append(summary_table)
     elements.append(Spacer(1, 0.25*inch))
 
-    # Grade Distribution
+    # Grade Distribution Table
     elements.append(Paragraph("Grade Distribution", styles['Heading2']))
-    grade_distribution = Counter()
-    for _, total_score in total_scores:
-        grade_score = get_grade(total_score / len(subjects))
-        grade_distribution[grade_score] += 1
-
-    # Create pie chart
-    drawing = Drawing(400, 200)
-    pie = Pie()
-    pie.x = 100
-    pie.y = 0
-    pie.width = 150
-    pie.height = 150
-    pie.data = list(grade_distribution.values())
-    pie.labels = list(grade_distribution.keys())
-
-    # Customize colors
-    pie_colors = [colors.red, colors.green, colors.blue, colors.yellow, colors.orange, colors.purple]
-    for i, slice in enumerate(pie.slices):
-        slice.fillColor = pie_colors[i % len(pie_colors)]
-
-    drawing.add(pie)
-
-    # Add legend
-    legend = Legend()
-    legend.x = 270
-    legend.y = 50
-    legend.dx = 8
-    legend.dy = 8
-    legend.fontName = 'Helvetica'
-    legend.fontSize = 7
-    legend.boxAnchor = 'w'
-    legend.columnMaximum = 10
-    legend.strokeWidth = 0.5
-    legend.strokeColor = colors.black
-    legend.deltax = 75
-    legend.deltay = 10
-    legend.autoXPadding = 5
-    legend.yGap = 0
-    legend.dxTextSpace = 5
-    legend.alignment = 'right'
-    legend.dividerLines = 1|2|4
-    legend.dividerOffsY = 4.5
-    legend.subCols.rpad = 30
-
+    data = [['Grade', 'Count', 'Percentage']]
     total_students = sum(grade_distribution.values())
-    legend_labels = [f"{grade} ({count}, {count/total_students:.1%})" for grade, count in grade_distribution.items()]
-    legend.colorNamePairs = list(zip(pie_colors[:len(grade_distribution)], legend_labels))
+    for grade, count in grade_distribution.items():
+        percentage = (count / total_students) * 100
+        data.append([grade, str(count), f"{percentage:.2f}%"])
 
-    drawing.add(legend)
+    grade_table = Table(data)
+    grade_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+        ('GRID', (0,0), (-1,-1), 1, colors.black),
+    ]))
 
-    elements.append(drawing)
+    elements.append(grade_table)
     elements.append(Spacer(1, 0.5*inch))
 
     # Create the main results table
