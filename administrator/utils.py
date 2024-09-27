@@ -1,4 +1,7 @@
 def get_grade(score):
+    if not isinstance(score, (int, float)):
+        raise ValueError("Score must be a number")
+    
     if score >= 75:
         return 'EE'  # Exceeding Expectations
     elif score >= 50:

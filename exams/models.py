@@ -4,7 +4,7 @@ from django.db import models
 from django.db.models import Sum
 from learners.models import LearnerRegister, Grade
 from django.conf import settings  # Add this import at the top
-
+from administrator.utils import get_grade
 # Create your models here.
 class ExamType(models.Model):
     TERM_CHOICES = [
@@ -53,7 +53,7 @@ class ExamResult(models.Model):
     def __str__(self):
         return f"{self.learner_id} - {self.subject}: {self.score}"
 
-
+    get_grade = get_grade
 
 class LearnerTotalScore(models.Model):
     learner = models.OneToOneField(LearnerRegister, on_delete=models.CASCADE, primary_key=True)

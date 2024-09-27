@@ -1554,7 +1554,7 @@ def generate_student_report_pdf(student, exam_type):
         data.append([
             result.subject.name, 
             f"{result.score:.2f}", 
-            result.get_grade(), 
+            get_grade(result.score), 
             result.teacher_comment
         ])
 
