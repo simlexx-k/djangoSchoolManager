@@ -247,22 +247,33 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from .forms import CustomUserCreationForm
 
+from django.contrib.auth import get_user_model
+from django.contrib import messages
+from django.shortcuts import render, redirect
+from .forms import CustomUserCreationForm
+
+User = get_user_model()
+
 @login_required
-@user_passes_test(is_superuser)
+@user_passes_test(lambda u: u.is_superuser)
 def create_user(request):
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            messages.success(request, f'User {user.username} has been created successfully.')
-            
-            # Send email notification
-            subject = 'New User Account Created'
-            template = 'emails/new_user_notification.html'
-            context = {'user': user}
-            send_email(subject, template, context, [user.email])
-            
-            return redirect('manage_users')
+            try:
+                user = form.save(commit=False)
+                user.save()
+                messages.success(request, f'User {user.username} has been created successfully.')
+                
+                # Send email notification
+                subject = 'New User Account Created'
+                template = 'emails/new_user_notification.html'
+                context = {'user': user}
+                send_email(subject, template, context, [user.email])
+                
+                return redirect('manage_users')
+            except Exception as e:
+                messages.error(request, f'Error creating user: {str(e)}')
     else:
         form = CustomUserCreationForm()
     return render(request, 'super-admin/create_user.html', {'form': form})

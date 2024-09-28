@@ -28,6 +28,7 @@ class CustomPermission(models.Model):
         ordering = ['name']
         verbose_name = 'Custom Permission'
         verbose_name_plural = 'Custom Permissions'
+        
 class CustomUser(AbstractUser):
     USER_TYPE_CHOICES = (
         ('admin', 'Administrator'),
