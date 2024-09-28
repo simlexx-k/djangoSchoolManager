@@ -1,11 +1,13 @@
+from django.conf import settings
 from django.db import models
 from django.contrib.auth import get_user_model
 from exams.models import Subject  # Import Subject from exams app
+from authenticator.models import CustomUser
 
 User = get_user_model()
 
 class Teacher(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     employee_id = models.CharField(max_length=20, unique=True)
     date_of_birth = models.DateField()
     phone_number = models.CharField(max_length=15)

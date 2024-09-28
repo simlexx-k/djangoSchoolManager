@@ -1,0 +1,26 @@
+{% extends 'teachers/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold">Assignments</h1>
+        <a href="{% url 'teacher_create_assignment' %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+            Create Assignment
+        </a>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for assignment in assignments %}
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-2">{{ assignment.name }}</h2>
+            <p class="text-gray-600 mb-2">Term: {{ assignment.term }}</p>
+            <p class="text-gray-600 mb-4">Date: {{ assignment.date_administered }}</p>
+            <a href="{% url 'teacher_grade_assignment' assignment.exam_id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-block">
+                Grade Assignment
+            </a>
+        </div>
+        {% empty %}
+        <p class="col-span-3 text-center text-gray-600">No assignments found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

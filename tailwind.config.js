@@ -6,6 +6,7 @@ module.exports = {
       './templates/**/*.html',
       './node_modules/flowbite/**/*.js',
       './templates/admin/**/*.html',
+      './templates/teachers/**/*.html',
   ],
   darkMode: 'class',
   theme: {

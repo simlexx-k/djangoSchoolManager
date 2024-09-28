@@ -1,0 +1,68 @@
+{% extends 'teachers/base.html' %}
+{% load static %}
+
+{% block title %}Create Assignment{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+    <div class="mb-8 flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-gray-900">Create Assignment</h1>
+        <a href="{% url 'teacher_assignment_list' %}" class="text-indigo-600 hover:text-indigo-900">Back to Assignments</a>
+    </div>
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <form method="post" class="space-y-6 sm:space-y-5">
+            {% csrf_token %}
+            <div class="sm:divide-y sm:divide-gray-200">
+                {% for field in form %}
+                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:pt-5 {% if not forloop.first %}sm:border-t sm:border-gray-200{% endif %}">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                        {{ field.label }}
+                    </label>
+                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                        {{ field }}
+                        {% if field.help_text %}
+                        <p class="mt-2 text-sm text-gray-500">{{ field.help_text|safe }}</p>
+                        {% endif %}
+                        {% if field.errors %}
+                        <p class="mt-2 text-sm text-red-600">{{ field.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="pt-5">
+                <div class="flex justify-end">
+                    <button type="button" onclick="window.history.back()" class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Cancel
+                    </button>
+                    <button type="submit" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Create Assignment
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("input[type=date]", {
+            dateFormat: "Y-m-d",
+            allowInput: true,
+        });
+
+        // Add custom styling to form fields
+        const formFields = document.querySelectorAll('input, select, textarea');
+        formFields.forEach(field => {
+            field.classList.add('mt-1', 'block', 'w-full', 'rounded-md', 'border-gray-300', 'shadow-sm', 'focus:border-indigo-300', 'focus:ring', 'focus:ring-indigo-200', 'focus:ring-opacity-50');
+        });
+    });
+</script>
+{% endblock %}

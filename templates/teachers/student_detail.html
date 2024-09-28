@@ -1,0 +1,48 @@
+{% extends 'teachers/base.html' %}
+{% load custom_filters %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Student Details: {{ student.name }}</h1>
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Personal Information</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <p><strong>ID:</strong> {{ student.learner_id }}</p>
+            <p><strong>Name:</strong> {{ student.name }}</p>
+            <p><strong>Grade:</strong> {{ student.grade.grade_name }}</p>
+            <p><strong>Gender:</strong> {{ student.gender }}</p>
+            <p><strong>Date of Birth:</strong> {{ student.date_of_birth }}</p>
+            <p><strong>Parent Name:</strong> {{ student.name_of_parent }}</p>
+            <p><strong>Parent Contact:</strong> {{ student.parent_contact }}</p>
+        </div>
+    </div>
+    <h2 class="text-2xl font-bold mb-4">Exam Results</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full bg-white rounded-lg shadow-md">
+            <thead>
+                <tr class="bg-gray-200 text-gray-700">
+                    <th class="py-2 px-4 text-left">Exam</th>
+                    <th class="py-2 px-4 text-left">Subject</th>
+                    <th class="py-2 px-4 text-left">Score</th>
+                    <th class="py-2 px-4 text-left">Grade</th>
+                    <th class="py-2 px-4 text-left">Teacher Comment</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in exam_results %}
+                <tr class="border-b border-gray-200">
+                    <td class="py-2 px-4">{{ result.exam_type.name }}</td>
+                    <td class="py-2 px-4">{{ result.subject.name }}</td>
+                    <td class="py-2 px-4">{{ result.score }}</td>
+                    <td class="py-2 px-4">{{ result.score|grade_from_score }}</td>
+                    <td class="py-2 px-4">{{ result.teacher_comment|default:"No comment" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="py-4 text-center text-gray-600">No exam results found for this student.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

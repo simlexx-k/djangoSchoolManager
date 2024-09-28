@@ -79,10 +79,10 @@ def login_view(request):
                 messages.info(request, f"You are now logged in as {username}.")
                 if user.is_superuser:
                     return redirect('super_admin_dashboard')
-                elif hasattr(user, 'teacher'):
+                elif user.user_type == 'teacher':
                     return redirect('teacher_dashboard')
                 else:
-                    return redirect(dashboard)  # Redirect to administrator app
+                    return redirect(dashboard)  # Default dashboard
             else:
                 messages.error(request,"Invalid username or password.")
         else:

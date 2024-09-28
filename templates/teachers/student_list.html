@@ -1,0 +1,37 @@
+{% extends 'teachers/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-8">Student List</h1>
+    <div class="overflow-x-auto">
+        <table class="w-full bg-white rounded-lg shadow-md">
+            <thead>
+                <tr class="bg-gray-200 text-gray-700">
+                    <th class="py-2 px-4 text-left">ID</th>
+                    <th class="py-2 px-4 text-left">Name</th>
+                    <th class="py-2 px-4 text-left">Grade</th>
+                    <th class="py-2 px-4 text-left">Gender</th>
+                    <th class="py-2 px-4 text-left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr class="border-b border-gray-200">
+                    <td class="py-2 px-4">{{ student.learner_id }}</td>
+                    <td class="py-2 px-4">{{ student.name }}</td>
+                    <td class="py-2 px-4">{{ student.grade.grade_name }}</td>
+                    <td class="py-2 px-4">{{ student.gender }}</td>
+                    <td class="py-2 px-4">
+                        <a href="{% url 'teacher_student_detail' student.id %}" class="text-blue-500 hover:text-blue-600">View Details</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="py-4 text-center text-gray-600">No students found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
