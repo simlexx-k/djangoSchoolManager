@@ -312,11 +312,10 @@ User = get_user_model()
 @user_passes_test(lambda u: u.is_superuser)
 def create_user(request):
     if request.method == 'POST':
-        form = CustomUserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                user = form.save(commit=False)
-                user.save()
+                user = form.save()
                 messages.success(request, f'User {user.username} has been created successfully.')
                 
                 # Send email notification

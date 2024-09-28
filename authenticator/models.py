@@ -3,6 +3,8 @@ from django.contrib.auth.models import AbstractUser, Permission
 from django.contrib.contenttypes.models import ContentType
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, Permission
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # Create your models here.
 
@@ -44,25 +46,20 @@ class CustomUser(AbstractUser):
     school = models.ForeignKey('learners.School', on_delete=models.SET_NULL, null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     
-    def save(self, *args, **kwargs):
-        creating = self._state.adding
-        super().save(*args, **kwargs)
-        if creating or self.role_id != self.__original_role_id:
-            self.update_user_permissions()
-
-    def update_user_permissions(self):
-        if self.role:
-            self.user_permissions.set(self.role.permissions.all())
-        else:
-            self.user_permissions.clear()
-        self.save()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__original_role_id = self.role_id
-
     def __str__(self):
         return f"{self.username} ({self.get_user_type_display()})"
+
+@receiver(post_save, sender=CustomUser)
+def update_user_permissions(sender, instance, created, **kwargs):
+    if created or instance.role_id != instance._CustomUser__original_role_id:
+        if instance.role:
+            instance.user_permissions.set(instance.role.permissions.all())
+        else:
+            instance.user_permissions.clear()
+        instance._CustomUser__original_role_id = instance.role_id
+        post_save.disconnect(update_user_permissions, sender=CustomUser)
+        instance.save()
+        post_save.connect(update_user_permissions, sender=CustomUser)
 
 class UserProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
