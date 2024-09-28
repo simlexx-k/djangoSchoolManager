@@ -111,7 +111,13 @@ DATABASES = {
     }
 }
 
-
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'school.katalyst.co.ke'
+EMAIL_PORT = 465
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'info@school.katalyst.co.ke'
+EMAIL_HOST_PASSWORD = 'N3ZtdmV_4_Us_Gt'
+DEFAULT_FROM_EMAIL = 'ST MARYS MASABA SCHOOL <info@school.katalyst.co.ke>'
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 

@@ -10,6 +10,8 @@ from .models import CustomUser, Role
 from learners.models import School, LearnerRegister
 from teachers.models import Teacher
 from django.db.models import Q
+from django.core.mail import send_mail
+from django.conf import settings
 
 def login_view(request):
     if request.method == 'POST':
@@ -50,8 +52,13 @@ def assign_role(request):
             user = form.cleaned_data['user']
             role = form.cleaned_data['role']
             user.role = role
-            user.save()  # This will trigger update_user_permissions
+            user.save()
             messages.success(request, f"Role {role.name} assigned to {user.username}")
+            # Send email notification
+            subject = 'Role Assignment Notification'
+            template = 'emails/role_assignment_notification.html'
+            context = {'user': user, 'role': role}
+            send_email(subject, template, context, [user.email])
             return redirect('assign_role')
     else:
         form = AssignRoleForm()
@@ -67,6 +74,14 @@ def manage_school(request):
         if form.is_valid():
             form.save()
             messages.success(request, "School details updated successfully")
+            
+            # Send email notification to all staff
+            subject = 'School Details Updated'
+            template = 'emails/school_details_update_notification.html'
+            context = {'school': school}
+            staff_emails = CustomUser.objects.filter(is_staff=True).values_list('email', flat=True)
+            send_email(subject, template, context, staff_emails)
+            
             return redirect('manage_school')
     else:
         form = SchoolDetailsForm(instance=school)
@@ -240,6 +255,13 @@ def create_user(request):
         if form.is_valid():
             user = form.save()
             messages.success(request, f'User {user.username} has been created successfully.')
+            
+            # Send email notification
+            subject = 'New User Account Created'
+            template = 'emails/new_user_notification.html'
+            context = {'user': user}
+            send_email(subject, template, context, [user.email])
+            
             return redirect('manage_users')
     else:
         form = CustomUserCreationForm()
@@ -303,3 +325,57 @@ def super_admin_search(request):
             })
 
     return JsonResponse(results, safe=False)
+
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
+def send_email(subject, template, context, recipient_list):
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    send_mail(
+        subject,
+        plain_message,
+        settings.DEFAULT_FROM_EMAIL,
+        recipient_list,
+        html_message=html_message,
+        fail_silently=False,
+    )
+
+@login_required
+@user_passes_test(is_superuser)
+def send_custom_email(request):
+    if request.method == 'POST':
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        recipients = request.POST.getlist('recipients')
+        
+        context = {'message': message}
+        template = 'emails/custom_email.html'  # Create this template
+        
+        send_email(subject, template, context, recipients)
+        messages.success(request, 'Email sent successfully.')
+        return redirect('super_admin_dashboard')
+    
+    users = CustomUser.objects.all()
+    return render(request, 'super-admin/send_email.html', {'users': users})
+
+@user_passes_test(lambda u: u.is_superuser)
+def test_email(request):
+    if request.method == 'POST':
+        recipient = request.POST.get('recipient')
+        subject = 'Test Email from St. Mary\'s Masaba School System'
+        message = 'This is a test email sent from the St. Mary\'s Masaba School Management System.'
+        from_email = settings.DEFAULT_FROM_EMAIL
+        
+        try:
+            send_mail(subject, message, from_email, [recipient])
+            messages.success(request, f'Test email sent successfully to {recipient}')
+        except Exception as e:
+            messages.error(request, f'Failed to send email. Error: {str(e)}')
+        
+        return redirect('test_email')
+    
+    return render(request, 'super-admin/test_email.html')

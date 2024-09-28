@@ -18,4 +18,5 @@ urlpatterns = [
     path('user-profile/', views.user_profile, name='user_profile'),
     path('create-user/', views.create_user, name='create_user'),
     path('super-admin/search/', views.super_admin_search, name='super_admin_search'),
+    path('super-admin/test-email/', views.test_email, name='test_email'),
 ]
