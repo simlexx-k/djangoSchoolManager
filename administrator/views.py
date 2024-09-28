@@ -1586,6 +1586,14 @@ def generate_student_report_pdf(student, exam_type):
     bc.width = 250
     bc.data = data
     bc.strokeColor = colors.black
+
+    # Set individual bar colors
+    num_bars = len(data[0])
+    bar_color = colors.HexColor('#4e73df')  # Blue color for bars
+    for i in range(num_bars):
+        bc.bars[(0, i)].fillColor = bar_color
+        bc.bars[(0, i)].strokeColor = None  # Remove the outline of bars
+
     bc.valueAxis.valueMin = 0
     bc.valueAxis.valueMax = 100
     bc.valueAxis.valueStep = 10
@@ -1594,6 +1602,11 @@ def generate_student_report_pdf(student, exam_type):
     bc.categoryAxis.labels.dy = -2
     bc.categoryAxis.labels.angle = 30
     bc.categoryAxis.categoryNames = [result.subject.name for result in results]
+    
+    # Add a border to the chart
+    bc.strokeColor = colors.black
+    bc.strokeWidth = 0.5
+    
     drawing.add(bc)
     chart_and_remarks.append(drawing)
 
