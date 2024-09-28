@@ -116,7 +116,7 @@ EMAIL_HOST = 'school.katalyst.co.ke'
 EMAIL_PORT = 465
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'info@school.katalyst.co.ke'
-EMAIL_HOST_PASSWORD = 'N3ZtdmV_4_Us_Gt'
+EMAIL_HOST_PASSWORD = 'Xx3W463T65Cx4Ng'
 DEFAULT_FROM_EMAIL = 'ST MARYS MASABA SCHOOL <info@school.katalyst.co.ke>'
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
