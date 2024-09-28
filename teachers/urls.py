@@ -10,4 +10,7 @@ urlpatterns = [
     path('assignments/', views.assignment_list, name='teacher_assignment_list'),
     path('assignments/create/', views.create_assignment, name='teacher_create_assignment'),
     path('assignments/<int:assignment_id>/grade/', views.grade_assignment, name='teacher_grade_assignment'),
+    path('api/subjects/', views.get_subjects, name='api_subjects'),
+    path('api/students/', views.get_students, name='api_students'),
+    path('api/scores/', views.get_scores, name='api_scores'),
 ]

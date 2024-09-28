@@ -1,28 +1,222 @@
 {% extends 'teachers/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-8">Grade Assignment: {{ assignment.name }}</h1>
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <form method="post">
-            {% csrf_token %}
-            {% for field in form %}
-            <div class="mb-4">
-                <label for="{{ field.id_for_label }}" class="block text-gray-700 font-bold mb-2">
-                    {{ field.label }}
-                </label>
-                {{ field }}
-                {% if field.errors %}
-                <p class="text-red-500 text-sm mt-1">{{ field.errors.0 }}</p>
-                {% endif %}
-            </div>
+
+    <!-- Class selection -->
+    <div class="mb-8">
+        <label for="class-select" class="block text-sm font-medium text-gray-700">Select Class</label>
+        <select id="class-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+            <option value="">Select a class</option>
+            {% for grade in grades %}
+            <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
             {% endfor %}
-            <div class="flex justify-end">
+        </select>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-8">
+        <nav class="flex space-x-4" aria-label="Tabs">
+            <button class="tab-button bg-white px-3 py-2 font-medium text-sm rounded-md" data-tab="individual">Individual Scores</button>
+            <button class="tab-button bg-white px-3 py-2 font-medium text-sm rounded-md" data-tab="bulk">Bulk Scores</button>
+            <button class="tab-button bg-white px-3 py-2 font-medium text-sm rounded-md" data-tab="view">View Scores</button>
+        </nav>
+    </div>
+
+    <!-- Individual Scores Tab -->
+    <div id="individual-tab" class="tab-content hidden">
+        <h2 class="text-2xl font-bold mb-4">Enter/Edit Individual Scores</h2>
+        <div class="mb-4">
+            <label for="subject-select" class="block text-sm font-medium text-gray-700">Select Subject</label>
+            <select id="subject-select" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                <option value="">Select a subject</option>
+                <!-- Subjects will be dynamically added here -->
+            </select>
+        </div>
+        <form id="individual-form" method="post">
+            {% csrf_token %}
+            <div id="individual-students" class="space-y-4">
+                <!-- Individual student score inputs will be dynamically added here -->
+            </div>
+            <div class="mt-4">
                 <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
-                    Submit Grade
+                    Save Individual Scores
                 </button>
             </div>
         </form>
     </div>
+
+    <!-- Bulk Scores Tab -->
+    <div id="bulk-tab" class="tab-content hidden">
+        <h2 class="text-2xl font-bold mb-4">Enter/Edit Bulk Scores</h2>
+        <form id="bulk-form" method="post">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="bulk-scores" class="block text-sm font-medium text-gray-700">Paste Bulk Scores (Student ID, Subject, Score)</label>
+                <textarea id="bulk-scores" name="bulk_scores" rows="10" class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md"></textarea>
+            </div>
+            <div>
+                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                    Save Bulk Scores
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- View Scores Tab -->
+    <div id="view-tab" class="tab-content hidden">
+        <h2 class="text-2xl font-bold mb-4">View Scores</h2>
+        <div id="score-table" class="overflow-x-auto">
+            <!-- Score table will be dynamically added here -->
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const classSelect = document.getElementById('class-select');
+    const subjectSelect = document.getElementById('subject-select');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    // Function to show a specific tab
+    function showTab(tabId) {
+        tabContents.forEach(content => content.classList.add('hidden'));
+        document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+        tabButtons.forEach(button => button.classList.remove('text-indigo-600', 'bg-indigo-100'));
+        document.querySelector(`[data-tab="${tabId}"]`).classList.add('text-indigo-600', 'bg-indigo-100');
+    }
+
+    // Tab switching
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => showTab(button.dataset.tab));
+    });
+
+    // Class selection change event
+    classSelect.addEventListener('change', function() {
+        const classId = this.value;
+        if (classId) {
+            fetchSubjects(classId);
+            fetchScores(classId);
+        }
+    });
+
+    // Subject selection change event
+    subjectSelect.addEventListener('change', function() {
+        const classId = classSelect.value;
+        const subjectId = this.value;
+        if (classId && subjectId) {
+            fetchStudents(classId, subjectId);
+        }
+    });
+
+    // Fetch subjects for the selected class
+    function fetchSubjects(classId) {
+        fetch(`/teacher/api/subjects/?class=${classId}`)
+            .then(response => response.json())
+            .then(subjects => {
+                subjectSelect.innerHTML = '<option value="">Select a subject</option>';
+                subjects.forEach(subject => {
+                    subjectSelect.innerHTML += `<option value="${subject.id}">${subject.name}</option>`;
+                });
+            });
+    }
+
+    // Fetch students for individual scoring
+    function fetchStudents(classId, subjectId) {
+        const assignmentId = '{{ assignment.exam_id }}';
+        Promise.all([
+            fetch(`/teacher/api/students/?class=${classId}&subject=${subjectId}`).then(res => res.json()),
+            fetch(`/teacher/api/scores/?class=${classId}&assignment=${assignmentId}`).then(res => res.json())
+        ])
+        .then(([students, scores]) => {
+            const container = document.getElementById('individual-students');
+            container.innerHTML = '';
+            students.forEach(student => {
+                const existingScore = scores.find(score => score.student_id === student.learner_id);
+                const scoreValue = existingScore ? existingScore.score : '';
+                const comment = existingScore ? existingScore.teacher_comment : '';
+                container.innerHTML += `
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700">${student.name} (ID: ${student.learner_id})</label>
+                        <input type="number" name="score_${student.learner_id}" value="${scoreValue}" 
+                               class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md">
+                        <textarea name="comment_${student.learner_id}" 
+                                  class="mt-1 block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-gray-300 rounded-md" 
+                                  placeholder="Teacher's comment">${comment}</textarea>
+                    </div>
+                `;
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const container = document.getElementById('individual-students');
+            container.innerHTML = `<p class="text-red-500">Error loading students and scores: ${error.message}</p>`;
+        });
+    }
+
+    // Fetch and display scores
+    function fetchScores(classId) {
+        const assignmentId = '{{ assignment.exam_id }}';  // Make sure this is correctly set in your template context
+        fetch(`/teacher/api/scores/?class=${classId}&assignment=${assignmentId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                const table = document.getElementById('score-table');
+                if (data.length === 0) {
+                    table.innerHTML = '<p>No scores found for this class and assignment.</p>';
+                    return;
+                }
+                table.innerHTML = `
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comment</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            ${data.map(score => `
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${score.student_id}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${score.student_name}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${score.subject_name}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${score.score !== null ? score.score : 'N/A'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${score.teacher_comment || ''}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const table = document.getElementById('score-table');
+                table.innerHTML = `<p class="text-red-500">Error loading scores: ${error.message}</p>`;
+            });
+    }
+
+    // Show the first tab by default
+    showTab('individual');
+});
+</script>
 {% endblock %}

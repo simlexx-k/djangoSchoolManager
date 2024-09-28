@@ -53,9 +53,11 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        flatpickr("input[type=date]", {
+        // Initialize Flatpickr for date inputs
+        flatpickr("input[name='date_administered']", {
             dateFormat: "Y-m-d",
             allowInput: true,
+            minDate: "today",
         });
 
         // Add custom styling to form fields
