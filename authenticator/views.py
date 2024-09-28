@@ -255,7 +255,19 @@ def edit_user(request, user_id):
         user_form = CustomUserEditForm(request.POST, request.FILES, instance=user)
         permissions_form = UserPermissionsForm(request.POST, instance=user)
         if user_form.is_valid() and permissions_form.is_valid():
-            user = user_form.save()
+            user = user_form.save(commit=False)
+            old_user_type = user.user_type
+            new_user_type = user_form.cleaned_data['user_type']
+            
+            if old_user_type != new_user_type:
+                # Handle user type change
+                user.user_type = new_user_type
+                # You might want to add additional logic here, such as:
+                # - Removing or adding specific permissions
+                # - Updating related models (e.g., Teacher, Student)
+                # - Sending notifications
+            
+            user.save()
             permissions_form.save()
             messages.success(request, f"User {user.username} updated successfully.")
             return redirect('manage_users')

@@ -52,6 +52,13 @@
                             </div>
                         {% endif %}
                     {% endfor %}
+                    
+                    <div class="mb-4">
+                        <label for="{{ user_form.user_type.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
+                            User Type
+                        </label>
+                        {{ user_form.user_type }}
+                    </div>
                 </div>
 
                 <!-- User Permissions Section -->

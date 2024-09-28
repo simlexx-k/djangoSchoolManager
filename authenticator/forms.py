@@ -79,10 +79,11 @@ from .models import CustomUser, Role
 
 class CustomUserEditForm(forms.ModelForm):
     role = forms.ModelChoiceField(queryset=Role.objects.all(), required=False)
+    user_type = forms.ChoiceField(choices=CustomUser.USER_TYPE_CHOICES, required=True)
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'email', 'first_name', 'last_name', 'is_active', 'role', 'profile_picture']
+        fields = ['username', 'email', 'first_name', 'last_name', 'is_active', 'role', 'user_type', 'profile_picture']
         widgets = {
             'username': forms.TextInput(attrs={'class': 'form-input'}),
             'email': forms.EmailInput(attrs={'class': 'form-input'}),
@@ -90,8 +91,13 @@ class CustomUserEditForm(forms.ModelForm):
             'last_name': forms.TextInput(attrs={'class': 'form-input'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
             'role': forms.Select(attrs={'class': 'form-select'}),
+            'user_type': forms.Select(attrs={'class': 'form-select'}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-file-input'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['user_type'].widget.attrs.update({'class': 'form-select'})
 
 class UserPermissionsForm(forms.ModelForm):
     user_permissions = forms.ModelMultipleChoiceField(
