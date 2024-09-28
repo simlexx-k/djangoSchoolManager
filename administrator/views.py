@@ -1087,7 +1087,7 @@ def generate_class_report(request, grade_id):
         ('GRID', (0,0), (-1,-1), 1, colors.black),
     ]))
     elements.append(summary_table)
-    elements.append(Spacer(1, 0.25*inch))
+    elements.append(Spacer(1, 0.1*inch))
 
     # Create the main results table
     data = [['Rank', 'Student Name'] + [subject.name for subject in subjects] + ['Total Score', 'Mean Score', 'Grade']]
@@ -1301,7 +1301,7 @@ def generate_class_report(request, grade_id):
 
     # Add a page break to ensure footer is on a new page if needed
     #elements.append(PageBreak())
-    elements.append(Spacer(1, 6*inch))  # Push footer to bottom of page
+    elements.append(Spacer(1, 0.1*inch))  # Push footer to bottom of page
     elements.append(footer)
 
 
