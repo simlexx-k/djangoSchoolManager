@@ -1012,6 +1012,9 @@ from .utils import get_grade
 from reportlab.lib import colors
 from collections import defaultdict
 from collections import OrderedDict
+from reportlab.lib.colors import HexColor, Color
+#from reportlab.graphics.charts.gradients import LinearGradient
+#from reportlab.graphics.charts.utils import LinearGradient
 
 @login_required
 def generate_class_report(request, grade_id):
@@ -1052,9 +1055,8 @@ def generate_class_report(request, grade_id):
         [str(learners.count()), '', '', '']
     ]
     
-    # Calculate total scores and grade distribution
+    # Calculate total scores
     total_scores = []
-    grade_distribution = Counter()
 
     for learner in learners:
         results = ExamResult.objects.filter(
@@ -1063,11 +1065,6 @@ def generate_class_report(request, grade_id):
         )
         total_score = results.aggregate(Sum('score'))['score__sum'] or 0
         total_scores.append((learner, total_score))
-        
-        # Calculate grade based on average score
-        avg_score = total_score / len(subjects) if len(subjects) > 0 else 0
-        grade_score = get_grade(avg_score)
-        grade_distribution[grade_score] += 1
 
     # Sort total_scores by score in descending order
     total_scores.sort(key=lambda x: x[1], reverse=True)
@@ -1091,29 +1088,6 @@ def generate_class_report(request, grade_id):
     ]))
     elements.append(summary_table)
     elements.append(Spacer(1, 0.25*inch))
-
-    # Grade Distribution Table
-    elements.append(Paragraph("Grade Distribution", styles['Heading2']))
-    data = [['Grade', 'Count', 'Percentage']]
-    total_students = sum(grade_distribution.values())
-    for grade, count in grade_distribution.items():
-        percentage = (count / total_students) * 100
-        data.append([grade, str(count), f"{percentage:.2f}%"])
-
-    grade_table = Table(data)
-    grade_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,-1), 8),
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),
-        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
-        ('GRID', (0,0), (-1,-1), 1, colors.black),
-    ]))
-
-    elements.append(grade_table)
-    elements.append(Spacer(1, 0.5*inch))
 
     # Create the main results table
     data = [['Rank', 'Student Name'] + [subject.name for subject in subjects] + ['Total Score', 'Mean Score', 'Grade']]
@@ -1203,9 +1177,17 @@ def generate_class_report(request, grade_id):
     bc.height = 125
     bc.width = 225
     bc.data = data
-    bc.strokeColor = colors.black
+
+    # Set the background color to white
     bc.fillColor = colors.white
-    bc.strokeWidth = 0.5
+
+    # Set individual bar colors
+    num_bars = len(data[0])
+    bar_color = colors.HexColor('#4e73df')  # Blue color for bars
+    for i in range(num_bars):
+        bc.bars[(0, i)].fillColor = bar_color
+        bc.bars[(0, i)].strokeColor = None  # Remove the outline of bars
+
     bc.valueAxis.valueMin = 0
     bc.valueAxis.valueMax = 100
     bc.valueAxis.valueStep = 10
@@ -1214,8 +1196,12 @@ def generate_class_report(request, grade_id):
     bc.categoryAxis.labels.dy = -2
     bc.categoryAxis.labels.angle = 30
     bc.categoryAxis.categoryNames = [subject.name for subject in subjects]
-    drawing.add(bc)
 
+    # Add a border to the chart
+    bc.strokeColor = colors.black
+    bc.strokeWidth = 0.5
+    # Add the chart to the drawing
+    drawing.add(bc)
     # Create a table to hold the subject table and bar chart side by side
     combined_table = Table([
         [subject_table, drawing]
@@ -1397,6 +1383,14 @@ def generate_student_report(request, student_id):
     bc.strokeColor = colors.black
     bc.fillColor = colors.white
     bc.strokeWidth = 0.5
+
+    # Set individual bar colors
+    num_bars = len(data[0])
+    bar_color = colors.HexColor('#4e73df')  # Blue color for bars
+    for i in range(num_bars):
+        bc.bars[(0, i)].fillColor = bar_color
+        bc.bars[(0, i)].strokeColor = None  # Remove the outline of bars
+
     bc.valueAxis.valueMin = 0
     bc.valueAxis.valueMax = 100
     bc.valueAxis.valueStep = 10
