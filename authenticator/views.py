@@ -13,6 +13,60 @@ from django.db.models import Q
 from django.core.mail import send_mail
 from django.conf import settings
 
+from django.core.mail import send_mail
+from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+
+def send_email(subject, template, context, recipient_list):
+    html_message = render_to_string(template, context)
+    plain_message = strip_tags(html_message)
+    
+    send_mail(
+        subject,
+        plain_message,
+        settings.DEFAULT_FROM_EMAIL,
+        recipient_list,
+        html_message=html_message,
+        fail_silently=False,
+    )
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def send_custom_email(request):
+    if request.method == 'POST':
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        recipients = request.POST.getlist('recipients')
+        
+        context = {'message': message}
+        template = 'emails/custom_email.html'  # Create this template
+        
+        send_email(subject, template, context, recipients)
+        messages.success(request, 'Email sent successfully.')
+        return redirect('super_admin_dashboard')
+    
+    users = CustomUser.objects.all()
+    return render(request, 'super-admin/send_email.html', {'users': users})
+
+@user_passes_test(lambda u: u.is_superuser)
+def test_email(request):
+    if request.method == 'POST':
+        recipient = request.POST.get('recipient')
+        subject = 'Test Email from St. Mary\'s Masaba School System'
+        message = 'This is a test email sent from the St. Mary\'s Masaba School Management System.'
+        from_email = settings.DEFAULT_FROM_EMAIL
+        
+        try:
+            send_mail(subject, message, from_email, [recipient])
+            messages.success(request, f'Test email sent successfully to {recipient}')
+        except Exception as e:
+            messages.error(request, f'Failed to send email. Error: {str(e)}')
+        
+        return redirect('test_email')
+    
+    return render(request, 'super-admin/test_email.html')
+
 def login_view(request):
     if request.method == 'POST':
         form = CustomAuthenticationForm(request, data=request.POST)
@@ -336,57 +390,3 @@ def super_admin_search(request):
             })
 
     return JsonResponse(results, safe=False)
-
-from django.core.mail import send_mail
-from django.conf import settings
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
-
-def send_email(subject, template, context, recipient_list):
-    html_message = render_to_string(template, context)
-    plain_message = strip_tags(html_message)
-    
-    send_mail(
-        subject,
-        plain_message,
-        settings.DEFAULT_FROM_EMAIL,
-        recipient_list,
-        html_message=html_message,
-        fail_silently=False,
-    )
-
-@login_required
-@user_passes_test(is_superuser)
-def send_custom_email(request):
-    if request.method == 'POST':
-        subject = request.POST.get('subject')
-        message = request.POST.get('message')
-        recipients = request.POST.getlist('recipients')
-        
-        context = {'message': message}
-        template = 'emails/custom_email.html'  # Create this template
-        
-        send_email(subject, template, context, recipients)
-        messages.success(request, 'Email sent successfully.')
-        return redirect('super_admin_dashboard')
-    
-    users = CustomUser.objects.all()
-    return render(request, 'super-admin/send_email.html', {'users': users})
-
-@user_passes_test(lambda u: u.is_superuser)
-def test_email(request):
-    if request.method == 'POST':
-        recipient = request.POST.get('recipient')
-        subject = 'Test Email from St. Mary\'s Masaba School System'
-        message = 'This is a test email sent from the St. Mary\'s Masaba School Management System.'
-        from_email = settings.DEFAULT_FROM_EMAIL
-        
-        try:
-            send_mail(subject, message, from_email, [recipient])
-            messages.success(request, f'Test email sent successfully to {recipient}')
-        except Exception as e:
-            messages.error(request, f'Failed to send email. Error: {str(e)}')
-        
-        return redirect('test_email')
-    
-    return render(request, 'super-admin/test_email.html')
