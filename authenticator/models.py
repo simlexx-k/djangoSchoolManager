@@ -38,6 +38,13 @@ class CustomUser(AbstractUser):
         ('student', 'Student'),
         ('parent', 'Parent'),
         ('staff', 'Staff'),
+        ('accountant', 'Accountant'),
+        ('librarian', 'Librarian'),
+        ('principal', 'Principal'),
+        ('security', 'Security'),
+        ('maintenance', 'Maintenance'),
+        ('receptionist', 'Receptionist'),
+        ('other', 'Other'),
     )
     
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='student')

@@ -42,7 +42,6 @@
                                     <a href="{% url 'teacher_class_list' %}" class="{% is_active request 'teacher_class_list' %} px-3 py-2 rounded-md text-sm font-medium">Classes</a>
                                     <a href="{% url 'teacher_assignment_list' %}" class="{% is_active request 'teacher_assignment_list' %} px-3 py-2 rounded-md text-sm font-medium">Assignments</a>
                                     <a href="{% url 'teacher_student_list' %}" class="{% is_active request 'teacher_student_list' %} px-3 py-2 rounded-md text-sm font-medium">Students</a>
-                                    <a href="{% url 'exam_list' %}" class="{% is_active request 'exam_list' %} px-3 py-2 rounded-md text-sm font-medium">Exams</a>
                                     <a href="{% url 'attendance_dashboard' %}" class="{% is_active request 'attendance_dashboard' %} px-3 py-2 rounded-md text-sm font-medium">Attendance</a>
                                 {% elif user.user_type == 'Student' %}
                                     <a href="{% url 'student_class_list' %}" class="{% is_active request 'student_class_list' %} px-3 py-2 rounded-md text-sm font-medium">My Classes</a>
@@ -69,7 +68,7 @@
                             </button>
                         </div>
                         <div class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1" id="user-menu">
-                            <a href="{% url 'user_profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" tabindex="-1" id="user-menu-item-0">Your Profile</a>
+                            <a href="{% url 'teacher_profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" tabindex="-1" id="user-menu-item-0">Your Profile</a>
                             <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" tabindex="-1" id="user-menu-item-1">Settings</a>
                             <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem" tabindex="-1" id="user-menu-item-2">Sign out</a>
                         </div>
@@ -92,7 +91,6 @@
                         <a href="{% url 'teacher_class_list' %}" class="{% is_active request 'teacher_class_list' %} block px-3 py-2 rounded-md text-base font-medium">Classes</a>
                         <a href="{% url 'teacher_assignment_list' %}" class="{% is_active request 'teacher_assignment_list' %} block px-3 py-2 rounded-md text-base font-medium">Assignments</a>
                         <a href="{% url 'teacher_student_list' %}" class="{% is_active request 'teacher_student_list' %} block px-3 py-2 rounded-md text-base font-medium">Students</a>
-                        <a href="{% url 'exam_list' %}" class="{% is_active request 'exam_list' %} block px-3 py-2 rounded-md text-base font-medium">Exams</a>
                         <a href="{% url 'attendance_dashboard' %}" class="{% is_active request 'attendance_dashboard' %} block px-3 py-2 rounded-md text-base font-medium">Attendance</a>
                     {% elif user.user_type == 'Student' %}
                         <a href="{% url 'student_class_list' %}" class="{% is_active request 'student_class_list' %} block px-3 py-2 rounded-md text-base font-medium">My Classes</a>
@@ -105,6 +103,15 @@
     </nav>
 
     <main>
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %} bg-{{ message.tags }} border-{{ message.tags }}-500 text-{{ message.tags }}-700 px-4 py-3 rounded relative" role="alert">
+                            {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 
@@ -141,6 +148,21 @@
                 userMenu.classList.add('hidden');
                 userMenuButton.setAttribute('aria-expanded', 'false');
             }
+        });
+    </script>
+    <script>
+        // Make alert messages dismissible
+        document.addEventListener('DOMContentLoaded', (event) => {
+            let alerts = document.querySelectorAll('.alert');
+            alerts.forEach((alert) => {
+                alert.addEventListener('click', function() {
+                    this.style.display = 'none';
+                });
+                // Automatically hide after 5 seconds
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 5000);
+            });
         });
     </script>
     {% block extra_js %}{% endblock %}

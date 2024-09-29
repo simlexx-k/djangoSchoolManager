@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from learners.models import Grade, LearnerRegister
 from exams.models import ExamResult, ExamType, Subject
-from .forms import AssignmentForm, GradeAssignmentForm
+from .forms import AssignmentForm, GradeAssignmentForm, TeacherProfileForm
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .serializers import SubjectSerializer, StudentSerializer, ScoreSerializer
@@ -13,10 +13,16 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from administrator.models import Attendance
 from django.utils import timezone
+from .models import Teacher, User
+from django.db.models import Count
+from django.http import HttpResponseForbidden
+from authenticator.models import CustomUser
+#from administrator.models import Assignment
 # Create your views here.
 
 def is_teacher(user):
     return user.user_type == 'teacher'
+    #return user.groups.filter(name='Teacher').exists()
 
 @login_required
 @user_passes_test(is_teacher)
@@ -276,3 +282,72 @@ def weekly_attendance_summary(request, class_id):
     }
     return render(request, 'teachers/weekly_attendance_summary.html', context)
 
+@login_required
+@user_passes_test(is_teacher)
+def teacher_profile(request):
+    if request.user.user_type != 'teacher':
+        messages.error(request, "You don't have permission to view this page.")
+        return redirect('authenticator:login')  # or wherever you want to redirect non-teachers
+    
+    try:
+        teacher = Teacher.objects.get(user=request.user)
+    except Teacher.DoesNotExist:
+        teacher = Teacher.objects.create(
+            user=request.user,
+            employee_id=f"T{request.user.id}",
+            date_of_birth=timezone.now().date(),
+            phone_number="Not set",
+            address="Not set"
+        )
+        messages.info(request, "Please complete your teacher profile.")
+        return redirect('complete_teacher_profile')
+    
+    if not teacher.is_profile_complete():
+        messages.info(request, "Please complete your teacher profile.")
+        return redirect('complete_teacher_profile')
+    
+    
+    # Get classes taught by the teacher
+    classes = Grade.objects.filter(subjects__in=teacher.subjects.all()).distinct()
+    
+    # Get total number of students
+    total_students = LearnerRegister.objects.filter(grade__in=classes).count()
+    
+    # Get recent attendance records
+    recent_attendance = Attendance.objects.filter(learner__grade__in=classes).order_by('-date')[:5]
+    
+    # Get recent assignments
+    recent_assignments = ExamType.objects.filter(exam_id__in=classes).order_by('-date_administered')[:5]
+    
+    # Get subject distribution
+    subject_distribution = teacher.subjects.annotate(class_count=Count('grades')).values('name', 'class_count')
+    
+    context = {
+        'teacher': teacher,
+        'classes': classes,
+        'total_students': total_students,
+        'recent_attendance': recent_attendance,
+        'recent_assignments': recent_assignments,
+        'subject_distribution': subject_distribution,
+    }
+    return render(request, 'teachers/teacher_profile.html', context)
+
+@login_required
+@user_passes_test(is_teacher)
+def complete_teacher_profile(request):
+    teacher = Teacher.objects.get(user=request.user)
+    
+    if request.method == 'POST':
+        form = TeacherProfileForm(request.POST, instance=teacher)
+        if form.is_valid():
+            form.save()
+            teacher.refresh_from_db()  # Refresh the teacher object from the database
+            if teacher.is_profile_complete():
+                messages.success(request, "Your teacher profile has been completed successfully.")
+                return redirect('teacher_profile')
+            else:
+                messages.warning(request, "Your profile is not yet complete. Please fill in all required information.")
+    else:
+        form = TeacherProfileForm(instance=teacher)
+    
+    return render(request, 'teachers/complete_profile.html', {'form': form})

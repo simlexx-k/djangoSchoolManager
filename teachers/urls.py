@@ -17,4 +17,6 @@ urlpatterns = [
     path('api/scores/', views.get_scores, name='api_scores'),
     path('attendance/', views.attendance_dashboard, name='attendance_dashboard'),
     path('classes/<int:class_id>/weekly-attendance/', views.weekly_attendance_summary, name='weekly_attendance_summary'),
+    path('profile/', views.teacher_profile, name='teacher_profile'),
+    path('complete-profile/', views.complete_teacher_profile, name='complete_teacher_profile'),
 ]
