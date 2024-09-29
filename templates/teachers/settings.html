@@ -1,0 +1,166 @@
+{% extends 'teachers/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/zxcvbn@4.4.2/dist/zxcvbn.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto space-y-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Teacher Settings</h1>
+        
+        <!-- Personal Information Form -->
+        <div id="personal-info-section" class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-2xl font-semibold mb-4">Personal Information</h2>
+            <form method="post" id="personal-info-form" class="space-y-4">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div>
+                        <label for="{{ settings_form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700">First Name</label>
+                        {{ settings_form.first_name }}
+                    </div>
+                    <div>
+                        <label for="{{ settings_form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700">Last Name</label>
+                        {{ settings_form.last_name }}
+                    </div>
+                    <div>
+                        <label for="{{ settings_form.phone_number.id_for_label }}" class="block text-sm font-medium text-gray-700">Phone Number</label>
+                        {{ settings_form.phone_number }}
+                    </div>
+                    <div>
+                        <label for="{{ settings_form.address.id_for_label }}" class="block text-sm font-medium text-gray-700">Address</label>
+                        {{ settings_form.address }}
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label for="{{ settings_form.email_notifications.id_for_label }}" class="inline-flex items-center">
+                        {{ settings_form.email_notifications }}
+                        <span class="ml-2 text-sm text-gray-600">Receive email notifications</span>
+                    </label>
+                </div>
+                <button type="submit" name="update_info" class="mt-4 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Update Information
+                </button>
+            </form>
+        </div>
+        
+        <hr class="border-t border-gray-300">
+        
+        <!-- Change Password Form -->
+        <div id="password-section" class="bg-white shadow rounded-lg p-6">
+            <h2 class="text-2xl font-semibold mb-4">Change Password</h2>
+            <form method="post" id="password-form" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label for="id_old_password" class="block text-sm font-medium text-gray-700">Current Password</label>
+                    {{ password_form.old_password }}
+                </div>
+                <div>
+                    <label for="id_new_password1" class="block text-sm font-medium text-gray-700">New Password</label>
+                    {{ password_form.new_password1 }}
+                    <div id="password-strength" class="mt-1 text-sm"></div>
+                </div>
+                <div>
+                    <label for="id_new_password2" class="block text-sm font-medium text-gray-700">Confirm New Password</label>
+                    {{ password_form.new_password2 }}
+                </div>
+                <button type="submit" name="change_password" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Change Password
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Force scroll to top of the page
+        window.scrollTo(0, 0);
+        
+        // Focus on the first input of the personal information form
+        const firstInput = document.querySelector('#personal-info-form input');
+        if (firstInput) {
+            firstInput.focus();
+        }
+
+        // Smooth scroll to forms when headers are clicked
+        const personalInfoHeader = document.querySelector('#personal-info-section h2');
+        const passwordHeader = document.querySelector('#password-section h2');
+
+        if (personalInfoHeader) {
+            personalInfoHeader.addEventListener('click', function() {
+                document.getElementById('personal-info-section').scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+
+        if (passwordHeader) {
+            passwordHeader.addEventListener('click', function() {
+                document.getElementById('password-section').scrollIntoView({ behavior: 'smooth' });
+            });
+        }
+
+        // Password strength checker
+        const passwordInput = document.getElementById('id_new_password1');
+        const passwordStrength = document.getElementById('password-strength');
+        const form = document.getElementById('password-form');
+
+        if (passwordInput && passwordStrength) {
+            passwordInput.addEventListener('input', function() {
+                const password = this.value;
+                const result = zxcvbn(password);
+                let strength = '';
+                let color = '';
+
+                switch (result.score) {
+                    case 0:
+                    case 1:
+                        strength = 'Weak';
+                        color = 'text-red-500';
+                        break;
+                    case 2:
+                        strength = 'Fair';
+                        color = 'text-yellow-500';
+                        break;
+                    case 3:
+                        strength = 'Good';
+                        color = 'text-blue-500';
+                        break;
+                    case 4:
+                        strength = 'Strong';
+                        color = 'text-green-500';
+                        break;
+                }
+
+                passwordStrength.textContent = `Password strength: ${strength}`;
+                passwordStrength.className = `mt-1 text-sm ${color}`;
+            });
+        }
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+
+                fetch('{% url "check_password" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.valid) {
+                        form.submit();
+                    } else {
+                        alert(data.errors.join('\n'));
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

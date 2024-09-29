@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from learners.models import Grade, LearnerRegister
 from exams.models import ExamResult, ExamType, Subject
-from .forms import AssignmentForm, GradeAssignmentForm, TeacherProfileForm
+from .forms import AssignmentForm, GradeAssignmentForm, TeacherProfileForm, TeacherSettingsForm, CustomPasswordChangeForm
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .serializers import SubjectSerializer, StudentSerializer, ScoreSerializer
@@ -17,6 +17,11 @@ from .models import Teacher, User
 from django.db.models import Count
 from django.http import HttpResponseForbidden
 from authenticator.models import CustomUser
+from .utils import send_profile_completion_email
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 #from administrator.models import Assignment
 # Create your views here.
 
@@ -341,9 +346,9 @@ def complete_teacher_profile(request):
         form = TeacherProfileForm(request.POST, instance=teacher)
         if form.is_valid():
             form.save()
-            teacher.refresh_from_db()  # Refresh the teacher object from the database
             if teacher.is_profile_complete():
-                messages.success(request, "Your teacher profile has been completed successfully.")
+                send_profile_completion_email(teacher)  # Send email notification
+                messages.success(request, "Your teacher profile has been completed successfully. An email confirmation has been sent.")
                 return redirect('teacher_profile')
             else:
                 messages.warning(request, "Your profile is not yet complete. Please fill in all required information.")
@@ -351,3 +356,44 @@ def complete_teacher_profile(request):
         form = TeacherProfileForm(instance=teacher)
     
     return render(request, 'teachers/complete_profile.html', {'form': form})
+
+@login_required
+@user_passes_test(is_teacher)
+def teacher_settings(request):
+    teacher = Teacher.objects.get(user=request.user)
+    
+    if request.method == 'POST':
+        if 'update_info' in request.POST:
+            settings_form = TeacherSettingsForm(request.POST, instance=teacher)
+            if settings_form.is_valid():
+                settings_form.save()
+                messages.success(request, 'Your settings have been updated successfully.')
+                return redirect('teacher_settings')
+        elif 'change_password' in request.POST:
+            password_form = CustomPasswordChangeForm(request.user, request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, 'Your password was successfully updated!')
+                return redirect('teacher_settings')
+            else:
+                messages.error(request, 'Please correct the error below.')
+    else:
+        settings_form = TeacherSettingsForm(instance=teacher)
+        password_form = CustomPasswordChangeForm(request.user)
+    
+    context = {
+        'settings_form': settings_form,
+        'password_form': password_form,
+    }
+    return render(request, 'teachers/settings.html', context)
+
+@require_POST
+@login_required
+def check_password(request):
+    form = PasswordChangeForm(request.user, request.POST)
+    if form.is_valid():
+        return JsonResponse({'valid': True})
+    else:
+        errors = [error for field_errors in form.errors.values() for error in field_errors]
+        return JsonResponse({'valid': False, 'errors': errors})

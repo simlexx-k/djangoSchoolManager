@@ -19,4 +19,6 @@ urlpatterns = [
     path('classes/<int:class_id>/weekly-attendance/', views.weekly_attendance_summary, name='weekly_attendance_summary'),
     path('profile/', views.teacher_profile, name='teacher_profile'),
     path('complete-profile/', views.complete_teacher_profile, name='complete_teacher_profile'),
+    path('settings/', views.teacher_settings, name='teacher_settings'),
+    path('check-password/', views.check_password, name='check_password'),
 ]

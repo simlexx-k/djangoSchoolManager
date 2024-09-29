@@ -16,6 +16,7 @@ class Teacher(models.Model):
     address = models.TextField()
     subjects = models.ManyToManyField(Subject, related_name='subject_teachers')
     date_joined = models.DateField(auto_now_add=True)
+    email_notifications = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
