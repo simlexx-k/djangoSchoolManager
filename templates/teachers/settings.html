@@ -1,5 +1,6 @@
 {% extends 'teachers/base.html' %}
 {% load static %}
+{% load teacher_tags %}
 
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/zxcvbn@4.4.2/dist/zxcvbn.js"></script>
@@ -39,6 +40,18 @@
                         <span class="ml-2 text-sm text-gray-600">Receive email notifications</span>
                     </label>
                 </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700">Subjects (Old)</label>
+                    <div class="mt-2 space-y-2">
+                        {{ settings_form.subjects }}
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700">Subjects and Grades (New)</label>
+                    <div class="mt-2 space-y-2">
+                        {{ subject_grade_form.subject_grades }}
+                    </div>
+                </div>
                 <button type="submit" name="update_info" class="mt-4 w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Update Information
                 </button>
@@ -69,6 +82,45 @@
                     Change Password
                 </button>
             </form>
+        </div>
+        
+        <div class="mt-8">
+            <h2 class="text-2xl font-semibold mb-4">Subjects and Grades</h2>
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <div class="px-4 py-5 sm:p-6">
+                    <form method="post" id="subject-grade-form">
+                        {% csrf_token %}
+                        {% for grade in grades %}
+                            <div class="mb-6">
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">{{ grade.grade_name }}</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {% for subject in subjects %}
+                                        {% with field_name="subject_grade_"|add:subject.subject_id|stringformat:"s"|add:"_"|add:grade.id|stringformat:"s" %}
+                                            {% with field=subject_grade_form|getattribute:field_name %}
+                                                <div class="flex items-center">
+                                                    <input type="checkbox" 
+                                                           name="{{ field.html_name }}" 
+                                                           id="{{ field.id_for_label }}" 
+                                                           {% if field.value %}checked{% endif %}
+                                                           class="form-checkbox h-5 w-5 text-indigo-600">
+                                                    <label for="{{ field.id_for_label }}" class="ml-2 text-sm text-gray-700">
+                                                        {{ subject.name }}
+                                                    </label>
+                                                </div>
+                                            {% endwith %}
+                                        {% endwith %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div class="mt-6">
+                            <button type="submit" name="update_subjects" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                Update Subjects and Grades
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -161,6 +213,39 @@
                 });
             });
         }
+
+        const subjectGradeForm = document.getElementById('subject-grade-form');
+        const checkboxes = subjectGradeForm.querySelectorAll('input[type="checkbox"]');
+
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const [_, subjectId, gradeId] = this.id.split('_');
+                const relatedCheckboxes = subjectGradeForm.querySelectorAll(`input[id$="_${gradeId}"]`);
+                
+                if (this.checked) {
+                    relatedCheckboxes.forEach(related => {
+                        if (related !== this) {
+                            related.disabled = true;
+                        }
+                    });
+                } else {
+                    relatedCheckboxes.forEach(related => {
+                        related.disabled = false;
+                    });
+                }
+            });
+
+            // Initialize the state on page load
+            if (checkbox.checked) {
+                const [_, subjectId, gradeId] = checkbox.id.split('_');
+                const relatedCheckboxes = subjectGradeForm.querySelectorAll(`input[id$="_${gradeId}"]`);
+                relatedCheckboxes.forEach(related => {
+                    if (related !== checkbox) {
+                        related.disabled = true;
+                    }
+                });
+            }
+        });
     });
 </script>
 {% endblock %}

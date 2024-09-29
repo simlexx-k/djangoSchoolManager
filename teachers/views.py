@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from learners.models import Grade, LearnerRegister
 from exams.models import ExamResult, ExamType, Subject
-from .forms import AssignmentForm, GradeAssignmentForm, TeacherProfileForm, TeacherSettingsForm, CustomPasswordChangeForm
+from .forms import AssignmentForm, GradeAssignmentForm, TeacherProfileForm, TeacherSettingsForm, CustomPasswordChangeForm, TeacherSubjectGradeForm
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .serializers import SubjectSerializer, StudentSerializer, ScoreSerializer
@@ -22,6 +22,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from exams.models import Grade, Subject
 #from administrator.models import Assignment
 # Create your views here.
 
@@ -365,8 +366,10 @@ def teacher_settings(request):
     if request.method == 'POST':
         if 'update_info' in request.POST:
             settings_form = TeacherSettingsForm(request.POST, instance=teacher)
-            if settings_form.is_valid():
+            subject_grade_form = TeacherSubjectGradeForm(request.POST, teacher=teacher)
+            if settings_form.is_valid() and subject_grade_form.is_valid():
                 settings_form.save()
+                subject_grade_form.save(teacher)
                 messages.success(request, 'Your settings have been updated successfully.')
                 return redirect('teacher_settings')
         elif 'change_password' in request.POST:
@@ -380,11 +383,18 @@ def teacher_settings(request):
                 messages.error(request, 'Please correct the error below.')
     else:
         settings_form = TeacherSettingsForm(instance=teacher)
+        subject_grade_form = TeacherSubjectGradeForm(teacher=teacher)
         password_form = CustomPasswordChangeForm(request.user)
+    
+    grades = Grade.objects.all().order_by('grade_name')
+    subjects = Subject.objects.all().order_by('name')
     
     context = {
         'settings_form': settings_form,
+        'subject_grade_form': subject_grade_form,
         'password_form': password_form,
+        'grades': grades,
+        'subjects': subjects,
     }
     return render(request, 'teachers/settings.html', context)
 
