@@ -43,6 +43,7 @@
                                     <a href="{% url 'teacher_assignment_list' %}" class="{% is_active request 'teacher_assignment_list' %} px-3 py-2 rounded-md text-sm font-medium">Assignments</a>
                                     <a href="{% url 'teacher_student_list' %}" class="{% is_active request 'teacher_student_list' %} px-3 py-2 rounded-md text-sm font-medium">Students</a>
                                     <a href="{% url 'exam_list' %}" class="{% is_active request 'exam_list' %} px-3 py-2 rounded-md text-sm font-medium">Exams</a>
+                                    <a href="{% url 'attendance_dashboard' %}" class="{% is_active request 'attendance_dashboard' %} px-3 py-2 rounded-md text-sm font-medium">Attendance</a>
                                 {% elif user.user_type == 'Student' %}
                                     <a href="{% url 'student_class_list' %}" class="{% is_active request 'student_class_list' %} px-3 py-2 rounded-md text-sm font-medium">My Classes</a>
                                     <a href="{% url 'student_assignment_list' %}" class="{% is_active request 'student_assignment_list' %} px-3 py-2 rounded-md text-sm font-medium">Assignments</a>
@@ -92,6 +93,7 @@
                         <a href="{% url 'teacher_assignment_list' %}" class="{% is_active request 'teacher_assignment_list' %} block px-3 py-2 rounded-md text-base font-medium">Assignments</a>
                         <a href="{% url 'teacher_student_list' %}" class="{% is_active request 'teacher_student_list' %} block px-3 py-2 rounded-md text-base font-medium">Students</a>
                         <a href="{% url 'exam_list' %}" class="{% is_active request 'exam_list' %} block px-3 py-2 rounded-md text-base font-medium">Exams</a>
+                        <a href="{% url 'attendance_dashboard' %}" class="{% is_active request 'attendance_dashboard' %} block px-3 py-2 rounded-md text-base font-medium">Attendance</a>
                     {% elif user.user_type == 'Student' %}
                         <a href="{% url 'student_class_list' %}" class="{% is_active request 'student_class_list' %} block px-3 py-2 rounded-md text-base font-medium">My Classes</a>
                         <a href="{% url 'student_assignment_list' %}" class="{% is_active request 'student_assignment_list' %} block px-3 py-2 rounded-md text-base font-medium">Assignments</a>

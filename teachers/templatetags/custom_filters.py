@@ -9,3 +9,7 @@ def grade_from_score(score):
         return utils_get_grade(float(score))
     except ValueError:
         return "N/A"
+
+@register.filter
+def get_item(dictionary, key):
+    return dictionary.get(key)
