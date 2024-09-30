@@ -2846,3 +2846,5 @@ def terminate_all_sessions(request):
         UserSession.objects.filter(user=request.user).exclude(session_key=request.session.session_key).delete()
         messages.success(request, 'All other sessions terminated successfully.')
     return redirect('view_sessions')
+
+

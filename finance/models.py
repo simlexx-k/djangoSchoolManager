@@ -57,3 +57,17 @@ class Supply(models.Model):
     @property
     def total_cost(self):
         return self.quantity * self.unit_price
+
+class FeeType(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    is_recurring = models.BooleanField(default=False)
+    recurrence_period = models.CharField(max_length=20, choices=[
+        ('MONTHLY', 'Monthly'),
+        ('QUARTERLY', 'Quarterly'),
+        ('ANNUALLY', 'Annually'),
+    ], blank=True, null=True)
+
+    def __str__(self):
+        return self.name

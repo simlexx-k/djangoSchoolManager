@@ -72,6 +72,10 @@
                         <a class="block py-2 px-4 text-sm text-gray-300 hover:bg-gray-700 hover:text-white pl-8" 
                            href="{% url 'payment_list' %}"
                            :class="{ 'bg-gray-700 text-white': isActive('{% url 'payment_list' %}') }">Payments</a>
+                        <!-- Add the new Fee Types link here -->
+                        <a class="block py-2 px-4 text-sm text-gray-300 hover:bg-gray-700 hover:text-white pl-8" 
+                           href="{% url 'fee_type_list' %}"
+                           :class="{ 'bg-gray-700 text-white': isActive('{% url 'fee_type_list' %}') }">Fee Types</a>
                     </div>
                     <button @click="financialOpen = !financialOpen" 
                             class="w-full flex items-center py-2 px-4 text-gray-300 hover:bg-gray-700 hover:text-white"

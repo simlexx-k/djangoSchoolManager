@@ -113,3 +113,24 @@ class UserPermissionsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['user_permissions'].label_from_instance = lambda obj: f"{obj.content_type.app_label}.{obj.codename}"
+
+from django import forms
+from administrator.models import Term, WeekSchedule
+
+class TermForm(forms.ModelForm):
+    class Meta:
+        model = Term
+        fields = ['year', 'term_number', 'start_date', 'end_date']
+        widgets = {
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+class WeekScheduleForm(forms.ModelForm):
+    class Meta:
+        model = WeekSchedule
+        fields = ['term', 'week_number', 'start_date', 'end_date']
+        widgets = {
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
+        }

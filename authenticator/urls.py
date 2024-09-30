@@ -19,4 +19,17 @@ urlpatterns = [
     path('create-user/', views.create_user, name='create_user'),
     path('super-admin/search/', views.super_admin_search, name='super_admin_search'),
     path('super-admin/test-email/', views.test_email, name='test_email'),
+    # Term management URLs
+    path('super-admin/terms/', views.term_list, name='term_list'),
+    path('super-admin/terms/manage/', views.manage_term, name='add_term'),
+    path('super-admin/terms/manage/<int:pk>/', views.manage_term, name='edit_term'),
+    path('super-admin/terms/<int:pk>/', views.get_term, name='get_term'),
+    path('super-admin/terms/delete/<int:pk>/', views.delete_term, name='delete_term'),
+
+    # Week Schedule management URLs
+    path('super-admin/week-schedules/', views.week_schedule_list, name='week_schedule_list'),
+    path('super-admin/week-schedules/manage/', views.manage_week_schedule, name='add_week_schedule'),
+    path('super-admin/week-schedules/manage/<int:pk>/', views.manage_week_schedule, name='edit_week_schedule'),
+    path('super-admin/week-schedules/delete/<int:pk>/', views.delete_week_schedule, name='delete_week_schedule'),
+    path('super-admin/api/week-schedule/<int:pk>/', views.get_week_schedule, name='get_week_schedule'),
 ]

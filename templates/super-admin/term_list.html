@@ -1,0 +1,163 @@
+{% extends 'super-admin/base.html' %}
+
+{% block title %}Manage Terms{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-md rounded my-6" x-data="{ 
+    showModal: false, 
+    showDeleteModal: false,
+    editingId: null,
+    deletingId: null,
+    openAddModal() {
+        this.editingId = null;
+        this.showModal = true;
+        this.resetForm();
+    },
+    openEditModal(id) {
+        this.editingId = id;
+        this.showModal = true;
+        this.fetchTermData(id);
+    },
+    openDeleteModal(id) {
+        this.deletingId = id;
+        this.showDeleteModal = true;
+    },
+    closeModal() {
+        this.showModal = false;
+        this.showDeleteModal = false;
+        this.editingId = null;
+        this.deletingId = null;
+        this.resetForm();
+    },
+    resetForm() {
+        document.getElementById('termForm').reset();
+    },
+    fetchTermData(id) {
+        fetch(`/auth/super-admin/terms/${id}/`)
+            .then(response => response.json())
+            .then(data => {
+                Object.keys(data).forEach(key => {
+                    const field = document.getElementById(`id_${key}`);
+                    if (field) {
+                        field.value = data[key];
+                    }
+                });
+            });
+    },
+    deleteTerm() {
+        fetch(`/auth/super-admin/terms/delete/${this.deletingId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                alert('Error deleting term');
+            }
+        });
+    }
+}">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+        <h2 class="text-xl font-semibold text-gray-800">Academic Terms</h2>
+        <button @click="openAddModal" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Add New Term
+        </button>
+    </div>
+    
+    <table class="w-full table-auto">
+        <thead>
+            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                <th class="py-3 px-6 text-left">Year</th>
+                <th class="py-3 px-6 text-left">Term</th>
+                <th class="py-3 px-6 text-left">Start Date</th>
+                <th class="py-3 px-6 text-left">End Date</th>
+                <th class="py-3 px-6 text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="text-gray-600 text-sm font-light">
+            {% for term in terms %}
+            <tr class="border-b border-gray-200 hover:bg-gray-100">
+                <td class="py-3 px-6 text-left whitespace-nowrap">{{ term.year }}</td>
+                <td class="py-3 px-6 text-left">{{ term.get_term_number_display }}</td>
+                <td class="py-3 px-6 text-left">{{ term.start_date }}</td>
+                <td class="py-3 px-6 text-left">{{ term.end_date }}</td>
+                <td class="py-4 px-6 text-center">
+                    <button @click="openEditModal({{ term.id }})" class="text-blue-500 hover:text-blue-700 mr-2">Edit</button>
+                    <button @click="openDeleteModal({{ term.id }})" class="text-red-500 hover:text-red-700">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Modal for adding/editing term -->
+    <div x-show="showModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" x-cloak>
+        <div class="relative p-8 bg-white w-full max-w-md m-auto rounded-lg shadow-lg">
+            <div class="text-center">
+                <h3 x-text="editingId ? 'Edit Term' : 'Add New Term'" class="text-2xl font-semibold text-gray-900 mb-4"></h3>
+                <form id="termForm" x-bind:action="editingId ? '{% url 'edit_term' 0 %}'.replace('0', editingId) : '{% url 'add_term' %}'" method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-4">
+                            <label for="{{ field.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2 text-left">
+                                {{ field.label }}
+                            </label>
+                            {% if field.field.widget.input_type == 'select' %}
+                                <select name="{{ field.name }}" id="{{ field.id_for_label }}" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500">
+                                    {% for choice in field.field.choices %}
+                                        <option value="{{ choice.0 }}"{% if choice.0 == field.value %} selected{% endif %}>{{ choice.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% elif field.field.widget.input_type == 'date' %}
+                                <input type="date" name="{{ field.name }}" id="{{ field.id_for_label }}" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500">
+                            {% else %}
+                                <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" id="{{ field.id_for_label }}" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500">
+                            {% endif %}
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                    <p class="text-red-500 text-xs italic mt-1">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <div class="flex justify-end mt-6">
+                        <button type="button" @click="closeModal" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 mr-2">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                            Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for deleting term -->
+    <div x-show="showDeleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" x-cloak>
+        <div class="relative p-5 bg-white w-96 m-auto rounded-lg shadow-lg">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Deletion</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">
+                        Are you sure you want to delete this term? This action cannot be undone.
+                    </p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button @click="closeModal" class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300 mb-2">
+                        Cancel
+                    </button>
+                    <button @click="deleteTerm" class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

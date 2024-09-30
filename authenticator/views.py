@@ -401,3 +401,113 @@ def super_admin_search(request):
             })
 
     return JsonResponse(results, safe=False)
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from administrator.models import Term, WeekSchedule
+from .forms import TermForm, WeekScheduleForm
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from .utils import generate_weeks_for_term
+
+# Term views
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def term_list(request):
+    terms = Term.objects.all().order_by('-year', 'term_number')
+    form = TermForm()
+    return render(request, 'super-admin/term_list.html', {'terms': terms, 'form': form})
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def manage_term(request, pk=None):
+    if pk:
+        term = get_object_or_404(Term, pk=pk)
+    else:
+        term = None
+
+    form = TermForm(request.POST, instance=term)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Term saved successfully.')
+        return redirect('term_list')
+    else:
+        return JsonResponse({'errors': form.errors}, status=400)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def get_term(request, pk):
+    term = get_object_or_404(Term, pk=pk)
+    data = {
+        'year': term.year,
+        'term_number': term.term_number,
+        'start_date': term.start_date.isoformat(),
+        'end_date': term.end_date.isoformat(),
+    }
+    return JsonResponse(data)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def delete_term(request, pk):
+    term = get_object_or_404(Term, pk=pk)
+    term.delete()
+    messages.success(request, 'Term deleted successfully.')
+    return JsonResponse({'status': 'success'})
+
+# Week Schedule views
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def week_schedule_list(request):
+    terms = Term.objects.all()
+    for term in terms:
+        generate_weeks_for_term(term)
+    
+    week_schedules = WeekSchedule.objects.all().select_related('term').order_by('term__year', 'term__term_number', 'week_number')
+    form = WeekScheduleForm()
+    return render(request, 'super-admin/week_schedule_list.html', {'week_schedules': week_schedules, 'form': form})
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+@require_POST
+def manage_week_schedule(request, pk=None):
+    if pk:
+        week_schedule = get_object_or_404(WeekSchedule, pk=pk)
+    else:
+        week_schedule = None
+
+    form = WeekScheduleForm(request.POST, instance=week_schedule)
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Week schedule saved successfully.')
+        return redirect('week_schedule_list')
+    else:
+        return JsonResponse({'errors': form.errors}, status=400)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def get_week_schedule(request, pk):
+    week_schedule = get_object_or_404(WeekSchedule, pk=pk)
+    data = {
+        'term': week_schedule.term.id,
+        'week_number': week_schedule.week_number,
+        'start_date': week_schedule.start_date.isoformat(),
+        'end_date': week_schedule.end_date.isoformat(),
+    }
+    return JsonResponse(data)
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def delete_week_schedule(request, pk):
+    week_schedule = get_object_or_404(WeekSchedule, pk=pk)
+    if request.method == 'POST':
+        week_schedule.delete()
+        messages.success(request, 'Week schedule deleted successfully.')
+        return redirect('week_schedule_list')
+    return render(request, 'super-admin/confirm_delete_week_schedule.html', {
+        'object': week_schedule,
+        'object_name': 'week schedule',
+        'cancel_url': 'week_schedule_list'
+    })

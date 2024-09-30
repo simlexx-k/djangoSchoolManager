@@ -1,7 +1,8 @@
 from django.db import models
 from learners.models import LearnerRegister, Grade
 from exams.models import Subject
-
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 # Create your models here.
 
 class Curriculum(models.Model):
@@ -88,3 +89,54 @@ class Teacher(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.employee_id})"
+
+class Term(models.Model):
+    TERM_CHOICES = [
+        (1, 'First Term'),
+        (2, 'Second Term'),
+        (3, 'Third Term'),
+    ]
+    
+    year = models.PositiveIntegerField()
+    term_number = models.PositiveSmallIntegerField(choices=TERM_CHOICES)
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    class Meta:
+        unique_together = ('year', 'term_number')
+        ordering = ['year', 'term_number']
+
+    def __str__(self):
+        return f"{self.get_term_number_display()} {self.year}"
+
+    def clean(self):
+        if self.start_date and self.end_date and self.start_date > self.end_date:
+            raise ValidationError(_("Start date must be before end date."))
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+class WeekSchedule(models.Model):
+    term = models.ForeignKey(Term, on_delete=models.CASCADE, related_name='week_schedules')
+    week_number = models.PositiveSmallIntegerField()
+    start_date = models.DateField()
+    end_date = models.DateField()
+
+    class Meta:
+        unique_together = ('term', 'week_number')
+        ordering = ['term', 'week_number']
+
+    def __str__(self):
+        return f"Week {self.week_number} ({self.start_date.strftime('%d%m')} - {self.end_date.strftime('%d%m')})"
+
+    def clean(self):
+        if self.start_date and self.end_date:
+            if self.start_date > self.end_date:
+                raise ValidationError(_("Start date must be before end date."))
+            if self.start_date < self.term.start_date or self.end_date > self.term.end_date:
+                raise ValidationError(_("Week schedule must be within the term dates."))
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)

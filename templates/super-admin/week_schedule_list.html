@@ -1,0 +1,103 @@
+{% extends 'super-admin/base.html' %}
+
+{% block title %}Manage Week Schedules{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-md rounded my-6" x-data="{ 
+    showModal: false, 
+    editingId: null,
+    openEditModal(id) {
+        this.editingId = id;
+        this.showModal = true;
+        this.fetchScheduleData(id);
+    },
+    closeModal() {
+        this.showModal = false;
+        this.editingId = null;
+    },
+    fetchScheduleData(id) {
+        fetch(`/auth/super-admin/api/week-schedule/${id}/`)
+            .then(response => response.json())
+            .then(data => {
+                Object.keys(data).forEach(key => {
+                    const field = document.getElementById(`id_${key}`);
+                    if (field) {
+                        field.value = data[key];
+                    }
+                });
+            });
+    }
+}">
+    <div class="flex justify-between items-center px-6 py-4 border-b">
+        <h2 class="text-xl font-semibold text-gray-800">Week Schedules</h2>
+    </div>
+    
+    <table class="w-full table-auto">
+        <thead>
+            <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                <th class="py-3 px-6 text-left">Term</th>
+                <th class="py-3 px-6 text-left">Week Number</th>
+                <th class="py-3 px-6 text-left">Start Date</th>
+                <th class="py-3 px-6 text-left">End Date</th>
+                <th class="py-3 px-6 text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="text-gray-600 text-sm font-light">
+            {% for schedule in week_schedules %}
+            <tr class="border-b border-gray-200 hover:bg-gray-100">
+                <td class="py-3 px-6 text-left whitespace-nowrap">{{ schedule.term }}</td>
+                <td class="py-3 px-6 text-left">{{ schedule.week_number }}</td>
+                <td class="py-3 px-6 text-left">{{ schedule.start_date }}</td>
+                <td class="py-3 px-6 text-left">{{ schedule.end_date }}</td>
+                <td class="py-4 px-6 text-center">
+                    <button @click="openEditModal({{ schedule.id }})" class="text-blue-500 hover:text-blue-700 mr-2">Edit</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Modal for editing week schedule -->
+    <div x-show="showModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center" x-cloak>
+        <div class="relative p-8 bg-white w-full max-w-md m-auto rounded-lg shadow-lg">
+            <div class="text-center">
+                <h3 class="text-2xl font-semibold text-gray-900 mb-4">Edit Week Schedule</h3>
+                <form id="weekScheduleForm" x-bind:action="'{% url 'edit_week_schedule' 0 %}'.replace('0', editingId)" method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-4">
+                            <label for="{{ field.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2 text-left">
+                                {{ field.label }}
+                            </label>
+                            {% if field.field.widget.input_type == 'select' %}
+                                <select name="{{ field.name }}" id="{{ field.id_for_label }}" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500">
+                                    {% for choice in field.field.choices %}
+                                        <option value="{{ choice.0 }}"{% if choice.0 == field.value %} selected{% endif %}>{{ choice.1 }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% elif field.field.widget.input_type == 'date' %}
+                                <input type="date" name="{{ field.name }}" id="{{ field.id_for_label }}" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500">
+                            {% else %}
+                                <input type="{{ field.field.widget.input_type }}" name="{{ field.name }}" id="{{ field.id_for_label }}" class="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:border-blue-500">
+                            {% endif %}
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                    <p class="text-red-500 text-xs italic mt-1">{{ error }}</p>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    <div class="flex justify-end mt-6">
+                        <button type="button" @click="closeModal" class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 mr-2">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                            Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

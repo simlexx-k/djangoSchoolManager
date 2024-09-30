@@ -1,5 +1,5 @@
 from django import forms
-from .models import Payment, Expense, Supply
+from .models import Payment, Expense, Supply, FeeType
 from fees.models import FeeRecord
 
 class PaymentForm(forms.ModelForm):
@@ -21,3 +21,23 @@ class FeeRecordForm(forms.ModelForm):
     class Meta:
         model = FeeRecord
         fields = ['learner', 'fee_type', 'amount', 'due_date']
+
+class FeeTypeForm(forms.ModelForm):
+    class Meta:
+        model = FeeType
+        fields = ['name', 'description', 'amount', 'is_recurring', 'recurrence_period']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_recurring = cleaned_data.get('is_recurring')
+        recurrence_period = cleaned_data.get('recurrence_period')
+
+        if is_recurring and not recurrence_period:
+            raise forms.ValidationError("Recurrence period is required for recurring fees.")
+        elif not is_recurring and recurrence_period:
+            cleaned_data['recurrence_period'] = None
+
+        return cleaned_data

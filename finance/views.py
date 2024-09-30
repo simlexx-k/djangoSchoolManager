@@ -18,6 +18,11 @@ from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 from datetime import datetime, timedelta
 from .models import Payment, Expense, FeeRecord
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from .models import FeeType
+from .forms import FeeTypeForm
 
 def generate_receipt_number():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
@@ -252,3 +257,28 @@ class DashboardDataAPIView(APIView):
 
         serializer = DashboardDataSerializer(dashboard_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class FeeTypeListView(LoginRequiredMixin, ListView):
+    model = FeeType
+    template_name = 'finance/fee_type_list.html'
+    context_object_name = 'fee_types'
+
+class FeeTypeCreateView(LoginRequiredMixin, PermissionRequiredMixin, CreateView):
+    model = FeeType
+    form_class = FeeTypeForm
+    template_name = 'finance/fee_type_form.html'
+    success_url = reverse_lazy('fee_type_list')
+    permission_required = 'finance.add_feetype'
+
+class FeeTypeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView):
+    model = FeeType
+    form_class = FeeTypeForm
+    template_name = 'finance/fee_type_form.html'
+    success_url = reverse_lazy('fee_type_list')
+    permission_required = 'finance.change_feetype'
+
+class FeeTypeDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    model = FeeType
+    template_name = 'finance/fee_type_confirm_delete.html'
+    success_url = reverse_lazy('fee_type_list')
+    permission_required = 'finance.delete_feetype'
