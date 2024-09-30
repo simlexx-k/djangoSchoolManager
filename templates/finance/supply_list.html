@@ -1,0 +1,33 @@
+{% extends 'finance/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Supply List</h1>
+    <a href="{% url 'add_supply' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">Add New Supply</a>
+    <table class="min-w-full bg-white">
+        <thead>
+            <tr>
+                <th class="py-2 px-4 border-b">Item Name</th>
+                <th class="py-2 px-4 border-b">Quantity</th>
+                <th class="py-2 px-4 border-b">Unit Price</th>
+                <th class="py-2 px-4 border-b">Total Cost</th>
+                <th class="py-2 px-4 border-b">Date Received</th>
+                <th class="py-2 px-4 border-b">Supplier</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for supply in supplies %}
+            <tr>
+                <td class="py-2 px-4 border-b">{{ supply.item_name }}</td>
+                <td class="py-2 px-4 border-b">{{ supply.quantity }}</td>
+                <td class="py-2 px-4 border-b">${{ supply.unit_price }}</td>
+                <td class="py-2 px-4 border-b">${{ supply.total_cost }}</td>
+                <td class="py-2 px-4 border-b">{{ supply.date_received }}</td>
+                <td class="py-2 px-4 border-b">{{ supply.supplier }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

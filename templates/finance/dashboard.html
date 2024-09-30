@@ -1,0 +1,184 @@
+{% extends 'finance/base.html' %}
+{% load static %}
+
+{% block title %}Finance Dashboard{% endblock %}
+
+{% block content %}
+<div x-data="dashboard()" x-init="initCharts()">
+    <h1 class="text-3xl font-semibold mb-6">Finance Dashboard</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-2">Total Revenue</h2>
+            <p class="text-3xl font-bold text-green-600">$<span x-text="totalRevenue.toLocaleString()"></span></p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-2">Total Expenses</h2>
+            <p class="text-3xl font-bold text-red-600">$<span x-text="totalExpenses.toLocaleString()"></span></p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-2">Net Income</h2>
+            <p class="text-3xl font-bold text-blue-600">$<span x-text="netIncome.toLocaleString()"></span></p>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-2">Pending Payments</h2>
+            <p class="text-3xl font-bold text-yellow-600">$<span x-text="pendingPayments.toLocaleString()"></span></p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Revenue vs Expenses</h2>
+            <canvas id="revenueExpensesChart"></canvas>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Income Distribution</h2>
+            <canvas id="incomeDistributionChart"></canvas>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Top Expense Categories</h2>
+            <canvas id="expenseCategoriesChart"></canvas>
+        </div>
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Cash Flow Trend</h2>
+            <canvas id="cashFlowTrendChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+function dashboard() {
+    return {
+        totalRevenue: 0,
+        totalExpenses: 0,
+        netIncome: 0,
+        pendingPayments: 0,
+        
+        async initCharts() {
+            const data = await this.fetchDashboardData();
+            this.updateSummary(data);
+            this.createRevenueExpensesChart(data);
+            this.createIncomeDistributionChart(data);
+            this.createExpenseCategoriesChart(data);
+            this.createCashFlowTrendChart(data);
+        },
+
+        async fetchDashboardData() {
+            // Replace this with an actual API call to your backend
+            const response = await fetch('/api/finance/dashboard-data/');
+            return await response.json();
+        },
+
+        updateSummary(data) {
+            this.totalRevenue = data.totalRevenue;
+            this.totalExpenses = data.totalExpenses;
+            this.netIncome = data.netIncome;
+            this.pendingPayments = data.pendingPayments;
+        },
+
+        createRevenueExpensesChart(data) {
+            const ctx = document.getElementById('revenueExpensesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.months,
+                    datasets: [
+                        {
+                            label: 'Revenue',
+                            data: data.monthlyRevenue,
+                            backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                        },
+                        {
+                            label: 'Expenses',
+                            data: data.monthlyExpenses,
+                            backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        },
+
+        createIncomeDistributionChart(data) {
+            const ctx = document.getElementById('incomeDistributionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.incomeCategories,
+                    datasets: [{
+                        data: data.incomeCategoryValues,
+                        backgroundColor: [
+                            'rgba(34, 197, 94, 0.6)',
+                            'rgba(59, 130, 246, 0.6)',
+                            'rgba(249, 115, 22, 0.6)',
+                            'rgba(168, 85, 247, 0.6)',
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                }
+            });
+        },
+
+        createExpenseCategoriesChart(data) {
+            const ctx = document.getElementById('expenseCategoriesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.expenseCategories,
+                    datasets: [{
+                        data: data.expenseCategoryValues,
+                        backgroundColor: [
+                            'rgba(239, 68, 68, 0.6)',
+                            'rgba(245, 158, 11, 0.6)',
+                            'rgba(16, 185, 129, 0.6)',
+                            'rgba(99, 102, 241, 0.6)',
+                            'rgba(236, 72, 153, 0.6)',
+                        ],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                }
+            });
+        },
+
+        createCashFlowTrendChart(data) {
+            const ctx = document.getElementById('cashFlowTrendChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.months,
+                    datasets: [{
+                        label: 'Cash Flow',
+                        data: data.cashFlow,
+                        borderColor: 'rgba(59, 130, 246, 0.8)',
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    }
+}
+</script>
+{% endblock %}

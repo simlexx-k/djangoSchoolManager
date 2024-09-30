@@ -1,0 +1,31 @@
+{% extends 'finance/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Fee Records</h1>
+    <a href="{% url 'create_fee_record' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">Create New Fee Record</a>
+    <table class="min-w-full bg-white">
+        <thead>
+            <tr>
+                <th class="py-2 px-4 border-b">Learner</th>
+                <th class="py-2 px-4 border-b">Fee Type</th>
+                <th class="py-2 px-4 border-b">Amount</th>
+                <th class="py-2 px-4 border-b">Due Date</th>
+                <th class="py-2 px-4 border-b">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in fee_records %}
+            <tr>
+                <td class="py-2 px-4 border-b">{{ record.learner.name }}</td>
+                <td class="py-2 px-4 border-b">{{ record.fee_type.name }}</td>
+                <td class="py-2 px-4 border-b">${{ record.amount }}</td>
+                <td class="py-2 px-4 border-b">{{ record.due_date }}</td>
+                <td class="py-2 px-4 border-b">{{ record.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

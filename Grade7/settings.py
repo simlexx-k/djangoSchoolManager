@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'teachers.apps.TeachersConfig',
     'django_cleanup.apps.CleanupConfig',
+    'finance.apps.FinanceConfig',
 ]
 
 MIDDLEWARE = [

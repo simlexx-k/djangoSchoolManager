@@ -1,0 +1,14 @@
+{% extends 'finance/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Financial Report</h1>
+    <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Summary ({{ start_date }} to {{ end_date }})</h2>
+        <p class="mb-2">Total Income: ${{ total_income|floatformat:2 }}</p>
+        <p class="mb-2">Total Expenses: ${{ total_expenses|floatformat:2 }}</p>
+        <p class="mb-2">Net Income: ${{ net_income|floatformat:2 }}</p>
+    </div>
+</div>
+{% endblock %}

@@ -33,11 +33,14 @@ def is_teacher(user):
 @login_required
 @user_passes_test(is_teacher)
 def teacher_dashboard(request):
+    teacher = Teacher.objects.get(user=request.user)
+    
     context = {
         'total_classes': Grade.objects.count(),
         'total_students': LearnerRegister.objects.count(),
         'total_assignments': ExamType.objects.count(),  # Assuming ExamType represents assignments
-        'recent_activities': []  # You'll need to implement this based on your activity tracking system
+        'recent_activities': [],  # You'll need to implement this based on your activity tracking system
+        #'has_control_access': teacher.user.has_perm('teachers.access_control_dashboard'),  # Assuming you have a custom permission for this
     }
     
     # Example of how you might populate recent_activities

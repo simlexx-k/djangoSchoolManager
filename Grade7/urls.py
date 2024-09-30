@@ -35,6 +35,7 @@ urlpatterns = [
     path('auth/', include("authenticator.urls")),
     path('control/learners/', include("learners.urls")),
     path('teacher/', include('teachers.urls')),
+    path('finance/', include('finance.urls')),
 ]
 
 if settings.DEBUG:

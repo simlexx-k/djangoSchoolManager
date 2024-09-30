@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}School Finance Management{% endblock %}</title>
+    <link href="{% static 'src/output.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    {% block extra_css %}{% endblock %}
+    <style>
+        .sidebar-collapsed {
+            width: 5rem;
+        }
+        .sidebar-expanded {
+            width: 16rem;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal" 
+      x-data="{ 
+          sidebarOpen: window.innerWidth >= 768,
+          isMobile: window.innerWidth < 768,
+          notificationOpen: false,
+          profileOpen: false,
+          currentPath: '{{ request.path }}',
+          isActive(path) {
+              return this.currentPath.startsWith(path);
+          }
+      }"
+      @resize.window="isMobile = window.innerWidth < 768; sidebarOpen = window.innerWidth >= 768">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="bg-gray-900 flex flex-col transition-all duration-300 ease-in-out sidebar"
+               :class="{
+                   'open': sidebarOpen,
+                   'sidebar-collapsed': !sidebarOpen && !isMobile,
+                   'sidebar-expanded': sidebarOpen && !isMobile,
+                   'fixed inset-y-0 left-0 z-50 w-64 transform': isMobile,
+                   '-translate-x-full': isMobile && !sidebarOpen,
+                   'translate-x-0': isMobile && sidebarOpen
+               }">
+            <div class="flex items-center justify-between p-4 text-white">
+                <span class="text-2xl font-semibold" x-show="sidebarOpen">Finance Portal</span>
+                <button @click="sidebarOpen = !sidebarOpen" class="text-white focus:outline-none">
+                    <i class="fas" :class="sidebarOpen ? 'fa-times' : 'fa-bars'"></i>
+                </button>
+            </div>
+            <nav class="flex-grow overflow-y-auto">
+                <div x-data="{ feeOpen: false, financialOpen: false }">
+                    <button @click="feeOpen = !feeOpen" 
+                            class="w-full flex items-center py-2 px-4 text-gray-300 hover:bg-gray-700 hover:text-white"
+                            :class="{ 'bg-gray-700 text-white': isActive('/finance/fee') }">
+                        <i class="fas fa-file-invoice-dollar mr-3"></i>
+                        <span x-show="sidebarOpen">Fee Management</span>
+                        <i x-show="sidebarOpen" class="fas fa-chevron-down ml-auto" :class="{'transform rotate-180': feeOpen}"></i>
+                    </button>
+                    <div x-show="feeOpen && sidebarOpen" class="bg-gray-800">
+                        <a class="block py-2 px-4 text-sm text-gray-300 hover:bg-gray-700 hover:text-white pl-8" 
+                           href="{% url 'fee_record_list' %}"
+                           :class="{ 'bg-gray-700 text-white': isActive('{% url 'fee_record_list' %}') }">Fee Records</a>
+                        <a class="block py-2 px-4 text-sm text-gray-300 hover:bg-gray-700 hover:text-white pl-8" 
+                           href="{% url 'payment_list' %}"
+                           :class="{ 'bg-gray-700 text-white': isActive('{% url 'payment_list' %}') }">Payments</a>
+                    </div>
+                    <button @click="financialOpen = !financialOpen" 
+                            class="w-full flex items-center py-2 px-4 text-gray-300 hover:bg-gray-700 hover:text-white"
+                            :class="{ 'bg-gray-700 text-white': isActive('/finance/financial') }">
+                        <i class="fas fa-chart-pie mr-3"></i>
+                        <span x-show="sidebarOpen">Financial Management</span>
+                        <i x-show="sidebarOpen" class="fas fa-chevron-down ml-auto" :class="{'transform rotate-180': financialOpen}"></i>
+                    </button>
+                    <div x-show="financialOpen && sidebarOpen" class="bg-gray-800">
+                        <a class="block py-2 px-4 text-sm text-gray-300 hover:bg-gray-700 hover:text-white pl-8" 
+                           href="{% url 'expense_list' %}"
+                           :class="{ 'bg-gray-700 text-white': isActive('{% url 'expense_list' %}') }">Expenses</a>
+                        <a class="block py-2 px-4 text-sm text-gray-300 hover:bg-gray-700 hover:text-white pl-8" 
+                           href="{% url 'supply_list' %}"
+                           :class="{ 'bg-gray-700 text-white': isActive('{% url 'supply_list' %}') }">Supplies</a>
+                        <a class="block py-2 px-4 text-sm text-gray-300 hover:bg-gray-700 hover:text-white pl-8" 
+                           href="{% url 'financial_report' %}"
+                           :class="{ 'bg-gray-700 text-white': isActive('{% url 'financial_report' %}') }">Financial Report</a>
+                    </div>
+                </div>
+                <a class="flex items-center py-2 px-4 text-gray-300 hover:bg-gray-700 hover:text-white" 
+                   href="{% url 'finance_dashboard' %}"
+                   :class="{ 'bg-gray-700 text-white': isActive('{% url 'finance_dashboard' %}') }">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    <span x-show="sidebarOpen">Dashboard</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top bar -->
+            <header class="bg-white shadow-md">
+                <div class="flex items-center justify-between p-4">
+                    <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 focus:outline-none">
+                        <i class="fas" :class="sidebarOpen ? 'fa-times' : 'fa-bars'"></i>
+                    </button>
+                    <div class="flex items-center">
+                        <div class="relative mr-4" x-data="{ open: false }">
+                            <button @click="notificationOpen = !notificationOpen" class="relative z-10 block rounded-md bg-white p-2 focus:outline-none">
+                                <i class="fas fa-bell text-gray-600"></i>
+                                <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">3</span>
+                            </button>
+                            <div x-show="notificationOpen" @click.away="notificationOpen = false" class="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg overflow-hidden z-20">
+                                <div class="py-2">
+                                    <a href="#" class="flex items-center px-4 py-3 hover:bg-gray-100 -mx-2">
+                                        <p class="text-gray-600 text-sm mx-2">
+                                            <span class="font-bold">New payment received</span> from John Doe.
+                                        </p>
+                                    </a>
+                                    <a href="#" class="flex items-center px-4 py-3 hover:bg-gray-100 -mx-2">
+                                        <p class="text-gray-600 text-sm mx-2">
+                                            <span class="font-bold">New expense added</span> by Jane Smith.
+                                        </p>
+                                    </a>
+                                    <a href="#" class="flex items-center px-4 py-3 hover:bg-gray-100 -mx-2">
+                                        <p class="text-gray-600 text-sm mx-2">
+                                            <span class="font-bold">Monthly financial report</span> is ready.
+                                        </p>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative" x-data="{ profileOpen: false }">
+                            <button @click="profileOpen = !profileOpen" class="flex items-center focus:outline-none">
+                                {% if request.user.is_authenticated %}
+                                    <img class="h-8 w-8 rounded-full object-cover" 
+                                         src="{% if request.user.profile.avatar %}{{ request.user.profile.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ request.user.get_full_name|urlencode }}{% endif %}" 
+                                         alt="{{ request.user.get_full_name }} profile picture">
+                                    <span class="ml-2 text-gray-700">{{ request.user.get_full_name }}</span>
+                                {% else %}
+                                    <span class="ml-2 text-gray-700">Guest</span>
+                                {% endif %}
+                            </button>
+                            <div x-show="profileOpen" @click.away="profileOpen = false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20">
+                                {% if request.user.is_authenticated %}
+                                    <a href="{% url 'user_profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</a>
+                                    <a href="{% url 'user_settings' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                                    <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                                {% else %}
+                                    <a href="{% url 'login' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign in</a>
+                                {% endif %}
+                            </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page content -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
+                <div class="container mx-auto px-6 py-8">
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

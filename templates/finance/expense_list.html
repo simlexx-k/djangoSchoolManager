@@ -1,0 +1,31 @@
+{% extends 'finance/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Expense List</h1>
+    <a href="{% url 'add_expense' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">Add New Expense</a>
+    <table class="min-w-full bg-white">
+        <thead>
+            <tr>
+                <th class="py-2 px-4 border-b">Description</th>
+                <th class="py-2 px-4 border-b">Amount</th>
+                <th class="py-2 px-4 border-b">Date</th>
+                <th class="py-2 px-4 border-b">Category</th>
+                <th class="py-2 px-4 border-b">Approved By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            <tr>
+                <td class="py-2 px-4 border-b">{{ expense.description }}</td>
+                <td class="py-2 px-4 border-b">${{ expense.amount }}</td>
+                <td class="py-2 px-4 border-b">{{ expense.date }}</td>
+                <td class="py-2 px-4 border-b">{{ expense.category }}</td>
+                <td class="py-2 px-4 border-b">{{ expense.approved_by.get_full_name }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
