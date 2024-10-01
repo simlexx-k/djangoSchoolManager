@@ -1420,10 +1420,10 @@ def generate_student_report(request, student_id):
         ['Total Score:', f"{total_score:.2f} out of {results.count() * 100}", 'Fee Balance:', f"Ksh {fee_balance:.2f}"],
     ]
 
-    '''
-            ['Total Fees:', f"Ksh {total_fees:.2f}", 'Total Paid:', f"Ksh {total_paid:.2f}"],
-        ['Maize Balance:', f"{maize_balance} Tins", 'Beans Balance:', f"{beans_balance} Tins"]
-    '''
+
+    #['Total Fees:', f"Ksh {total_fees:.2f}", 'Total Paid:', f"Ksh {total_paid:.2f}"],
+    #['Maize Balance:', f"{maize_balance} Tins", 'Beans Balance:', f"{beans_balance} Tins"]
+    
     t = Table(data, colWidths=[1.5*inch, 2.5*inch, 1.5*inch, 2.5*inch])
     t.setStyle(TableStyle([
         ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
