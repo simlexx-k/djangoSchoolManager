@@ -1,0 +1,54 @@
+{% extends 'finance/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Verify Receipt</h2>
+    <form method="get" action="{% url 'verify_receipt' 'placeholder' %}" onsubmit="return submitForm(this);">
+        <div class="form-group">
+            <label for="receipt_number">Receipt Number:</label>
+            <input type="text" class="form-control" id="receipt_number" name="receipt_number" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Verify</button>
+    </form>
+    <div id="result" class="mt-4"></div>
+</div>
+
+<script>
+function submitForm(form) {
+    var receipt_number = form.receipt_number.value;
+    var url = form.action.replace('placeholder', receipt_number);
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        var resultDiv = document.getElementById('result');
+        if (data.valid) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h4>Valid Receipt</h4>
+                    <p><strong>Receipt Number:</strong> ${data.receipt_number}</p>
+                    <p><strong>Payment Date:</strong> ${data.payment_date}</p>
+                    <p><strong>Student Name:</strong> ${data.student_name}</p>
+                    <p><strong>Grade:</strong> ${data.grade}</p>
+                    <p><strong>Fee Type:</strong> ${data.fee_type}</p>
+                    <p><strong>Total Fee Amount:</strong> KES ${data.total_fee_amount}</p>
+                    <p><strong>Amount Paid:</strong> KES ${data.amount_paid}</p>
+                    <p><strong>Balance:</strong> KES ${data.balance}</p>
+                </div>
+            `;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h4>Invalid Receipt</h4>
+                    <p>${data.message}</p>
+                </div>
+            `;
+        }
+    });
+    return false;
+}
+</script>
+{% endblock %}

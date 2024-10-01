@@ -1,9 +1,9 @@
 from django.db import models
 from django.conf import settings
-from fees.models import FeeRecord
-from learners.models import LearnerRegister
-
-# Create your models here.
+from fees.models import FeeRecord, FeeType
+from learners.models import LearnerRegister, Grade
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Payment(models.Model):
     fee_record = models.ForeignKey(FeeRecord, on_delete=models.CASCADE, related_name='payments')
@@ -25,7 +25,13 @@ class Payment(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.fee_record.paid_amount += self.amount
+        self.fee_record.paid_date = self.payment_date
         self.fee_record.update_status()
+
+@receiver(post_save, sender=Payment)
+def update_fee_record(sender, instance, created, **kwargs):
+    if created:
+        instance.fee_record.update_status()
 
 class Expense(models.Model):
     description = models.CharField(max_length=255)
@@ -58,16 +64,14 @@ class Supply(models.Model):
     def total_cost(self):
         return self.quantity * self.unit_price
 
-class FeeType(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True)
+
+class ClassFee(models.Model):
+    fee_type = models.ForeignKey(FeeType, on_delete=models.CASCADE, related_name='class_fees')
+    class_group = models.ForeignKey(Grade, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    is_recurring = models.BooleanField(default=False)
-    recurrence_period = models.CharField(max_length=20, choices=[
-        ('MONTHLY', 'Monthly'),
-        ('QUARTERLY', 'Quarterly'),
-        ('ANNUALLY', 'Annually'),
-    ], blank=True, null=True)
+
+    class Meta:
+        unique_together = ('fee_type', 'class_group')
 
     def __str__(self):
-        return self.name
+        return f"{self.fee_type} for {self.class_group}: {self.amount}"

@@ -1,0 +1,100 @@
+{% extends 'finance/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 sm:px-8">
+    <div class="py-8">
+        <div class="flex justify-between items-center">
+            <h2 class="text-2xl font-semibold leading-tight">Class Fees</h2>
+            <a href="{% url 'fee_type_list' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Manage Fee Types
+            </a>
+        </div>
+        
+        <div class="my-2 flex sm:flex-row flex-col">
+            <div class="flex flex-row mb-1 sm:mb-0">
+                <div class="relative">
+                    <select id="feeTypeFilter" class="appearance-none h-full rounded-l border block appearance-none w-full bg-white border-gray-400 text-gray-700 py-2 px-4 pr-8 leading-tight focus:outline-none focus:bg-white focus:border-gray-500">
+                        <option value="">All Fee Types</option>
+                        {% for fee_type in fee_types %}
+                            <option value="{{ fee_type.name }}">{{ fee_type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="relative">
+                    <select id="classGroupFilter" class="appearance-none h-full rounded-r border-t sm:rounded-r-none sm:border-r-0 border-r border-b block appearance-none w-full bg-white border-gray-400 text-gray-700 py-2 px-4 pr-8 leading-tight focus:outline-none focus:border-l focus:border-r focus:bg-white focus:border-gray-500">
+                        <option value="">All Classes</option>
+                        {% for class_group in class_groups %}
+                            <option value="{{ class_group.grade_name }}">{{ class_group.grade_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="-mx-4 sm:-mx-8 px-4 sm:px-8 py-4 overflow-x-auto">
+            <div class="inline-block min-w-full shadow rounded-lg overflow-hidden">
+                <table class="min-w-full leading-normal">
+                    <thead>
+                        <tr>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Fee Type
+                            </th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Class
+                            </th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Amount
+                            </th>
+                            <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for class_fee in class_fees %}
+                        <tr class="fee-row" data-fee-type="{{ class_fee.fee_type.name }}" data-class-group="{{ class_fee.class_group.grade_name }}">
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <p class="text-gray-900 whitespace-no-wrap">{{ class_fee.fee_type.name }}</p>
+                            </td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <p class="text-gray-900 whitespace-no-wrap">{{ class_fee.class_group.grade_name }}</p>
+                            </td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <p class="text-gray-900 whitespace-no-wrap">{{ class_fee.amount }}</p>
+                            </td>
+                            <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                                <a href="{% url 'update_class_fee' class_fee.id %}" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const feeTypeFilter = document.getElementById('feeTypeFilter');
+    const classGroupFilter = document.getElementById('classGroupFilter');
+    const feeRows = document.querySelectorAll('.fee-row');
+
+    function filterFees() {
+        const selectedFeeType = feeTypeFilter.value;
+        const selectedClassGroup = classGroupFilter.value;
+
+        feeRows.forEach(row => {
+            const feeType = row.getAttribute('data-fee-type');
+            const classGroup = row.getAttribute('data-class-group');
+            const showFeeType = selectedFeeType === '' || feeType === selectedFeeType;
+            const showClassGroup = selectedClassGroup === '' || classGroup === selectedClassGroup;
+            row.style.display = showFeeType && showClassGroup ? '' : 'none';
+        });
+    }
+
+    feeTypeFilter.addEventListener('change', filterFees);
+    classGroupFilter.addEventListener('change', filterFees);
+});
+</script>
+{% endblock %}

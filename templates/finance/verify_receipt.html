@@ -1,0 +1,25 @@
+{% extends 'finance/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Receipt Verification Result</h2>
+    {% if valid %}
+        <div class="alert alert-success">
+            <h4>Valid Receipt</h4>
+            <p><strong>Receipt Number:</strong> {{ receipt_number }}</p>
+            <p><strong>Payment Date:</strong> {{ payment_date }}</p>
+            <p><strong>Student Name:</strong> {{ student_name }}</p>
+            <p><strong>Grade:</strong> {{ grade }}</p>
+            <p><strong>Fee Type:</strong> {{ fee_type }}</p>
+            <p><strong>Total Fee Amount:</strong> KES {{ total_fee_amount }}</p>
+            <p><strong>Amount Paid:</strong> KES {{ amount_paid }}</p>
+            <p><strong>Balance:</strong> KES {{ balance }}</p>
+        </div>
+    {% else %}
+        <div class="alert alert-danger">
+            <h4>Invalid Receipt</h4>
+            <p>{{ message }}</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

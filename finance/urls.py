@@ -22,4 +22,11 @@ urlpatterns = [
     path('fee-types/create/', FeeTypeCreateView.as_view(), name='fee_type_create'),
     path('fee-types/<int:pk>/update/', FeeTypeUpdateView.as_view(), name='fee_type_update'),
     path('fee-types/<int:pk>/delete/', FeeTypeDeleteView.as_view(), name='fee_type_delete'),
+    path('class-fees/', views.ClassFeeListView.as_view(), name='class_fee_list'),  # You'll need to create this view
+    path('fee-types/<int:fee_type_id>/manage-class-fees/', views.manage_class_fees, name='manage_class_fees'),
+    path('class-fees/<int:pk>/update/', views.UpdateClassFeeView.as_view(), name='update_class_fee'),
+    path('get-learners-and-fee-types/', views.get_learners_and_fee_types, name='get_learners_and_fee_types'),
+    path('print-receipt/<int:payment_id>/', views.print_receipt, name='print_receipt'),
+    path('verify-receipt/<str:receipt_number>/', views.verify_receipt, name='verify_receipt'),
+    path('manual-verify/', views.manual_verify, name='manual_verify'),
 ]

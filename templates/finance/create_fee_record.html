@@ -1,25 +1,94 @@
 {% extends 'finance/base.html' %}
-{% load static %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Create Fee Record</h1>
-    <form method="post" class="max-w-lg">
-        {% csrf_token %}
-        {% for field in form %}
-        <div class="mb-4">
-            <label for="{{ field.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
-                {{ field.label }}
-            </label>
-            {{ field }}
-            {% if field.errors %}
-            <p class="text-red-500 text-xs italic">{{ field.errors.0 }}</p>
-            {% endif %}
-        </div>
+    <h1 class="text-2xl font-bold mb-6">Create Fee Record</h1>
+
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
         {% endfor %}
-        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Create Fee Record
-        </button>
+    </ul>
+    {% endif %}
+
+    <form id="feeRecordForm" method="post" class="space-y-6">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        <div>
+            <label for="grade" class="block text-sm font-medium text-gray-700">Select Grade:</label>
+            <select name="grade" id="grade" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                <option value="">Select a grade</option>
+                {% for grade in grades %}
+                    <option value="{{ grade.id }}" {% if grade.id|stringformat:"s" == selected_grade_id %}selected{% endif %}>{{ grade.grade_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="{{ form.learner.id_for_label }}" class="block text-sm font-medium text-gray-700">Learner:</label>
+            {{ form.learner }}
+            {{ form.learner.errors }}
+        </div>
+
+        <div>
+            <label for="{{ form.fee_type.id_for_label }}" class="block text-sm font-medium text-gray-700">Fee Type:</label>
+            <select name="fee_type" id="id_fee_type">
+                <option value="">Select a fee type</option>
+                {% for fee_type in form.fee_type.field.queryset %}
+                    <option value="{{ fee_type.id }}">{{ fee_type.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="{{ form.amount.id_for_label }}" class="block text-sm font-medium text-gray-700">Amount:</label>
+            {{ form.amount }}
+            {{ form.amount.errors }}
+        </div>
+
+        <div>
+            <label for="{{ form.due_date.id_for_label }}" class="block text-sm font-medium text-gray-700">Due Date:</label>
+            {{ form.due_date }}
+            {{ form.due_date.errors }}
+        </div>
+
+        <div>
+            <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Create Fee Record
+            </button>
+        </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const gradeSelect = document.getElementById('grade');
+    const learnerSelect = document.getElementById('{{ form.learner.id_for_label }}');
+    const feeTypeSelect = document.getElementById('{{ form.fee_type.id_for_label }}');
+
+    gradeSelect.addEventListener('change', function() {
+        const gradeId = this.value;
+        if (gradeId) {
+            fetch(`/finance/get-learners-and-fee-types/?grade_id=${gradeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    learnerSelect.innerHTML = '<option value="">Select a learner</option>';
+                    data.learners.forEach(learner => {
+                        learnerSelect.innerHTML += `<option value="${learner.id}">${learner.name}</option>`;
+                    });
+
+                    feeTypeSelect.innerHTML = '<option value="">Select a fee type</option>';
+                    data.fee_types.forEach(feeType => {
+                        feeTypeSelect.innerHTML += `<option value="${feeType.id}">${feeType.name}</option>`;
+                    });
+                });
+        } else {
+            learnerSelect.innerHTML = '<option value="">Select a learner</option>';
+            feeTypeSelect.innerHTML = '<option value="">Select a fee type</option>';
+        }
+    });
+});
+</script>
 {% endblock %}

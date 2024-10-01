@@ -1,14 +1,21 @@
 from django.db import models
 from learners.models import LearnerRegister
-
+from django.db.models import Sum
 # Create your models here.
 
 class FeeType(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
+    PAYMENT_FREQUENCY_CHOICES = [
+        ('WEEKLY', 'Weekly'),
+        ('TERMLY', 'Termly'),
+        ('ANNUALLY', 'Annually'),
+    ]
+    payment_frequency = models.CharField(max_length=20, choices=PAYMENT_FREQUENCY_CHOICES, default='TERMLY')
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.get_payment_frequency_display()})"
+
 
 class FeeRecord(models.Model):
     learner = models.ForeignKey(LearnerRegister, on_delete=models.CASCADE)
@@ -23,6 +30,12 @@ class FeeRecord(models.Model):
         ('PAID', 'Paid'),
     ]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='UNPAID')
+
+    def collected_amount(self):
+        return self.payments.aggregate(total=Sum('amount'))['total'] or 0
+
+    def balance(self):
+        return self.amount - self.paid_amount
 
     def __str__(self):
         return f"{self.learner.name} - {self.fee_type.name}"
