@@ -151,14 +151,14 @@ class Term(models.Model):
     ]
     
     year = models.PositiveIntegerField()
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
+    #academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
     term_number = models.PositiveSmallIntegerField(choices=TERM_CHOICES)
     start_date = models.DateField()
     end_date = models.DateField()
 
     class Meta:
-        unique_together = ('year', 'academic_year', 'term_number')
-        ordering = ['year', 'academic_year', 'term_number']
+        unique_together = ('year', 'term_number')
+        ordering = ['year', 'term_number']
 
     def __str__(self):
         return f"{self.get_term_number_display()} {self.year}"

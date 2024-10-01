@@ -1378,9 +1378,8 @@ def generate_student_report(request, student_id):
 
      # Fetch financial data
     current_year = timezone.now().year
-    fee_records = FeeRecord.objects.filter(learner=student, academic_year__year=current_year)
-    learner_fees = FeeRecord.learner
-    payments = Payment.objects.filter(learner_fees=student, payment_date__year=current_year)
+    fee_records = FeeRecord.objects.filter(learner=student, year__year=current_year)
+    payments = Payment.objects.filter(fee_record=student, payment_date__year=current_year)
 
     total_fees = sum(record.amount for record in fee_records)
     total_paid = sum(payment.amount for payment in payments)
