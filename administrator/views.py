@@ -1417,7 +1417,7 @@ def generate_student_report(request, student_id):
         ['Student Name:', student.name, 'Class:', student.grade.grade_name],
         ['Exam:', exam_type.name, 'Date:', exam_type.date_administered.strftime('%B %d, %Y')],
         ['Term:', exam_type.term, 'Rank:', f"{class_rank} out of {student.grade.learners.count()}"],
-        ['Total Score:', f"{total_score:.2f} out of {results.count() * 100}", 'Fee Balance:', f"Ksh ----"],
+        ['Total Score:', f"{total_score:.2f} out of {results.count() * 100}", 'Fee Balance:', "Ksh ----"],
     ]
 
 
