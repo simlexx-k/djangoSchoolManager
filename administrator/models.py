@@ -90,6 +90,59 @@ class Teacher(models.Model):
     def __str__(self):
         return f"{self.name} ({self.employee_id})"
 
+class AcademicYear(models.Model):
+    year = models.CharField(max_length=9, unique=True, help_text="Format: YYYY-YYYY")
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_current = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-year']
+        verbose_name = "Academic Year"
+        verbose_name_plural = "Academic Years"
+
+    def __str__(self):
+        return self.year
+
+    def clean(self):
+        # Validate year format
+        try:
+            start_year, end_year = map(int, self.year.split('-'))
+            if end_year - start_year != 1:
+                raise ValidationError(_("Invalid year format. It should be YYYY-YYYY with consecutive years."))
+        except ValueError:
+            raise ValidationError(_("Invalid year format. It should be YYYY-YYYY."))
+
+        # Validate start_date and end_date
+        if self.start_date and self.end_date:
+            if self.start_date >= self.end_date:
+                raise ValidationError(_("Start date must be before end date."))
+            
+            if self.start_date.year != start_year or self.end_date.year != end_year:
+                raise ValidationError(_("The dates must correspond to the years in the academic year."))
+
+        # Validate is_current
+        if self.is_current and AcademicYear.objects.filter(is_current=True).exclude(pk=self.pk).exists():
+            raise ValidationError(_("There can only be one current academic year."))
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_current(cls):
+        try:
+            return cls.objects.get(is_current=True)
+        except cls.DoesNotExist:
+            return None
+
+    @classmethod
+    def get_for_date(cls, date):
+        return cls.objects.filter(start_date__lte=date, end_date__gte=date).first()
+
+    def is_date_within(self, date):
+        return self.start_date <= date <= self.end_date
+
 class Term(models.Model):
     TERM_CHOICES = [
         (1, 'First Term'),
@@ -98,13 +151,14 @@ class Term(models.Model):
     ]
     
     year = models.PositiveIntegerField()
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
     term_number = models.PositiveSmallIntegerField(choices=TERM_CHOICES)
     start_date = models.DateField()
     end_date = models.DateField()
 
     class Meta:
-        unique_together = ('year', 'term_number')
-        ordering = ['year', 'term_number']
+        unique_together = ('year', 'academic_year', 'term_number')
+        ordering = ['year', 'academic_year', 'term_number']
 
     def __str__(self):
         return f"{self.get_term_number_display()} {self.year}"

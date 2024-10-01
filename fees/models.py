@@ -1,6 +1,7 @@
 from django.db import models
 from learners.models import LearnerRegister
 from django.db.models import Sum
+from administrator.models import AcademicYear
 # Create your models here.
 
 class FeeType(models.Model):
@@ -18,6 +19,7 @@ class FeeType(models.Model):
 
 
 class FeeRecord(models.Model):
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
     learner = models.ForeignKey(LearnerRegister, on_delete=models.CASCADE)
     fee_type = models.ForeignKey(FeeType, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -48,3 +50,5 @@ class FeeRecord(models.Model):
         else:
             self.status = 'UNPAID'
         self.save()
+    class Meta:
+        unique_together = ('learner', 'academic_year', 'fee_type')
