@@ -1376,21 +1376,14 @@ def generate_student_report(request, student_id):
         total_score__gt=total_score
     ).count() + 1
 
-     # Fetch financial data
-    current_year = timezone.now().year
-    fee_records = FeeRecord.objects.filter(learner=student, year__year=current_year)
-    payments = Payment.objects.filter(fee_record__learner=student, payment_date__year=current_year)
-
-    total_fees = sum(record.amount for record in fee_records)
-    total_paid = sum(payment.amount for payment in payments)
-    fee_balance = total_fees - total_paid
-
+ 
     # Fetch additional data
-    #fee_balance = student.fee_balance  # Assuming you have this field in your LearnerRegister model
+    fee_balance = student.fee_balance  # Assuming you have this field in your LearnerRegister model
     maize_balance = student.maize_balance  # Assuming you have this field
     beans_balance = student.beans_balance  # Assuming you have this field
     class_teacher_remark = student.grade.class_teacher_remark  # Assuming you have this field in Grade model
-
+    total_fees = 0
+    total_paid = 0
     # Fetch school and principal's remark
     school = School.objects.first()  # Assuming you have only one school record
     if school:
@@ -1441,76 +1434,6 @@ def generate_student_report(request, student_id):
     elements.append(t)
     elements.append(Spacer(1, 0.25*inch))
 
-       # Add a new section for financial details
-    elements.append(Paragraph("Financial Summary", styles['Heading2']))
-    elements.append(Spacer(1, 0.1*inch))
-
-    financial_data = [
-        ['Fee Type', 'Amount', 'Paid', 'Balance'],
-    ]
-
-    for record in fee_records:
-        paid_for_this_record = sum(payment.amount for payment in payments if payment.fee_type == record.fee_type)
-        balance_for_this_record = record.amount - paid_for_this_record
-        financial_data.append([
-            record.fee_type.name,
-            f"Ksh {record.amount:.2f}",
-            f"Ksh {paid_for_this_record:.2f}",
-            f"Ksh {balance_for_this_record:.2f}"
-        ])
-
-    financial_table = Table(financial_data, colWidths=[2*inch, 1.5*inch, 1.5*inch, 1.5*inch])
-    financial_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 12),
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),
-        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
-        ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
-        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
-        ('FONTSIZE', (0,1), (-1,-1), 10),
-        ('TOPPADDING', (0,1), (-1,-1), 6),
-        ('BOTTOMPADDING', (0,1), (-1,-1), 6),
-        ('GRID', (0,0), (-1,-1), 1, colors.black)
-    ]))
-    elements.append(financial_table)
-    elements.append(Spacer(1, 0.25*inch))
-
-    # Add a payment history section
-    elements.append(Paragraph("Recent Payment History", styles['Heading2']))
-    elements.append(Spacer(1, 0.1*inch))
-
-    payment_data = [
-        ['Date', 'Amount', 'Receipt No.', 'Fee Type'],
-    ]
-
-    for payment in payments.order_by('-payment_date')[:5]:  # Show last 5 payments
-        payment_data.append([
-            payment.payment_date.strftime('%Y-%m-%d'),
-            f"Ksh {payment.amount:.2f}",
-            payment.receipt_number,
-            payment.fee_type.name
-        ])
-
-    payment_table = Table(payment_data, colWidths=[1.5*inch, 1.5*inch, 2*inch, 1.5*inch])
-    payment_table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,0), 12),
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),
-        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
-        ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
-        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
-        ('FONTSIZE', (0,1), (-1,-1), 10),
-        ('TOPPADDING', (0,1), (-1,-1), 6),
-        ('BOTTOMPADDING', (0,1), (-1,-1), 6),
-        ('GRID', (0,0), (-1,-1), 1, colors.black)
-    ]))
-    elements.append(payment_table)
 
     # Results table with subject teacher comments
     data = [['Subject', 'Score', 'Grade', 'Teacher Comment']]
