@@ -1378,7 +1378,7 @@ def generate_student_report(request, student_id):
 
  
     # Fetch additional data
-    fee_balance = student.fee_balance  # Assuming you have this field in your LearnerRegister model
+    fee_balance = '----'  # Assuming you have this field in your LearnerRegister model
     maize_balance = student.maize_balance  # Assuming you have this field
     beans_balance = student.beans_balance  # Assuming you have this field
     class_teacher_remark = student.grade.class_teacher_remark  # Assuming you have this field in Grade model
