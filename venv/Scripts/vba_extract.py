@@ -1,4 +1,4 @@
-#!D:\software\Grade7\venv\Scripts\python.exe
+#!F:\DjangoSchoolManager\venv\Scripts\python.exe
 
 ##############################################################################
 #

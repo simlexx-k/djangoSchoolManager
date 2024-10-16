@@ -77,12 +77,14 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 messages.info(request, f"You are now logged in as {username}.")
-                if user.is_superuser:
-                    return redirect('super_admin_dashboard')
-                elif user.user_type == 'teacher':
-                    return redirect('teacher_dashboard')
-                else:
-                    return redirect(dashboard)  # Default dashboard
+                # Comment out user type redirect
+                # if user.is_superuser:
+                #     return redirect('super_admin_dashboard')
+                # elif user.user_type == 'teacher':
+                #     return redirect('teacher_dashboard')
+                # else:
+                #     return redirect(dashboard)  # Default dashboard
+                return redirect(dashboard)  # Always redirect to the control dashboard
             else:
                 messages.error(request,"Invalid username or password.")
         else:
@@ -309,7 +311,7 @@ def user_profile(request):
         form = CustomUserForm(instance=request.user)
     return render(request, 'super-admin/user_profile.html', {'form': form})
 
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .forms import CustomUserCreationForm
 
