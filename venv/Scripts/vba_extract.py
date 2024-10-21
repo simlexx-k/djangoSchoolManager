@@ -1,4 +1,4 @@
-#!F:\DjangoSchoolManager\venv\Scripts\python.exe
+#!G:\projects\school\venv\Scripts\python.exe
 
 ##############################################################################
 #

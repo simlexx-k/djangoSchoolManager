@@ -1017,6 +1017,48 @@ from reportlab.lib.colors import HexColor, Color
 #from reportlab.graphics.charts.gradients import LinearGradient
 #from reportlab.graphics.charts.utils import LinearGradient
 
+def calculate_performance_metrics(results):
+    total_score = sum(result.score for result in results)
+    average_score = total_score / len(results)
+    highest_score = max(result.score for result in results)
+    lowest_score = min(result.score for result in results)
+    subjects_above_75 = sum(1 for result in results if result.score >= 75)
+    subjects_below_50 = sum(1 for result in results if result.score < 50)
+    
+    return {
+        'total_score': total_score,
+        'average_score': average_score,
+        'highest_score': highest_score,
+        'lowest_score': lowest_score,
+        'subjects_above_75': subjects_above_75,
+        'subjects_below_50': subjects_below_50
+    }
+
+def generate_principal_remark(metrics, class_rank, total_students):
+    remark = f"Dear student, your overall performance shows an average score of {metrics['average_score']:.2f}. "
+    
+    if metrics['average_score'] >= 80:
+        remark += "Your exceptional results demonstrate outstanding academic achievement. "
+    elif 70 <= metrics['average_score'] < 80:
+        remark += "You've shown very good performance across your subjects. "
+    elif 60 <= metrics['average_score'] < 70:
+        remark += "Your results show good potential, but there's room for improvement. "
+    else:
+        remark += "Your current performance indicates a need for increased focus and effort. "
+
+    remark += f"You ranked {class_rank} out of {total_students} in your class. "
+
+    if metrics['subjects_above_75'] > 0:
+        remark += f"Notably, you excelled in {metrics['subjects_above_75']} subject(s) with scores above 75. "
+    if metrics['subjects_below_50'] > 0:
+        remark += f"However, {metrics['subjects_below_50']} subject(s) require additional attention as they fall below 50. "
+
+    remark += "Remember, consistent effort and dedication are key to academic success. "
+    remark += "Keep up the good work where you're excelling, and don't hesitate to seek help in areas where you're struggling. "
+    remark += "We're here to support your academic journey."
+
+    return remark
+
 @login_required
 def generate_class_report(request, grade_id):
     grade = get_object_or_404(Grade, id=grade_id)
@@ -1331,6 +1373,109 @@ from django.db.models import Sum
 from learners.models import LearnerRegister, Grade, School
 from exams.models import ExamType, ExamResult, LearnerTotalScore
 
+def get_overall_grade(mean_score):
+    if 75 <= mean_score <= 100:
+        return "Exceeding Expectations (EE)"
+    elif 50 <= mean_score < 75:
+        return "Meeting Expectations (ME)"
+    elif 25 <= mean_score < 50:
+        return "Approaching Expectations (AE)"
+    elif 0 <= mean_score < 25:
+        return "Below Expectations (BE)"
+    else:
+        return "Invalid Score"  # This catches any potential out-of-range scores
+    
+def get_auto_comment(score):
+    if score >= 80:
+        return "Excellent performance! Keep up the great work."
+    elif 70 <= score < 80:
+        return "Very good performance. You're on the right track."
+    elif 60 <= score < 70:
+        return "Good effort. With more practice, you can improve further."
+    elif 50 <= score < 60:
+        return "Fair performance. Focus on areas that need improvement."
+    else:
+        return "Needs improvement. Let's work together to boost score."
+
+
+def calculate_performance_metrics(results):
+    scores = [result.score for result in results]
+    total_score = sum(scores)
+    average_score = total_score / len(scores) if scores else 0
+    highest_score = max(scores) if scores else 0
+    lowest_score = min(scores) if scores else 0
+    subjects_above_75 = sum(1 for score in scores if score >= 75)
+    subjects_below_50 = sum(1 for score in scores if score < 50)
+    
+    return {
+        'total_score': total_score,
+        'average_score': average_score,
+        'highest_score': highest_score,
+        'lowest_score': lowest_score,
+        'subjects_above_75': subjects_above_75,
+        'subjects_below_50': subjects_below_50
+    }
+
+def generate_principal_remark(metrics, class_rank, total_students):
+    remark = f"Dear student, your overall performance shows an average score of {metrics['average_score']:.2f}. "
+    
+    if metrics['average_score'] >= 80:
+        remark += "Your exceptional results demonstrate outstanding academic achievement. "
+    elif 70 <= metrics['average_score'] < 80:
+        remark += "You've shown very good performance across your subjects. "
+    elif 60 <= metrics['average_score'] < 70:
+        remark += "Your results show good potential, but there's room for improvement. "
+    else:
+        remark += "Your current performance indicates a need for increased focus and effort. "
+
+    remark += f"You ranked {class_rank} out of {total_students} in your class. "
+
+    if metrics['subjects_above_75'] > 0:
+        remark += f"Notably, you excelled in {metrics['subjects_above_75']} subject(s) with scores above 75. "
+    if metrics['subjects_below_50'] > 0:
+        remark += f"However, {metrics['subjects_below_50']} subject(s) require additional attention as they fall below 50. "
+
+    remark += "Remember to seek help in areas where you're struggling. "
+    remark += "We're here to support your academic journey."
+
+    return remark
+
+'''def get_auto_comment(score):
+    if score >= 80:
+        return "Excellent performance! Keep up the great work."
+    elif 70 <= score < 80:
+        return "Very good performance. You're on the right track."
+    elif 60 <= score < 70:
+        return "Good effort. With more practice, you can improve further."
+    elif 50 <= score < 60:
+        return "Fair performance. Focus on areas that need improvement."
+    else:
+        return "Needs improvement. Let's work together to boost your performance."
+
+def get_overall_grade(mean_score):
+    if mean_score >= 80:
+        return "Exceeding Expectations (EE)"
+    elif 70 <= mean_score < 80:
+        return "Meeting Expectations (ME)"
+    elif 60 <= mean_score < 70:
+        return "Approaching Expectations (AE)"
+    else:
+        return "Below Expectations (BE)"
+'''
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from django.db.models import Sum
+
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, Frame
+from reportlab.platypus.doctemplate import PageTemplate
+
 @login_required
 def generate_student_report(request, student_id):
     # ... (previous code for fetching student, exam type, and results)
@@ -1363,122 +1508,191 @@ def generate_student_report(request, student_id):
         messages.warning(request, f"No results found for {student.name} in {exam_type.name}.")
         return redirect('report_options')
 
-    try:
-        LearnerTotalScore.update_all_totals(exam_type)
-        total_score = LearnerTotalScore.objects.get(learner=student, exam_type=exam_type).total_score
-    except LearnerTotalScore.DoesNotExist:
-        messages.error(request, f"Total score not found for {student.name} in {exam_type.name}.")
-        return redirect('report_options')
+    # Calculate total score and mean score on-the-fly
+    total_score = sum(result.score for result in results)
+    mean_score = total_score / len(results)
 
-    class_rank = LearnerTotalScore.objects.filter(
-        learner__grade=student.grade,
-        exam_type=exam_type,
-        total_score__gt=total_score
-    ).count() + 1
+    # Get overall grade
+    overall_grade = get_overall_grade(mean_score)
 
+    # Generate class teacher's remark
+    class_teacher_remark = f"The learner's overall performance is {overall_grade} with a mean score of {mean_score:.2f}."
+
+    # Calculate performance metrics
+    performance_metrics = calculate_performance_metrics(results)
+
+    # Calculate class rank
+    class_results = ExamResult.objects.filter(
+        learner_id__grade=student.grade,
+        exam_type=exam_type
+    ).values('learner_id').annotate(total_score=Sum('score')).order_by('-total_score')
+
+    class_rank = next(i for i, result in enumerate(class_results, 1) if result['learner_id'] == student.id)
+
+    total_students = student.grade.learners.count()
+    principal_remark = generate_principal_remark(performance_metrics, class_rank, total_students)
  
     # Fetch additional data
     fee_balance = '----'  # Assuming you have this field in your LearnerRegister model
     maize_balance = student.maize_balance  # Assuming you have this field
     beans_balance = student.beans_balance  # Assuming you have this field
-    class_teacher_remark = student.grade.class_teacher_remark  # Assuming you have this field in Grade model
     total_fees = 0
     total_paid = 0
-    # Fetch school and principal's remark
+    '''
+            # Fetch school and principal's remark
     school = School.objects.first()  # Assuming you have only one school record
     if school:
         principal_remark = school.principal_remark
     else:
         principal_remark = "Principal's remark not available."
 
+    '''
+
     # Generate PDF
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=portrait(letter), topMargin=0.1*inch, bottomMargin=0.1*inch)
+    
+    # Create a custom PageTemplate with a border
+    def add_border(canvas, doc):
+        canvas.saveState()
+        canvas.setStrokeColor(colors.black)
+        canvas.setLineWidth(1)
+        canvas.rect(doc.leftMargin, doc.bottomMargin,
+                    doc.width, doc.height, stroke=1, fill=0)
+        canvas.restoreState()
+
+    # Create the document with custom PageTemplate
+    page_width, page_height = letter
+    margin = 0.5 * inch
+    doc = SimpleDocTemplate(buffer, pagesize=letter, 
+                            topMargin=margin, bottomMargin=margin,
+                            leftMargin=margin, rightMargin=margin)
+    
+    # Create a frame with some padding inside the border
+    frame_padding = 0.25 * inch
+    frame = Frame(doc.leftMargin + frame_padding, 
+                  doc.bottomMargin + frame_padding, 
+                  doc.width - (2 * frame_padding), 
+                  doc.height - (2 * frame_padding),
+                  id='normal', showBoundary=0)
+    
+    template = PageTemplate(id='test', frames=frame, onPage=add_border)
+    doc.addPageTemplates([template])
+
     elements = []
 
+    # Adjust styles to fit within the new frame
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='Center', alignment=1))
-    styles.add(ParagraphStyle(name='Right', alignment=2))
-    styles.add(ParagraphStyle(name='Left', alignment=0))
+    styles['Title'].fontSize = 14  # Reduce title font size if necessary
 
-    # School logo and header
-    elements.append(Image('static/src/img/masabaLogo.png', width=0.8*inch, height=0.8*inch))
+    # School logo and header (adjust sizes if needed)
+    elements.append(Image('static/src/img/masabaLogo.png', width=0.6*inch, height=0.6*inch))
     elements.append(Paragraph("ST MARY'S MASABA SCHOOL", styles['Title']))
     elements.append(Paragraph("P.O. BOX 12-30302 LESSOS, KENYA", styles['Center']))
     elements.append(Paragraph("PHONE: (254) 700-098-595 | EMAIL: stmarysmasaba@gmail.com", styles['Center']))
-    elements.append(Spacer(1, 0.25*inch))
+    elements.append(Spacer(1, 0.15*inch))
 
     # Report header
     elements.append(Paragraph("Student Exam Report", styles['Title']))
     elements.append(Spacer(1, 0.1*inch))
+
+    # ... (previous code remains unchanged)
+
+    # Calculate available width
+    available_width = doc.width - (2 * frame_padding)
 
     # Student details
     data = [
         ['Student Name:', student.name, 'Class:', student.grade.grade_name],
         ['Exam:', exam_type.name, 'Date:', exam_type.date_administered.strftime('%B %d, %Y')],
         ['Term:', exam_type.term, 'Rank:', f"{class_rank} out of {student.grade.learners.count()}"],
-        ['Total Score:', f"{total_score:.2f} out of {results.count() * 100}", 'Fee Balance:', "Ksh ----"],
+        ['Total Score:', f"{total_score:.2f} out of {results.count() * 100}", 'Fee Balance:', f"Ksh "],
     ]
 
-
-    #['Total Fees:', f"Ksh {total_fees:.2f}", 'Total Paid:', f"Ksh {total_paid:.2f}"],
-    #['Maize Balance:', f"{maize_balance} Tins", 'Beans Balance:', f"{beans_balance} Tins"]
-    
-    t = Table(data, colWidths=[1.5*inch, 2.5*inch, 1.5*inch, 2.5*inch])
+    col_widths = [available_width * 0.2, available_width * 0.3, available_width * 0.2, available_width * 0.3]
+    t = Table(data, colWidths=col_widths)
     t.setStyle(TableStyle([
         ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('FONTSIZE', (0,0), (-1,-1), 8),  # Reduced font size
         ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
         ('BOX', (0,0), (-1,-1), 0.25, colors.black),
+        ('TOPPADDING', (0,0), (-1,-1), 1),  # Reduced padding
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1),  # Reduced padding
     ]))
     elements.append(t)
-    elements.append(Spacer(1, 0.25*inch))
+    elements.append(Spacer(1, 0.1*inch))  # Reduced spacer
 
-
+    # ... (rest of the code remains unchanged)
     # Results table with subject teacher comments
     data = [['Subject', 'Score', 'Grade', 'Teacher Comment']]
     for result in results:
+        # Use the stored comment if available, otherwise use the auto-generated comment
+        comment = result.teacher_comment or get_auto_comment(result.score)
         data.append([
             result.subject.name, 
             f"{result.score:.2f}", 
             get_grade(result.score), 
-            result.teacher_comment  # Assuming you have this field in ExamResult model
+            comment
         ])
 
-    t = Table(data, colWidths=[2*inch, 1*inch, 1*inch, 4*inch])
+    # For example, adjust the results table width:
+    available_width = doc.width - (2 * frame_padding)
+    t = Table(data, colWidths=[available_width * 0.25, available_width * 0.125, 
+                               available_width * 0.125, available_width * 0.5])
     t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        # Header style
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#4e73df')),  # Blue header
         ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('ALIGN', (0,0), (-1,0), 'CENTER'),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('FONTSIZE', (0,0), (-1,0), 12),
         ('BOTTOMPADDING', (0,0), (-1,0), 12),
-        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+        
+        # Data row styles
+        ('BACKGROUND', (0,1), (-1,-1), colors.white),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.lightgrey]),        
+        # Data row styles
         ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+        ('ALIGN', (0,1), (2,-1), 'CENTER'),
         ('ALIGN', (3,1), (3,-1), 'LEFT'),  # Left-align comments
         ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
         ('FONTSIZE', (0,1), (-1,-1), 10),
         ('TOPPADDING', (0,1), (-1,-1), 6),
         ('BOTTOMPADDING', (0,1), (-1,-1), 6),
-        ('GRID', (0,0), (-1,-1), 1, colors.black)
+        
+        # Alternating row colors
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.lightgrey]),                
+        # Grid styling
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('LINEBELOW', (0,0), (-1,0), 1, colors.HexColor('#4e73df')),  # Thicker line below header
+        
+        # Highlight passing scores in green, failing in red
+        ('TEXTCOLOR', (1,1), (1,-1), lambda x: colors.green if float(x) >= 50 else colors.red),
     ]))
+
+
+ 
     elements.append(t)
     elements.append(Spacer(1, 0.1*inch))
+
+    # Calculate available width
+    available_width = doc.width - (2 * frame_padding)
 
     # Bar chart and remarks side by side
     chart_and_remarks = []
 
     # Bar chart
-    drawing = Drawing(300, 150)
+    chart_width = available_width * 0.45  # Adjust this value as needed
+    drawing = Drawing(chart_width, 150)
     data = [[result.score for result in results]]
     bc = VerticalBarChart()
     bc.x = 30
-    bc.y = 30
-    bc.height = 125
-    bc.width = 250
+    bc.y = 20
+    bc.height = 100
+    bc.width = chart_width - 40
     bc.data = data
     bc.strokeColor = colors.black
     bc.fillColor = colors.white
@@ -1493,7 +1707,7 @@ def generate_student_report(request, student_id):
 
     bc.valueAxis.valueMin = 0
     bc.valueAxis.valueMax = 100
-    bc.valueAxis.valueStep = 10
+    bc.valueAxis.valueStep = 20
     bc.categoryAxis.labels.boxAnchor = 'ne'
     bc.categoryAxis.labels.dx = 8
     bc.categoryAxis.labels.dy = -2
@@ -1503,39 +1717,61 @@ def generate_student_report(request, student_id):
     chart_and_remarks.append(drawing)
 
     # Remarks
+    remarks_width = available_width * 0.55  # Adjust this value as needed
+    styles.add(ParagraphStyle(name='Small', fontSize=8, leading=10))
     remarks_data = [
         [Paragraph("Class Teacher's Remark:", styles['Heading3'])],
-        [Paragraph(str(class_teacher_remark), styles['Normal'])],
-        [Spacer(1, 0.1*inch)],
+        [Paragraph(class_teacher_remark, styles['Small'])],
+        [Spacer(1, 0.05*inch)],
         [Paragraph("Principal's Remark:", styles['Heading3'])],
-        [Paragraph(str(principal_remark), styles['Normal'])]
+        [Paragraph(str(principal_remark), styles['Small'])]
     ]
-    remarks_table = Table(remarks_data, colWidths=[4*inch])
+    remarks_table = Table(remarks_data, colWidths=[remarks_width])
     remarks_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
     chart_and_remarks.append(remarks_table)
 
-    chart_and_remarks_table = Table([chart_and_remarks], colWidths=[4*inch, 4*inch])
+    chart_and_remarks_table = Table([chart_and_remarks], colWidths=[chart_width, remarks_width])
     chart_and_remarks_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
     elements.append(chart_and_remarks_table)
 
+
+
     # Signature lines
-    elements.append(Spacer(1, 0.5*inch))
+    elements.append(Spacer(1, 0.25*inch))  # Reduced spacer
+    
+    signature_style = ParagraphStyle(
+        'Signature',
+        parent=styles['Normal'],
+        fontSize=7,  # Reduced font size
+        leading=8,   # Reduced line height
+        alignment=1  # Center alignment
+    )
+    
     signature_data = [
-        ['_________________________', '_________________________', '_________________________'],
-        ['Class Teacher', 'Principal', 'Parent/Guardian']
+        ['_____________', '_____________', '_____________'],
+        [Paragraph('Class Teacher', signature_style),
+         Paragraph('Principal', signature_style),
+         Paragraph('Parent/Guardian', signature_style)]
     ]
-    signature_table = Table(signature_data, colWidths=[3*inch, 3*inch, 3*inch])
+    
+    signature_table = Table(signature_data, colWidths=[available_width/3]*3)
     signature_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
+    
     elements.append(signature_table)
+
+    # Add minimal space at the bottom
+    elements.append(Spacer(1, 0.1*inch))
 
     # Build PDF
     doc.build(elements)
@@ -1579,8 +1815,8 @@ def generate_all_student_report(request):
     # Create ZIP file
     with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
         for learner in learners:
-            pdf_buffer = generate_student_report_pdf(learner, exam_type)
-            zip_file.writestr(f"{learner.name}_{exam_type.name}_report.pdf", pdf_buffer.getvalue())
+            pdf = generate_student_report_pdf(learner, exam_type)
+            zip_file.writestr(f"{learner.name}_{exam_type.name}_report.pdf", pdf)
     
     # Prepare response
     response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
@@ -1591,101 +1827,173 @@ def generate_all_student_report(request):
 
 def generate_student_report_pdf(student, exam_type):
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=portrait(letter), topMargin=0.1*inch, bottomMargin=0.1*inch)
+    
+    # Create a custom PageTemplate with a border
+    def add_border(canvas, doc):
+        canvas.saveState()
+        canvas.setStrokeColor(colors.black)
+        canvas.setLineWidth(1)
+        canvas.rect(doc.leftMargin, doc.bottomMargin,
+                    doc.width, doc.height, stroke=1, fill=0)
+        canvas.restoreState()
+
+    # Create the document with custom PageTemplate
+    page_width, page_height = letter
+    margin = 0.5 * inch
+    doc = SimpleDocTemplate(buffer, pagesize=letter, 
+                            topMargin=margin, bottomMargin=margin,
+                            leftMargin=margin, rightMargin=margin)
+    
+    # Create a frame with some padding inside the border
+    frame_padding = 0.25 * inch
+    frame = Frame(doc.leftMargin + frame_padding, 
+                  doc.bottomMargin + frame_padding, 
+                  doc.width - (2 * frame_padding), 
+                  doc.height - (2 * frame_padding),
+                  id='normal', showBoundary=0)
+    
+    template = PageTemplate(id='test', frames=frame, onPage=add_border)
+    doc.addPageTemplates([template])
+
     elements = []
 
+    # Adjust styles to fit within the new frame
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name='Center', alignment=1))
+    styles['Title'].fontSize = 14  # Reduce title font size if necessary
 
-    # Fetch additional data
-    fee_balance = student.fee_balance  # Assuming you have this field in your LearnerRegister model
-    maize_balance = student.maize_balance  # Assuming you have this field
-    beans_balance = student.beans_balance  # Assuming you have this field
-    class_teacher_remark = student.grade.class_teacher_remark  # Assuming you have this field in Grade model
-
-    # School logo and header
+    # School logo and header (adjust sizes if needed)
     elements.append(Image('static/src/img/masabaLogo.png', width=0.6*inch, height=0.6*inch))
-    elements.append(Paragraph("St Marys Masaba School", styles['Title']))
-    elements.append(Paragraph("PO BOX 12-30302 Lessos, Kenya", styles['Center']))
-    elements.append(Paragraph("Phone: (254) 700-098-595 | Email: stmarysmasaba@gmail.com", styles['Center']))
-    elements.append(Spacer(1, 0.25*inch))
+    elements.append(Paragraph("ST MARY'S MASABA SCHOOL", styles['Title']))
+    elements.append(Paragraph("P.O. BOX 12-30302 LESSOS, KENYA", styles['Center']))
+    elements.append(Paragraph("PHONE: (254) 700-098-595 | EMAIL: stmarysmasaba@gmail.com", styles['Center']))
+    elements.append(Spacer(1, 0.15*inch))
 
     # Report header
     elements.append(Paragraph("Student Exam Report", styles['Title']))
     elements.append(Spacer(1, 0.1*inch))
 
+    # Calculate available width
+    available_width = doc.width - (2 * frame_padding)
+
     # Student details
     results = ExamResult.objects.filter(learner_id=student, exam_type=exam_type).select_related('subject')
     total_score = sum(result.score for result in results)
-    class_rank = LearnerTotalScore.objects.filter(
-        learner__grade=student.grade,
-        exam_type=exam_type,
-        total_score__gt=total_score
-    ).count() + 1
+
+    # Calculate class rank
+    class_results = ExamResult.objects.filter(
+        learner_id__grade=student.grade,
+        exam_type=exam_type
+    ).values('learner_id').annotate(total_score=Sum('score')).order_by('-total_score')
+    class_rank = next(i for i, result in enumerate(class_results, 1) if result['learner_id'] == student.id)
 
     data = [
         ['Student Name:', student.name, 'Class:', student.grade.grade_name],
         ['Exam:', exam_type.name, 'Date:', exam_type.date_administered.strftime('%B %d, %Y')],
         ['Term:', exam_type.term, 'Rank:', f"{class_rank} out of {student.grade.learners.count()}"],
-        ['Total Score:', f"{total_score:.2f} out of {results.count() * 100}", 'Fee Balance:', f"Ksh {fee_balance:.2f}"],
-        [ 'Maize Balance:', f"{maize_balance} Tins", 'Beans Balance:', f"{beans_balance} Tins"]
+        ['Total Score:', f"{total_score:.2f} out of {results.count() * 100}", 'Fee Balance:', f"Ksh "],
     ]
-    t = Table(data, colWidths=[1.5*inch, 2.5*inch, 1.5*inch, 2.5*inch])
+
+    col_widths = [available_width * 0.2, available_width * 0.3, available_width * 0.2, available_width * 0.3]
+    t = Table(data, colWidths=col_widths)
     t.setStyle(TableStyle([
         ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('FONTSIZE', (0,0), (-1,-1), 8),  # Reduced font size
         ('TEXTCOLOR', (0,0), (-1,-1), colors.black),
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
         ('BOX', (0,0), (-1,-1), 0.25, colors.black),
+        ('TOPPADDING', (0,0), (-1,-1), 1),  # Reduced padding
+        ('BOTTOMPADDING', (0,0), (-1,-1), 1),  # Reduced padding
     ]))
     elements.append(t)
-    elements.append(Spacer(1, 0.25*inch))
+    elements.append(Spacer(1, 0.1*inch))  # Reduced spacer
 
-    # Results table
+    # Results table with subject teacher comments
     data = [['Subject', 'Score', 'Grade', 'Teacher Comment']]
     for result in results:
+        # Use the stored comment if available, otherwise use the auto-generated comment
+        comment = result.teacher_comment or get_auto_comment(result.score)
         data.append([
             result.subject.name, 
             f"{result.score:.2f}", 
             get_grade(result.score), 
-            result.teacher_comment
+            comment
         ])
 
-    t = Table(data, colWidths=[2*inch, 1*inch, 1*inch, 4*inch])
+    t = Table(data, colWidths=[available_width * 0.25, available_width * 0.125, 
+                               available_width * 0.125, available_width * 0.5])
     t.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.grey),
+        # Header style
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#4e73df')),  # Blue header
         ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('ALIGN', (0,0), (-1,0), 'CENTER'),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('FONTSIZE', (0,0), (-1,0), 12),
         ('BOTTOMPADDING', (0,0), (-1,0), 12),
-        ('BACKGROUND', (0,1), (-1,-1), colors.beige),
+        
+        # Data row styles
+        ('BACKGROUND', (0,1), (-1,-1), colors.white),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.lightgrey]),        
         ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
-        ('ALIGN', (3,1), (3,-1), 'LEFT'),
+        ('ALIGN', (0,1), (2,-1), 'CENTER'),
+        ('ALIGN', (3,1), (3,-1), 'LEFT'),  # Left-align comments
         ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
         ('FONTSIZE', (0,1), (-1,-1), 10),
         ('TOPPADDING', (0,1), (-1,-1), 6),
         ('BOTTOMPADDING', (0,1), (-1,-1), 6),
-        ('GRID', (0,0), (-1,-1), 1, colors.black)
+        
+        # Grid styling
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('LINEBELOW', (0,0), (-1,0), 1, colors.HexColor('#4e73df')),  # Thicker line below header
+        
+        # Highlight passing scores in green, failing in red
+        ('TEXTCOLOR', (1,1), (1,-1), lambda x: colors.green if float(x) >= 50 else colors.red),
     ]))
     elements.append(t)
-    elements.append(Spacer(1, 0.15*inch))
+    elements.append(Spacer(1, 0.1*inch))
 
-    # Bar chart and remarks
+    # Calculate total score and mean score on-the-fly
+    total_score = sum(result.score for result in results)
+    mean_score = total_score / len(results)
+
+    # Get overall grade
+    overall_grade = get_overall_grade(mean_score)
+
+    # Generate class teacher's remark
+    class_teacher_remark = f"The learner's overall performance is {overall_grade} with a mean score of {mean_score:.2f}."
+
+    # Calculate performance metrics
+    performance_metrics = calculate_performance_metrics(results)
+
+    # Calculate class rank
+    class_results = ExamResult.objects.filter(
+        learner_id__grade=student.grade,
+        exam_type=exam_type
+    ).values('learner_id').annotate(total_score=Sum('score')).order_by('-total_score')
+
+    class_rank = next(i for i, result in enumerate(class_results, 1) if result['learner_id'] == student.id)
+
+    total_students = student.grade.learners.count()
+    principal_remark = generate_principal_remark(performance_metrics, class_rank, total_students)
+
+    # Bar chart and remarks side by side
     chart_and_remarks = []
 
     # Bar chart
-    drawing = Drawing(300, 150)
+    chart_width = available_width * 0.45  # Adjust this value as needed
+    drawing = Drawing(chart_width, 150)
     data = [[result.score for result in results]]
     bc = VerticalBarChart()
     bc.x = 30
-    bc.y = 30
-    bc.height = 125
-    bc.width = 250
+    bc.y = 20
+    bc.height = 100
+    bc.width = chart_width - 40
     bc.data = data
     bc.strokeColor = colors.black
+    bc.fillColor = colors.white
+    bc.strokeWidth = 0.5
 
     # Set individual bar colors
     num_bars = len(data[0])
@@ -1696,37 +2004,33 @@ def generate_student_report_pdf(student, exam_type):
 
     bc.valueAxis.valueMin = 0
     bc.valueAxis.valueMax = 100
-    bc.valueAxis.valueStep = 10
+    bc.valueAxis.valueStep = 20
     bc.categoryAxis.labels.boxAnchor = 'ne'
     bc.categoryAxis.labels.dx = 8
     bc.categoryAxis.labels.dy = -2
     bc.categoryAxis.labels.angle = 30
     bc.categoryAxis.categoryNames = [result.subject.name for result in results]
-    
-    # Add a border to the chart
-    bc.strokeColor = colors.black
-    bc.strokeWidth = 0.5
-
     drawing.add(bc)
     chart_and_remarks.append(drawing)
 
     # Remarks
-    school = School.objects.first()
+    remarks_width = available_width * 0.55  # Adjust this value as needed
+    styles.add(ParagraphStyle(name='Small', fontSize=8, leading=10))
     remarks_data = [
         [Paragraph("Class Teacher's Remark:", styles['Heading3'])],
-        [Paragraph(str(student.grade.class_teacher_remark), styles['Normal'])],
-        [Spacer(1, 0.1*inch)],
+        [Paragraph(class_teacher_remark, styles['Small'])],
+        [Spacer(1, 0.05*inch)],
         [Paragraph("Principal's Remark:", styles['Heading3'])],
-        [Paragraph(str(school.principal_remark if school else ""), styles['Normal'])]
+        [Paragraph(str(principal_remark), styles['Small'])]
     ]
-    remarks_table = Table(remarks_data, colWidths=[4*inch])
+    remarks_table = Table(remarks_data, colWidths=[remarks_width])
     remarks_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
     ]))
     chart_and_remarks.append(remarks_table)
 
-    chart_and_remarks_table = Table([chart_and_remarks], colWidths=[4*inch, 4*inch])
+    chart_and_remarks_table = Table([chart_and_remarks], colWidths=[chart_width, remarks_width])
     chart_and_remarks_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'LEFT'),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
@@ -1734,21 +2038,41 @@ def generate_student_report_pdf(student, exam_type):
     elements.append(chart_and_remarks_table)
 
     # Signature lines
-    elements.append(Spacer(1, 0.5*inch))
+    elements.append(Spacer(1, 0.25*inch))  # Reduced spacer
+    
+    signature_style = ParagraphStyle(
+        'Signature',
+        parent=styles['Normal'],
+        fontSize=7,  # Reduced font size
+        leading=8,   # Reduced line height
+        alignment=1  # Center alignment
+    )
+    
     signature_data = [
-        ['_________________________', '_________________________', '_________________________'],
-        ['Class Teacher', 'Principal', 'Parent/Guardian']
+        ['_____________', '_____________', '_____________'],
+        [Paragraph('Class Teacher', signature_style),
+         Paragraph('Principal', signature_style),
+         Paragraph('Parent/Guardian', signature_style)]
     ]
-    signature_table = Table(signature_data, colWidths=[3*inch, 3*inch, 3*inch])
+    
+    signature_table = Table(signature_data, colWidths=[available_width/3]*3)
     signature_table.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
     ]))
+    
     elements.append(signature_table)
+
+    # Add minimal space at the bottom
+    elements.append(Spacer(1, 0.1*inch))
 
     # Build PDF
     doc.build(elements)
-    return buffer
+    pdf = buffer.getvalue()
+    buffer.close()
+    return pdf
 
 @login_required
 def get_students_by_grade(request):
