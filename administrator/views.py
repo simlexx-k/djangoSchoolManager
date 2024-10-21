@@ -1391,9 +1391,9 @@ def get_auto_comment(score):
     elif 70 <= score < 80:
         return "Very good performance. You're on the right track."
     elif 60 <= score < 70:
-        return "Good effort. With more practice, you can improve further."
+        return "Good effort. With more practice, you can improve."
     elif 50 <= score < 60:
-        return "Fair performance. Focus on areas that need improvement."
+        return "Fair performance. Focus on areas needing improvement."
     else:
         return "Needs improvement. Let's work together to boost score."
 
