@@ -3,6 +3,12 @@ from django.contrib.auth.decorators import login_required
 from .models import ClassLevel
 from .forms import ClassLevelForm
 from django.contrib import messages
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import LearnerRegister
+from .serializers import LearnerProfileSerializer
 
 # Create your views here.
 
@@ -51,4 +57,25 @@ def view_class_level(request, class_level_id):
 @login_required
 def class_level_management(request):
     return render(request, 'learners/class_level_management.html')
-    
+
+class LearnerProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            learner = request.user.learner_profile
+            serializer = LearnerProfileSerializer(learner)
+            return Response(serializer.data)
+        except LearnerRegister.DoesNotExist:
+            return Response({"error": "Learner profile not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def put(self, request):
+        try:
+            learner = request.user.learner_profile
+            serializer = LearnerProfileSerializer(learner, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except LearnerRegister.DoesNotExist:
+            return Response({"error": "Learner profile not found"}, status=status.HTTP_404_NOT_FOUND)

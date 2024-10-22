@@ -40,6 +40,7 @@ class LearnerRegister(models.Model):
     fee_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     maize_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     beans_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='learner_profile')
 
     def __str__(self):
         return f"{self.learner_id} {self.name}"

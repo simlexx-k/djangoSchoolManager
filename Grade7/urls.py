@@ -15,13 +15,28 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+from django.contrib.auth import views as auth_views
+
+schema_view = get_schema_view(
+   openapi.Info(
+      title="Student Dashboard API",
+      default_version='v1',
+      description="API for student/parent dashboard",
+   ),
+   public=True,
+   permission_classes=(permissions.AllowAny,),
+)
 
 from Grade7.views import index, tables, login, register
 import administrator.urls
 import authenticator.urls
 import teachers.urls
 import learners.urls
+import dashboard_api.urls
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -36,6 +51,11 @@ urlpatterns = [
     path('control/learners/', include("learners.urls")),
     path('teacher/', include('teachers.urls')),
     path('finance/', include('finance.urls')),
+    path('api/', include('dashboard_api.urls')),
+    path('api/dashboard/', include('dashboard_api.urls')),
+    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]
 
 if settings.DEBUG:

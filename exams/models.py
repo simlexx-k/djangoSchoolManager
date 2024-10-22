@@ -50,8 +50,20 @@ class ExamResult(models.Model):
         unique_together = ('learner_id', 'subject', 'exam_type')
         # This ensures that a learner can't have multiple results for the same subject
 
+    def get_score(self):
+        try:
+            return float(self.score) if self.score is not None else None
+        except ValueError:
+            return None
+
+    def get_grade(self):
+        score = self.get_score()
+        if score is None:
+            return "N/A"
+        # ... rest of the grading logic ...
+
     def __str__(self):
-        return f"{self.learner_id} - {self.subject}: {self.score}"
+        return f"{self.learner_id} - {self.subject}: {self.get_score()}"
 
     get_grade = get_grade
 
