@@ -2,6 +2,10 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('assignments/', views.assignment_list, name='assignment_list'),
+    path('assignments/<int:assignment_id>/', views.assignment_detail, name='assignment_detail'),
+    path('assignments/<int:assignment_id>/submissions/', views.assignment_submissions, name='assignment_submissions'),
+    path('submissions/<int:submission_id>/grade/', views.grade_assignment, name='grade_assignment'),
     path('dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
     path('classes/', views.class_list, name='teacher_class_list'),
     path('classes/<int:class_id>/', views.class_detail, name='teacher_class_detail'),
@@ -14,7 +18,8 @@ urlpatterns = [
     path('assignments/<int:assignment_id>/', views.assignment_detail, name='assignment_detail'),
     path('assignments/<int:assignment_id>/edit/', views.edit_assignment, name='edit_assignment'),
     path('assignments/<int:assignment_id>/delete/', views.delete_assignment, name='delete_assignment'),
-    path('assignments/submission/<int:submission_id>/grade/', views.grade_assignment, name='grade_assignment'),
+    path('assignments/<int:assignment_id>/submissions/', views.assignment_submissions, name='assignment_submissions'),
+    path('submissions/<int:submission_id>/grade/', views.grade_assignment, name='grade_assignment'),
     path('api/subjects/', views.get_subjects, name='api_subjects'),
     path('api/students/', views.get_students, name='api_students'),
     path('api/scores/', views.get_scores, name='api_scores'),

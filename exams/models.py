@@ -338,9 +338,18 @@ class AssignmentSubmission(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress')
     score = models.FloatField(null=True, blank=True)
+    feedback = models.TextField(blank=True, null=True)  # Add this field for teacher feedback
+    graded_at = models.DateTimeField(null=True, blank=True)  # Add this field to track when the assignment was graded
 
     def __str__(self):
         return f"{self.learner} - {self.assignment} - Status: {self.status}"
+
+    def grade_submission(self, score, feedback):
+        self.score = score
+        self.feedback = feedback
+        self.status = 'graded'
+        self.graded_at = timezone.now()
+        self.save()
 
 class QuestionResponse(models.Model):
     submission = models.ForeignKey(AssignmentSubmission, on_delete=models.CASCADE, related_name='question_responses')
@@ -351,13 +360,4 @@ class QuestionResponse(models.Model):
 
     def __str__(self):
         return f"Response to {self.question} by {self.submission.learner}"
-
-
-
-
-
-
-
-
-
 

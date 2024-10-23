@@ -8,15 +8,29 @@
             Create Assignment
         </a>
     </div>
+    
+    <form method="get" class="mb-6">
+        <input type="text" name="search" placeholder="Search assignments..." value="{{ search_query }}" class="border rounded py-2 px-3 mr-2">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Search</button>
+    </form>
+
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for assignment in assignments %}
+        {% for assignment in page_obj %}
         <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold mb-2">{{ assignment.name }}</h2>
-            <p class="text-gray-600 mb-2">Term: {{ assignment.term }}</p>
-            <p class="text-gray-600 mb-4">Date: {{ assignment.date_administered }}</p>
-            <a href="{% url 'teacher_grade_assignment' assignment.exam_id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-block">
-                Grade Assignment
-            </a>
+            <h2 class="text-xl font-semibold mb-2">{{ assignment.title }}</h2>
+            <p class="text-gray-600 mb-2">Subject: {{ assignment.subject.name }}</p>
+            <p class="text-gray-600 mb-2">Grade: {{ assignment.grade.grade_name }}</p>
+            <p class="text-gray-600 mb-2">Due Date: {{ assignment.due_date|date:"F j, Y, g:i a" }}</p>
+            <p class="text-gray-600 mb-4">Status: {{ assignment.get_status_display }}</p>
+            <p class="text-gray-600 mb-4">Submissions: {{ assignment.submission_count }}</p>
+            <div class="flex flex-wrap gap-2">
+                <a href="{% url 'assignment_detail' assignment.id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-block">
+                    View Details
+                </a>
+                <a href="{% url 'assignment_submissions' assignment.id %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded inline-block">
+                    View Submissions
+                </a>
+            </div>
         </div>
         {% empty %}
         <p class="col-span-3 text-center text-gray-600">No assignments found.</p>

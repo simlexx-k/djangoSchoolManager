@@ -49,4 +49,13 @@ export default {
   submitAssignment(id, data) {
     return api.post(`student/assignments/${id}/submit/`, data);
   },
+  async getSubmission(assignmentId) {
+    try {
+      const response = await api.get(`student/assignments/${assignmentId}/submission/`)
+      return response.data
+    } catch (error) {
+      console.error('Error fetching submission:', error)
+      throw error
+    }
+  }
 };

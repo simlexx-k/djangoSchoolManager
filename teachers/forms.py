@@ -106,10 +106,9 @@ class AssignmentForm(forms.ModelForm):
             instance.save()
         return instance
 
-class GradeAssignmentForm(forms.ModelForm):
-    class Meta:
-        model = ExamResult
-        fields = ['learner_id', 'subject', 'score', 'teacher_comment']
+class GradeAssignmentForm(forms.Form):
+    overall_score = forms.FloatField(min_value=0, max_value=100, label="Overall Score (0-100)")
+    overall_feedback = forms.CharField(widget=forms.Textarea, required=False, label="Overall Feedback")
 
 class TeacherSettingsForm(forms.ModelForm):
     first_name = forms.CharField(max_length=30)
@@ -200,3 +199,4 @@ class FeedbackTemplateForm(forms.ModelForm):
         widgets = {
             'template_text': CKEditor5Widget(config_name='extends'),
         }
+

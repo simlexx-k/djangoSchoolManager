@@ -27,6 +27,7 @@ from teachers.models import TeacherSubjectGrade  # Add this import
 from django.views.generic.edit import CreateView, UpdateView
 from .forms import ObjectiveQuestionForm
 from exams.models import ObjectiveQuestion
+from django.forms import formset_factory
 #from administrator.models import Assignment
 # Create your views here.
 
@@ -128,7 +129,11 @@ def assignment_list(request):
             Q(grade__grade_name__icontains=search_query)
         )
     
-    paginator = Paginator(assignments, 10)  # Show 10 assignments per page
+    # Add submission count for each assignment
+    for assignment in assignments:
+        assignment.submission_count = AssignmentSubmission.objects.filter(assignment=assignment).count()
+    
+    paginator = Paginator(assignments, 9)  # Show 9 assignments per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -141,32 +146,50 @@ def assignment_list(request):
 @login_required
 @user_passes_test(is_teacher)
 def create_assignment(request):
+    ObjectiveQuestionFormSet = formset_factory(ObjectiveQuestionForm, extra=1)
+    
     if request.method == 'POST':
         form = AssignmentForm(request.POST, request.FILES, user=request.user)
-        if form.is_valid():
+        formset = ObjectiveQuestionFormSet(request.POST, prefix='questions')
+        
+        if form.is_valid() and formset.is_valid():
             assignment = form.save(commit=False)
             assignment.teacher = request.user.teacher
             assignment.save()
+            
+            for question_form in formset:
+                if question_form.cleaned_data:
+                    question = question_form.save(commit=False)
+                    question.assignment = assignment
+                    question.save()
+            
             messages.success(request, 'Assignment created successfully.')
             return redirect('assignment_detail', assignment_id=assignment.id)
-        else:
-            messages.error(request, 'There were errors in your submission. Please correct them and try again.')
     else:
         form = AssignmentForm(user=request.user)
+        formset = ObjectiveQuestionFormSet(prefix='questions')
     
-    context = {'form': form}
+    context = {
+        'form': form,
+        'formset': formset,
+    }
     return render(request, 'teachers/create_assignment.html', context)
 
 @login_required
 @user_passes_test(is_teacher)
 def assignment_detail(request, assignment_id):
-    teacher = request.user.teacher
-    teacher_subject_grades = TeacherSubjectGrade.objects.filter(teacher=teacher)
-    assignment = get_object_or_404(Assignment, id=assignment_id, subject__teachersubjectgrade__in=teacher_subject_grades)
-    submissions = AssignmentSubmission.objects.filter(assignment=assignment)
+    assignment = get_object_or_404(Assignment, id=assignment_id)
     
+    # Check if the teacher is authorized to view this assignment
+    if not assignment.subject.teachersubjectgrade_set.filter(teacher=request.user.teacher).exists():
+        return HttpResponseForbidden("You are not authorized to view this assignment.")
+
+    objective_questions = assignment.objective_questions.all()
+    submissions = AssignmentSubmission.objects.filter(assignment=assignment).order_by('-submitted_at')
+
     context = {
         'assignment': assignment,
+        'objective_questions': objective_questions,
         'submissions': submissions,
     }
     return render(request, 'teachers/assignment_detail.html', context)
@@ -174,20 +197,38 @@ def assignment_detail(request, assignment_id):
 @login_required
 @user_passes_test(is_teacher)
 def edit_assignment(request, assignment_id):
-    teacher = request.user.teacher
-    teacher_subject_grades = TeacherSubjectGrade.objects.filter(teacher=teacher)
-    assignment = get_object_or_404(Assignment, id=assignment_id, subject__teachersubjectgrade__in=teacher_subject_grades)
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+    ObjectiveQuestionFormSet = formset_factory(ObjectiveQuestionForm, extra=1)
     
     if request.method == 'POST':
-        form = AssignmentForm(request.POST, instance=assignment, user=request.user)
-        if form.is_valid():
-            form.save()
+        form = AssignmentForm(request.POST, request.FILES, instance=assignment, user=request.user)
+        formset = ObjectiveQuestionFormSet(request.POST, prefix='questions')
+        
+        if form.is_valid() and formset.is_valid():
+            assignment = form.save()
+            
+            # Delete existing questions
+            ObjectiveQuestion.objects.filter(assignment=assignment).delete()
+            
+            # Create new questions
+            for question_form in formset:
+                if question_form.cleaned_data:
+                    question = question_form.save(commit=False)
+                    question.assignment = assignment
+                    question.save()
+            
             messages.success(request, 'Assignment updated successfully.')
             return redirect('assignment_detail', assignment_id=assignment.id)
     else:
         form = AssignmentForm(instance=assignment, user=request.user)
+        existing_questions = ObjectiveQuestion.objects.filter(assignment=assignment)
+        formset = ObjectiveQuestionFormSet(initial=[{'question_text': q.question_text, 'question_type': q.question_type, 'options': q.options, 'correct_answer': q.correct_answer, 'points': q.points} for q in existing_questions], prefix='questions')
     
-    context = {'form': form, 'assignment': assignment}
+    context = {
+        'form': form,
+        'formset': formset,
+        'assignment': assignment,
+    }
     return render(request, 'teachers/edit_assignment.html', context)
 
 @login_required
@@ -209,17 +250,66 @@ def delete_assignment(request, assignment_id):
 @user_passes_test(is_teacher)
 def grade_assignment(request, submission_id):
     submission = get_object_or_404(AssignmentSubmission, id=submission_id)
-    
+    assignment = submission.assignment
+
+    # Check if the teacher is authorized to grade this assignment
+    if not assignment.subject.teachersubjectgrade_set.filter(teacher=request.user.teacher).exists():
+        return HttpResponseForbidden("You are not authorized to grade this assignment.")
+
+    # Get all question responses for this submission
+    question_responses = submission.question_responses.all().select_related('question')
+
     if request.method == 'POST':
-        score = request.POST.get('score')
-        if score is not None:
-            submission.score = float(score)
-            submission.save()
+        form = GradeAssignmentForm(request.POST)
+        if form.is_valid():
+            overall_score = form.cleaned_data['overall_score']
+            overall_feedback = form.cleaned_data['overall_feedback']
+            
+            # Update individual question scores and feedback
+            for response in question_responses:
+                response.score = float(request.POST.get(f'question_score_{response.id}', 0))
+                response.feedback = request.POST.get(f'question_feedback_{response.id}', '')
+                response.save()
+
+            # Calculate total score
+            total_score = sum(response.score for response in question_responses)
+            
+            submission.grade_submission(total_score, overall_feedback)
             messages.success(request, 'Assignment graded successfully.')
-            return redirect('assignment_detail', assignment_id=submission.assignment.id)
+            return redirect('assignment_submissions', assignment_id=assignment.id)
+    else:
+        form = GradeAssignmentForm(initial={
+            'overall_score': submission.score, 
+            'overall_feedback': submission.feedback
+        })
+
+    context = {
+        'form': form,
+        'submission': submission,
+        'assignment': assignment,
+        'student': submission.learner,
+        'question_responses': question_responses,
+        'assignment_attachments': assignment.attachments.all(),
+        'objective_questions': assignment.objective_questions.all(),
+    }
+    return render(request, 'teachers/grade_assignments.html', context)
+
+@login_required
+@user_passes_test(is_teacher)
+def assignment_submissions(request, assignment_id):
+    assignment = get_object_or_404(Assignment, id=assignment_id)
     
-    context = {'submission': submission}
-    return render(request, 'teachers/grade_assignment.html', context)
+    # Check if the teacher is authorized to view this assignment's submissions
+    if not assignment.subject.teachersubjectgrade_set.filter(teacher=request.user.teacher).exists():
+        return HttpResponseForbidden("You are not authorized to view submissions for this assignment.")
+
+    submissions = AssignmentSubmission.objects.filter(assignment=assignment).order_by('-submitted_at')
+    
+    context = {
+        'assignment': assignment,
+        'submissions': submissions,
+    }
+    return render(request, 'teachers/assignment_submissions.html', context)
 
 @api_view(['GET'])
 def get_subjects(request):
@@ -488,8 +578,6 @@ class ObjectiveQuestionUpdateView(UpdateView):
     form_class = ObjectiveQuestionForm
     template_name = 'teachers/edit_objective_question.html'
     success_url = '/questions/'  # Adjust as needed
-
-
 
 
 

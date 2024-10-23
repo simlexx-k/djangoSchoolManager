@@ -1,0 +1,106 @@
+{% extends 'teachers/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Grade Assignment: {{ assignment.title }}</h1>
+    <h2 class="text-xl font-semibold mb-4">Student: {{ student.name }}</h2>
+
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <h3 class="text-lg font-semibold mb-2">Assignment Details:</h3>
+        <p><strong>Subject:</strong> {{ assignment.subject.name }}</p>
+        <p><strong>Grade:</strong> {{ assignment.grade.grade_name }}</p>
+        <p><strong>Due Date:</strong> {{ assignment.due_date }}</p>
+        <p><strong>Total Points:</strong> {{ assignment.total_points }}</p>
+        <p><strong>Status:</strong> {{ assignment.get_status_display }}</p>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <h3 class="text-lg font-semibold mb-2">Assignment Content:</h3>
+        <div class="prose max-w-none">
+            {{ assignment.content|safe }}
+        </div>
+    </div>
+
+    {% if assignment_attachments %}
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <h3 class="text-lg font-semibold mb-2">Attachments:</h3>
+        <ul>
+            {% for attachment in assignment_attachments %}
+            <li><a href="{{ attachment.file.url }}" target="_blank" class="text-blue-500 hover:underline">{{ attachment.filename }}</a></li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% if objective_questions %}
+    <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+        <h3 class="text-lg font-semibold mb-2">Objective Questions:</h3>
+        {% for question in objective_questions %}
+        <div class="mb-4">
+            <p class="font-semibold">{{ forloop.counter }}. {{ question.question_text|safe }}</p>
+            <ul class="list-disc list-inside ml-4">
+                {% for option in question.get_options %}
+                <li>{{ option }}</li>
+                {% endfor %}
+            </ul>
+            <p><strong>Correct Answer:</strong> {{ question.correct_answer }}</p>
+            <p><strong>Points:</strong> {{ question.points }}</p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {% for response in question_responses %}
+        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-2">Question {{ forloop.counter }}:</h3>
+            <div class="prose max-w-none mb-4">
+                {{ response.question.question_text|safe }}
+            </div>
+            
+            <h4 class="text-md font-semibold mb-2">Student's Answer:</h4>
+            <div class="prose max-w-none mb-4">
+                {{ response.answer|safe }}
+            </div>
+            
+            <div class="mb-4">
+                <label for="question_score_{{ response.id }}" class="block text-sm font-medium text-gray-700">Score:</label>
+                <input type="number" id="question_score_{{ response.id }}" name="question_score_{{ response.id }}" 
+                       value="{{ response.score|default_if_none:'' }}" min="0" max="{{ response.question.points }}" step="0.1" 
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+            </div>
+            
+            <div class="mb-4">
+                <label for="question_feedback_{{ response.id }}" class="block text-sm font-medium text-gray-700">Feedback:</label>
+                <textarea id="question_feedback_{{ response.id }}" name="question_feedback_{{ response.id }}" rows="3" 
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">{{ response.feedback|default_if_none:'' }}</textarea>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="bg-white shadow-md rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Overall Grading</h3>
+            {{ form.as_p }}
+        </div>
+
+        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+            Submit Grades
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.ckeditor.com/ckeditor5/27.1.0/classic/ckeditor.js"></script>
+<script>
+    document.querySelectorAll('textarea[name^="question_feedback_"]').forEach(textarea => {
+        ClassicEditor
+            .create(textarea)
+            .catch(error => {
+                console.error(error);
+            });
+    });
+</script>
+{% endblock %}

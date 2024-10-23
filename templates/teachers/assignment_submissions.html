@@ -1,0 +1,38 @@
+{% extends 'teachers/base.html' %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Submissions for {{ assignment.title }}</h1>
+
+    <table class="w-full bg-white shadow-md rounded-lg overflow-hidden">
+        <thead class="bg-gray-100">
+            <tr>
+                <th class="py-3 px-4 text-left">Student</th>
+                <th class="py-3 px-4 text-left">Submitted At</th>
+                <th class="py-3 px-4 text-left">Status</th>
+                <th class="py-3 px-4 text-left">Score</th>
+                <th class="py-3 px-4 text-left">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for submission in submissions %}
+            <tr class="border-t">
+                <td class="py-3 px-4">{{ submission.learner.name }}</td>
+                <td class="py-3 px-4">{{ submission.submitted_at|date:"F j, Y, g:i a" }}</td>
+                <td class="py-3 px-4">{{ submission.get_status_display }}</td>
+                <td class="py-3 px-4">{{ submission.score|default_if_none:"Not graded" }}</td>
+                <td class="py-3 px-4">
+                    <a href="{% url 'grade_assignment' submission.id %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded inline-block">
+                        {% if submission.status == 'graded' %}Edit Grade{% else %}Grade{% endif %}
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="py-3 px-4 text-center">No submissions found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
