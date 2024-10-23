@@ -67,14 +67,17 @@ class AssignmentForm(forms.ModelForm):
     class Meta:
         model = Assignment
         fields = ['title', 'description', 'subject', 'grade', 'due_date', 'status', 'estimated_time', 'difficulty',
-                  'prerequisites', 'is_group_assignment', 'max_group_size',
+                  'prerequisites', 'learning_objectives', 'is_group_assignment', 'max_group_size',
                   'enable_peer_review', 'allow_attachments', 'max_file_size',
-                  'plagiarism_check', 'auto_grading']
+                  'plagiarism_check', 'auto_grading', 'rubric_criteria', 'rubric_weights', 'feedback_templates', 'categories']
         widgets = {
-            'description': CKEditor5Widget(
-                config_name='extends',
-                attrs={'class': 'django-ckeditor-5'}
-            ),
+            'description': CKEditor5Widget(config_name='extends'),
+            'prerequisites': CKEditor5Widget(config_name='extends'),
+            'learning_objectives': CKEditor5Widget(config_name='extends'),
+            'rubric_criteria': CKEditor5Widget(config_name='extends'),
+            'rubric_weights': CKEditor5Widget(config_name='extends'),
+            'feedback_templates': CKEditor5Widget(config_name='extends'),
+            'categories': CKEditor5Widget(config_name='extends'),
             'due_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
         }
 
@@ -182,7 +185,18 @@ class ObjectiveQuestionForm(forms.ModelForm):
     class Meta:
         model = ObjectiveQuestion
         fields = ['question_text', 'question_type', 'options', 'correct_answer', 'points']
+        widgets = {
+            'question_text': CKEditor5Widget(config_name='extends'),
+        }
 
 ObjectiveQuestionFormSet = forms.inlineformset_factory(
     Assignment, ObjectiveQuestion, form=ObjectiveQuestionForm, extra=1, can_delete=True
 )
+
+class FeedbackTemplateForm(forms.ModelForm):
+    class Meta:
+        model = FeedbackTemplate
+        fields = ['template_text']
+        widgets = {
+            'template_text': CKEditor5Widget(config_name='extends'),
+        }

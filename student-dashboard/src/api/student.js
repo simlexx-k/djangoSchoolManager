@@ -1,4 +1,5 @@
 import api from './config';
+import axios from 'axios';
 
 export default {
   getDashboard(studentId = null) {
@@ -40,4 +41,12 @@ export default {
     return api.get(`student/assignments/${assignmentId}/`);
   },
   // You can add more methods here as needed
+
+  getAssignment(id) {
+    return api.get(`student/assignments/${id}/`);
+  },
+
+  submitAssignment(id, data) {
+    return api.post(`student/assignments/${id}/submit/`, data);
+  },
 };

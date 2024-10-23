@@ -24,6 +24,9 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from exams.models import Grade, Subject
 from teachers.models import TeacherSubjectGrade  # Add this import
+from django.views.generic.edit import CreateView, UpdateView
+from .forms import ObjectiveQuestionForm
+from exams.models import ObjectiveQuestion
 #from administrator.models import Assignment
 # Create your views here.
 
@@ -140,41 +143,18 @@ def assignment_list(request):
 def create_assignment(request):
     if request.method == 'POST':
         form = AssignmentForm(request.POST, request.FILES, user=request.user)
-        question_formset = ObjectiveQuestionFormSet(request.POST, prefix='questions')
-        if form.is_valid() and question_formset.is_valid():
+        if form.is_valid():
             assignment = form.save(commit=False)
+            assignment.teacher = request.user.teacher
             assignment.save()
-            
-            # Handle file attachments
-            for file in request.FILES.getlist('attachments'):
-                AssignmentAttachment.objects.create(assignment=assignment, file=file, filename=file.name)
-            
-            # Handle rubric
-            if form.cleaned_data['rubric_criteria'] and form.cleaned_data['rubric_weights']:
-                criteria = form.cleaned_data['rubric_criteria'].split('\n')
-                weights = [float(w) for w in form.cleaned_data['rubric_weights'].split('\n')]
-                Rubric.objects.create(assignment=assignment, criteria=criteria, weights=weights)
-            
-            # Handle feedback templates
-            if form.cleaned_data['feedback_templates']:
-                templates = form.cleaned_data['feedback_templates'].split('\n')
-                for template in templates:
-                    FeedbackTemplate.objects.create(assignment=assignment, template_text=template)
-            
-            # Save objective questions
-            question_formset.instance = assignment
-            question_formset.save()
-            
             messages.success(request, 'Assignment created successfully.')
             return redirect('assignment_detail', assignment_id=assignment.id)
+        else:
+            messages.error(request, 'There were errors in your submission. Please correct them and try again.')
     else:
         form = AssignmentForm(user=request.user)
-        question_formset = ObjectiveQuestionFormSet(prefix='questions')
     
-    context = {
-        'form': form,
-        'question_formset': question_formset,
-    }
+    context = {'form': form}
     return render(request, 'teachers/create_assignment.html', context)
 
 @login_required
@@ -496,6 +476,21 @@ def check_password(request):
     else:
         errors = [error for field_errors in form.errors.values() for error in field_errors]
         return JsonResponse({'valid': False, 'errors': errors})
+
+class ObjectiveQuestionCreateView(CreateView):
+    model = ObjectiveQuestion
+    form_class = ObjectiveQuestionForm
+    template_name = 'teachers/create_objective_question.html'
+    success_url = '/questions/'  # Adjust as needed
+
+class ObjectiveQuestionUpdateView(UpdateView):
+    model = ObjectiveQuestion
+    form_class = ObjectiveQuestionForm
+    template_name = 'teachers/edit_objective_question.html'
+    success_url = '/questions/'  # Adjust as needed
+
+
+
 
 
 

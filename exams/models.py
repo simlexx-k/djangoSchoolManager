@@ -327,14 +327,32 @@ class ObjectiveQuestion(models.Model):
         return f"Question for {self.assignment}: {self.question_text[:50]}..."
 
 class AssignmentSubmission(models.Model):
+    STATUS_CHOICES = [
+        ('in_progress', 'In Progress'),
+        ('submitted', 'Submitted'),
+        ('graded', 'Graded'),
+    ]
+
     assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions')
     learner = models.ForeignKey(LearnerRegister, on_delete=models.CASCADE, related_name='assignment_submissions')
     submitted_at = models.DateTimeField(auto_now_add=True)
-    content = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='in_progress')
     score = models.FloatField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.learner} - {self.assignment} - Submitted: {self.submitted_at}"
+        return f"{self.learner} - {self.assignment} - Status: {self.status}"
+
+class QuestionResponse(models.Model):
+    submission = models.ForeignKey(AssignmentSubmission, on_delete=models.CASCADE, related_name='question_responses')
+    question = models.ForeignKey(ObjectiveQuestion, on_delete=models.CASCADE)
+    answer = models.TextField()
+    is_correct = models.BooleanField(null=True, blank=True)
+    score = models.FloatField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Response to {self.question} by {self.submission.learner}"
+
+
 
 
 

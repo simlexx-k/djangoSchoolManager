@@ -15,6 +15,7 @@ import UserProfile from '../views/UserProfile.vue'
 import AboutView from '../views/AboutView.vue'
 import ContactView from '../views/ContactView.vue'
 import ExamsView from '../views/ExamsView.vue'
+import AssignmentSubmitView from '@/views/AssignmentSubmitView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -95,6 +96,11 @@ const router = createRouter({
       path: '/exams',
       name: 'Exams',
       component: ExamsView
+    },
+    {
+      path: '/assignments/:id/submit',
+      name: 'AssignmentSubmit',
+      component: AssignmentSubmitView
     }
   ]
 })

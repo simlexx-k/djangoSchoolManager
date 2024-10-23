@@ -1,6 +1,8 @@
 from django.urls import path
 from .views import user_views, student_views, notification_views, auth_views, registration_views, StudentCoursesView, StudentAssignmentsView, StudentMessagesView, StudentResourcesView, StudentTimetableView, StudentAttendanceView, StudentExamResultsView, SchoolInfoView, LearnerInfoView, UserProfileView
 from learners.views import LearnerProfileView
+from dashboard_api.views.student_views import StudentAssignmentSubmitView
+
 urlpatterns = [
     #path('auth/login/', auth_views.LoginView.as_view(), name='login'),
     path('auth/logout/', auth_views.LogoutView.as_view(), name='logout'),
@@ -47,6 +49,7 @@ urlpatterns = [
     #path('user/profile/', UserProfileView.as_view(), name='user-profile'),
     path('learner/profile/', LearnerProfileView.as_view(), name='learner-profile'),
     path('assignments/', student_views.StudentAssignmentsView.as_view(), name='student-assignments'),
-    path('assignments/<int:assignment_id>/submission/', student_views.StudentAssignmentSubmissionView.as_view(), name='student-assignment-submission'),
+    path('assignments/<int:assignment_id>/submission/', student_views.StudentAssignmentSubmitView.as_view(), name='student-assignment-submission'),
     #path('student/exams/', student_views.StudentExamsView.as_view(), name='student-exams'),
+    path('student/assignments/<int:assignment_id>/submit/', StudentAssignmentSubmitView.as_view(), name='student-assignment-submit'),
 ]

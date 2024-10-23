@@ -13,7 +13,7 @@ from dashboard_api.serializers.student_serializers import (
 )
 from dashboard_api.permissions import IsParentOrStudent, IsAdminOrTeacherOrParentOrStudent, IsOwnerOrParent
 from learners.models import LearnerRegister, School
-from exams.models import ExamResult, Subject, ExamType, Assignment, AssignmentSubmission
+from exams.models import ExamResult, Subject, ExamType, Assignment, AssignmentSubmission, ObjectiveQuestion, QuestionResponse
 from administrator.models import Attendance, Timetable
 from fees.models import FeeRecord
 from finance.models import Payment
@@ -23,7 +23,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Sum
 from datetime import timedelta
 import logging
 from administrator.utils import get_grade, get_auto_comment
@@ -337,41 +337,40 @@ class StudentCoursesView(APIView):
         serializer = CourseSerializer(courses, many=True)
         return Response(serializer.data)
 
-class StudentAssignmentsView(APIView):
-    permission_classes = [IsAuthenticated]
+class StudentAssignmentsView(generics.ListAPIView):
+    serializer_class = AssignmentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsParentOrStudent]
 
-    def get(self, request):
-        assignments = Assignment.objects.filter(subject__grades=request.user.learner_profile.grade)
-        serializer = AssignmentSerializer(assignments, many=True, context={'request': request})
-        return Response(serializer.data)
+    def get_queryset(self):
+        student = self.request.user.learner_profile
+        return Assignment.objects.filter(grade=student.grade).order_by('-due_date')
 
-class StudentAssignmentSubmissionView(APIView):
-    permission_classes = [IsAuthenticated]
+class StudentAssignmentDetailView(generics.RetrieveAPIView):
+    serializer_class = AssignmentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsParentOrStudent]
 
-    def get(self, request, assignment_id):
-        try:
-            assignment = Assignment.objects.get(id=assignment_id)
-            submission = AssignmentSubmission.objects.get(assignment=assignment, learner=request.user.learner_profile)
-            serializer = AssignmentSubmissionSerializer(submission)
-            return Response(serializer.data)
-        except AssignmentSubmission.DoesNotExist:
-            return Response({"detail": "Submission not found"}, status=status.HTTP_404_NOT_FOUND)
+    def get_object(self):
+        assignment_id = self.kwargs.get('assignment_id')
+        student = self.request.user.learner_profile
+        return Assignment.objects.get(id=assignment_id, grade=student.grade)
+
+class StudentAssignmentSubmitView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsParentOrStudent]
 
     def post(self, request, assignment_id):
-        try:
-            assignment = Assignment.objects.get(id=assignment_id)
-            submission, created = AssignmentSubmission.objects.get_or_create(
-                assignment=assignment,
-                learner=request.user.learner_profile,
-                defaults={'content': request.data.get('content', '')}
-            )
-            if not created:
-                submission.content = request.data.get('content', '')
-                submission.save()
-            serializer = AssignmentSubmissionSerializer(submission)
-            return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
-        except Assignment.DoesNotExist:
-            return Response({"detail": "Assignment not found"}, status=status.HTTP_404_NOT_FOUND)
+        student = request.user.learner_profile
+        assignment = Assignment.objects.get(id=assignment_id, grade=student.grade)
+        
+        submission, created = AssignmentSubmission.objects.get_or_create(
+            assignment=assignment,
+            learner=student,
+            defaults={'status': 'submitted'}
+        )
+        
+        # Process the submission data here
+        # You might want to create QuestionResponse objects for each answer
+        
+        return Response({'message': 'Assignment submitted successfully'})
 
 class StudentMessagesView(APIView):
     def get(self, request, student_id=None):
@@ -531,6 +530,13 @@ class StudentExamsView(APIView):
 
         serializer = ExamResultSerializer(results, many=True)
         return Response(serializer.data)
+
+
+
+
+
+
+
 
 
 

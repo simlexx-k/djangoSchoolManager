@@ -1,0 +1,43 @@
+{% extends 'teachers/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+{{ form.media }}
+<style>
+    .django-ckeditor-5-widget {
+        width: 100%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-4">{% if form.instance.pk %}Edit{% else %}Create{% endif %} Feedback Template</h1>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <div class="mb-4">
+                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">{{ field.label }}</label>
+                <div class="mt-1">
+                    {% if field.name == 'template_text' %}
+                        {{ field }}
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                </div>
+                {% if field.help_text %}
+                    <p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>
+                {% endif %}
+                {% for error in field.errors %}
+                    <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endfor %}
+        <div class="mt-4">
+            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                {% if form.instance.pk %}Update{% else %}Create{% endif %} Feedback Template
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

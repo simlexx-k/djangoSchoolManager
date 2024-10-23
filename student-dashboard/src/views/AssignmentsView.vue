@@ -31,17 +31,17 @@
             <div class="flex justify-between items-start mb-4">
               <h2 class="text-xl font-semibold text-gray-800">{{ assignment.title }}</h2>
               <span :class="getStatusClass(assignment.status)">
-                {{ assignment.status }}
+                {{ assignment.status || 'Unknown' }}
               </span>
             </div>
-            <p class="text-gray-600 mb-4">{{ assignment.description }}</p>
+            <div class="text-gray-600 mb-4 prose max-w-none" v-dompurify-html="assignment.description"></div>
             <div class="flex justify-between items-center text-sm">
               <span class="text-gray-500">
                 Due: {{ formatDate(assignment.due_date) }}
               </span>
-              <button @click="viewAssignmentDetails(assignment.id)" 
+              <button @click="handleAssignmentAction(assignment)" 
                       class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out">
-                View Details
+                {{ getActionButtonText(assignment.status) }}
               </button>
             </div>
           </div>
@@ -53,16 +53,24 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import studentApi from '@/api/student'
+import VueDOMPurifyHTML from 'vue-dompurify-html'
+import { createApp } from 'vue'
+
+const app = createApp({})
+app.use(VueDOMPurifyHTML)
 
 const assignments = ref([])
 const isLoading = ref(true)
 const error = ref(null)
+const router = useRouter()
 
 const fetchAssignments = async () => {
   try {
     const response = await studentApi.getAssignments()
-    assignments.value = response.data
+    assignments.value = response.data.results
+    console.log('Fetched assignments:', assignments.value)
   } catch (error) {
     console.error('Error fetching assignments:', error)
     error.value = 'Failed to load assignments. Please try again.'
@@ -78,6 +86,8 @@ const formatDate = (dateString) => {
 
 const getStatusClass = (status) => {
   const baseClasses = 'px-2 py-1 rounded-full text-xs font-medium'
+  if (!status) return `${baseClasses} bg-gray-100 text-gray-800`
+  
   switch (status.toLowerCase()) {
     case 'completed':
       return `${baseClasses} bg-green-100 text-green-800`
@@ -90,12 +100,70 @@ const getStatusClass = (status) => {
   }
 }
 
-const viewAssignmentDetails = (assignmentId) => {
-  // Implement navigation to assignment details page
-  console.log(`Viewing details for assignment ${assignmentId}`)
+const getActionButtonText = (status) => {
+  if (!status) return 'View Details'
+  
+  switch (status.toLowerCase()) {
+    case 'pending':
+      return 'Start Assignment'
+    case 'submitted':
+      return 'View Submission'
+    case 'graded':
+      return 'View Grade'
+    default:
+      return 'View Details'
+  }
+}
+
+const handleAssignmentAction = (assignment) => {
+  const status = assignment.status ? assignment.status.toLowerCase() : 'unknown'
+  switch (status) {
+    case 'pending':
+      router.push(`/assignments/${assignment.id}/submit`)
+      break
+    case 'submitted':
+      router.push(`/assignments/${assignment.id}/submission`)
+      break
+    case 'graded':
+      router.push(`/assignments/${assignment.id}/grade`)
+      break
+    default:
+      router.push(`/assignments/${assignment.id}`)
+  }
 }
 
 onMounted(fetchAssignments)
 
 defineExpose({ fetchAssignments })
 </script>
+
+<style>
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Add these styles for better rendering of rich text content */
+.prose {
+  @apply text-gray-900;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  @apply font-bold text-gray-900 mt-4 mb-2;
+}
+
+.prose p {
+  @apply mb-4;
+}
+
+.prose ul, .prose ol {
+  @apply pl-5 mb-4;
+}
+
+.prose li {
+  @apply mb-2;
+}
+
+.prose a {
+  @apply text-blue-600 hover:underline;
+}
+</style>
