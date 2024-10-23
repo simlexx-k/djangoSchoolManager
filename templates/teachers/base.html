@@ -40,7 +40,7 @@
                                 <a href="{% url 'teacher_dashboard' %}" class="{% is_active request 'teacher_dashboard' %} px-3 py-2 rounded-md text-sm font-medium">Dashboard</a>
                                 {% if user.user_type == 'teacher' %}
                                     <a href="{% url 'teacher_class_list' %}" class="{% is_active request 'teacher_class_list' %} px-3 py-2 rounded-md text-sm font-medium">Classes</a>
-                                    <a href="{% url 'teacher_assignment_list' %}" class="{% is_active request 'teacher_assignment_list' %} px-3 py-2 rounded-md text-sm font-medium">Assignments</a>
+                                    <a href="{% url 'assignment_list' %}" class="{% is_active request 'assignment_list' %} px-3 py-2 rounded-md text-sm font-medium">Assignments</a>
                                     <a href="{% url 'teacher_student_list' %}" class="{% is_active request 'teacher_student_list' %} px-3 py-2 rounded-md text-sm font-medium">Students</a>
                                     <a href="{% url 'attendance_dashboard' %}" class="{% is_active request 'attendance_dashboard' %} px-3 py-2 rounded-md text-sm font-medium">Attendance</a>
                                 {% elif user.user_type == 'Student' %}

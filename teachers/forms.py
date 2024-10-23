@@ -1,8 +1,10 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from .models import Teacher, TeacherSubjectGrade
-from exams.models import ExamType, ExamResult, Subject, Grade
+from exams.models import ExamType, ExamResult, Subject, Grade, Assignment, AssignmentAttachment, Rubric, FeedbackTemplate, ObjectiveQuestion
 from django.contrib.auth.forms import PasswordChangeForm
+from learners.models import Grade
+from django_ckeditor_5.widgets import CKEditor5Widget
 User = get_user_model()
 
 class TeacherProfileForm(forms.ModelForm):
@@ -33,10 +35,73 @@ class TeacherProfileForm(forms.ModelForm):
             self.save_m2m()  # This saves the subjects
         return instance
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class MultipleFileField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            result = [single_file_clean(d, initial) for d in data]
+        else:
+            result = single_file_clean(data, initial)
+        return result
+
 class AssignmentForm(forms.ModelForm):
+    attachments = MultipleFileField(required=False)
+    rubric_criteria = forms.CharField(widget=forms.Textarea, required=False)
+    rubric_weights = forms.CharField(widget=forms.Textarea, required=False)
+    feedback_templates = forms.CharField(widget=forms.Textarea, required=False)
+    categories = forms.CharField(widget=forms.Textarea, required=False)
+    learning_objectives = forms.CharField(widget=forms.Textarea, required=False)
+    submission_types = forms.MultipleChoiceField(
+        choices=Assignment.SUBMISSION_TYPES,
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
+    
     class Meta:
-        model = ExamType
-        fields = ['name', 'term', 'date_administered']
+        model = Assignment
+        fields = ['title', 'description', 'subject', 'grade', 'due_date', 'status', 'estimated_time', 'difficulty',
+                  'prerequisites', 'is_group_assignment', 'max_group_size',
+                  'enable_peer_review', 'allow_attachments', 'max_file_size',
+                  'plagiarism_check', 'auto_grading']
+        widgets = {
+            'description': CKEditor5Widget(
+                config_name='extends',
+                attrs={'class': 'django-ckeditor-5'}
+            ),
+            'due_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user and hasattr(user, 'teacher'):
+            teacher = user.teacher
+            self.fields['subject'].queryset = Subject.objects.filter(teachersubjectgrade__teacher=teacher).distinct()
+            self.fields['grade'].queryset = Grade.objects.filter(teachersubjectgrade__teacher=teacher).distinct()
+
+    def clean_categories(self):
+        categories = self.cleaned_data.get('categories')
+        return [cat.strip() for cat in categories.split('\n') if cat.strip()]
+
+    def clean_learning_objectives(self):
+        objectives = self.cleaned_data.get('learning_objectives')
+        return [obj.strip() for obj in objectives.split('\n') if obj.strip()]
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.set_categories(self.cleaned_data['categories'])
+        instance.set_learning_objectives(self.cleaned_data['learning_objectives'])
+        instance.set_submission_types(self.cleaned_data['submission_types'])
+        if commit:
+            instance.save()
+        return instance
 
 class GradeAssignmentForm(forms.ModelForm):
     class Meta:
@@ -112,3 +177,12 @@ class CustomPasswordChangeForm(PasswordChangeForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.update({'class': 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50'})
+
+class ObjectiveQuestionForm(forms.ModelForm):
+    class Meta:
+        model = ObjectiveQuestion
+        fields = ['question_text', 'question_type', 'options', 'correct_answer', 'points']
+
+ObjectiveQuestionFormSet = forms.inlineformset_factory(
+    Assignment, ObjectiveQuestion, form=ObjectiveQuestionForm, extra=1, can_delete=True
+)

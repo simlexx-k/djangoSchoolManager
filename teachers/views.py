@@ -2,8 +2,8 @@ from datetime import timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from learners.models import Grade, LearnerRegister
-from exams.models import ExamResult, ExamType, Subject
-from .forms import AssignmentForm, GradeAssignmentForm, TeacherProfileForm, TeacherSettingsForm, CustomPasswordChangeForm, TeacherSubjectGradeForm
+from exams.models import ExamResult, ExamType, Subject, Assignment, AssignmentAttachment, Rubric, FeedbackTemplate, ObjectiveQuestion, AssignmentSubmission
+from .forms import AssignmentForm, GradeAssignmentForm, TeacherProfileForm, TeacherSettingsForm, CustomPasswordChangeForm, TeacherSubjectGradeForm, ObjectiveQuestionFormSet
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .serializers import SubjectSerializer, StudentSerializer, ScoreSerializer
@@ -23,11 +23,12 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from exams.models import Grade, Subject
+from teachers.models import TeacherSubjectGrade  # Add this import
 #from administrator.models import Assignment
 # Create your views here.
 
 def is_teacher(user):
-    return user.user_type == 'teacher'
+    return user.user_type == 'teacher' and hasattr(user, 'teacher')
     #return user.groups.filter(name='Teacher').exists()
 
 @login_required
@@ -111,48 +112,133 @@ def student_detail(request, student_id):
 @login_required
 @user_passes_test(is_teacher)
 def assignment_list(request):
-    assignments = ExamType.objects.all()  # Assuming ExamType can be used for assignments
-    return render(request, 'teachers/assignment_list.html', {'assignments': assignments})
+    teacher = request.user.teacher
+    teacher_subject_grades = TeacherSubjectGrade.objects.filter(teacher=teacher)
+    assignments = Assignment.objects.filter(subject__teachersubjectgrade__in=teacher_subject_grades).distinct().order_by('-created_at')
+    
+    search_query = request.GET.get('search', '')
+    if search_query:
+        assignments = assignments.filter(
+            Q(title__icontains=search_query) | 
+            Q(description__icontains=search_query) |
+            Q(subject__name__icontains=search_query) |
+            Q(grade__grade_name__icontains=search_query)
+        )
+    
+    paginator = Paginator(assignments, 10)  # Show 10 assignments per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+    }
+    return render(request, 'teachers/assignment_list.html', context)
 
 @login_required
 @user_passes_test(is_teacher)
 def create_assignment(request):
     if request.method == 'POST':
-        form = AssignmentForm(request.POST)
-        if form.is_valid():
-            assignment = form.save()
-            return redirect('teacher_assignment_list')
+        form = AssignmentForm(request.POST, request.FILES, user=request.user)
+        question_formset = ObjectiveQuestionFormSet(request.POST, prefix='questions')
+        if form.is_valid() and question_formset.is_valid():
+            assignment = form.save(commit=False)
+            assignment.save()
+            
+            # Handle file attachments
+            for file in request.FILES.getlist('attachments'):
+                AssignmentAttachment.objects.create(assignment=assignment, file=file, filename=file.name)
+            
+            # Handle rubric
+            if form.cleaned_data['rubric_criteria'] and form.cleaned_data['rubric_weights']:
+                criteria = form.cleaned_data['rubric_criteria'].split('\n')
+                weights = [float(w) for w in form.cleaned_data['rubric_weights'].split('\n')]
+                Rubric.objects.create(assignment=assignment, criteria=criteria, weights=weights)
+            
+            # Handle feedback templates
+            if form.cleaned_data['feedback_templates']:
+                templates = form.cleaned_data['feedback_templates'].split('\n')
+                for template in templates:
+                    FeedbackTemplate.objects.create(assignment=assignment, template_text=template)
+            
+            # Save objective questions
+            question_formset.instance = assignment
+            question_formset.save()
+            
+            messages.success(request, 'Assignment created successfully.')
+            return redirect('assignment_detail', assignment_id=assignment.id)
     else:
-        form = AssignmentForm()
-    return render(request, 'teachers/create_assignment.html', {'form': form})
+        form = AssignmentForm(user=request.user)
+        question_formset = ObjectiveQuestionFormSet(prefix='questions')
+    
+    context = {
+        'form': form,
+        'question_formset': question_formset,
+    }
+    return render(request, 'teachers/create_assignment.html', context)
 
 @login_required
 @user_passes_test(is_teacher)
-def grade_assignment(request, assignment_id):
-    assignment = get_object_or_404(ExamType, exam_id=assignment_id)
-    grades = Grade.objects.all()
-    if request.method == 'POST':
-        for key, value in request.POST.items():
-            if key.startswith('score_'):
-                student_id = key.split('_')[1]
-                score = value
-                comment = request.POST.get(f'comment_{student_id}', '')
-                
-                # Update or create the ExamResult
-                ExamResult.objects.update_or_create(
-                    learner_id_id=student_id,
-                    exam_type_id=assignment_id,
-                    defaults={'score': score, 'teacher_comment': comment}
-                )
-        
-        messages.success(request, 'Scores updated successfully.')
-        return redirect('grade_assignment', assignment_id=assignment_id)
-
-    # For GET requests
+def assignment_detail(request, assignment_id):
+    teacher = request.user.teacher
+    teacher_subject_grades = TeacherSubjectGrade.objects.filter(teacher=teacher)
+    assignment = get_object_or_404(Assignment, id=assignment_id, subject__teachersubjectgrade__in=teacher_subject_grades)
+    submissions = AssignmentSubmission.objects.filter(assignment=assignment)
+    
     context = {
         'assignment': assignment,
-        'grades': grades,
+        'submissions': submissions,
     }
+    return render(request, 'teachers/assignment_detail.html', context)
+
+@login_required
+@user_passes_test(is_teacher)
+def edit_assignment(request, assignment_id):
+    teacher = request.user.teacher
+    teacher_subject_grades = TeacherSubjectGrade.objects.filter(teacher=teacher)
+    assignment = get_object_or_404(Assignment, id=assignment_id, subject__teachersubjectgrade__in=teacher_subject_grades)
+    
+    if request.method == 'POST':
+        form = AssignmentForm(request.POST, instance=assignment, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Assignment updated successfully.')
+            return redirect('assignment_detail', assignment_id=assignment.id)
+    else:
+        form = AssignmentForm(instance=assignment, user=request.user)
+    
+    context = {'form': form, 'assignment': assignment}
+    return render(request, 'teachers/edit_assignment.html', context)
+
+@login_required
+@user_passes_test(is_teacher)
+def delete_assignment(request, assignment_id):
+    teacher = request.user.teacher
+    teacher_subject_grades = TeacherSubjectGrade.objects.filter(teacher=teacher)
+    assignment = get_object_or_404(Assignment, id=assignment_id, subject__teachersubjectgrade__in=teacher_subject_grades)
+    
+    if request.method == 'POST':
+        assignment.delete()
+        messages.success(request, 'Assignment deleted successfully.')
+        return redirect('assignment_list')
+    
+    context = {'assignment': assignment}
+    return render(request, 'teachers/delete_assignment.html', context)
+
+@login_required
+@user_passes_test(is_teacher)
+def grade_assignment(request, submission_id):
+    submission = get_object_or_404(AssignmentSubmission, id=submission_id)
+    
+    if request.method == 'POST':
+        score = request.POST.get('score')
+        if score is not None:
+            submission.score = float(score)
+            submission.save()
+            messages.success(request, 'Assignment graded successfully.')
+            return redirect('assignment_detail', assignment_id=submission.assignment.id)
+    
+    context = {'submission': submission}
     return render(request, 'teachers/grade_assignment.html', context)
 
 @api_view(['GET'])
@@ -410,3 +496,10 @@ def check_password(request):
     else:
         errors = [error for field_errors in form.errors.values() for error in field_errors]
         return JsonResponse({'valid': False, 'errors': errors})
+
+
+
+
+
+
+

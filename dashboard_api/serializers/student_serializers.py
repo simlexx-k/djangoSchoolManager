@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from learners.models import LearnerRegister, Grade
-from exams.models import ExamResult, Subject
+from exams.models import ExamResult, Subject, Assignment, AssignmentSubmission
 from administrator.models import Attendance, Timetable
 from fees.models import FeeRecord
 from finance.models import Payment
@@ -17,12 +17,25 @@ class StudentSerializer(serializers.ModelSerializer):
         model = LearnerRegister
         fields = ['learner_id', 'name', 'grade', 'date_of_birth', 'gender']
 
-class ExamResultSerializer(serializers.ModelSerializer):
-    subject = serializers.StringRelatedField()
+class ExamResultDetailSerializer(serializers.Serializer):
+    subject = serializers.CharField()
+    score = serializers.FloatField(allow_null=True)
+    grade = serializers.CharField(allow_null=True)
+    teacher_comment = serializers.CharField(allow_null=True)
+    date_examined = serializers.DateField(allow_null=True)
 
-    class Meta:
-        model = ExamResult
-        fields = ['subject', 'score', 'grade', 'teacher_comment']
+class ExamResultSerializer(serializers.Serializer):
+    exam_id = serializers.IntegerField()
+    exam_type = serializers.CharField()
+    term = serializers.CharField()
+    date = serializers.DateField()
+    results = ExamResultDetailSerializer(many=True)
+    average_score = serializers.FloatField(allow_null=True)
+    overall_grade = serializers.CharField(allow_null=True)
+    overall_comment = serializers.CharField(allow_null=True)
+    student_name = serializers.CharField()
+    student_grade = serializers.CharField()
+    school_name = serializers.CharField()
 
 class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,11 +64,25 @@ class CourseSerializer(serializers.Serializer):
     name = serializers.CharField()
     teacher = serializers.CharField()
 
-class AssignmentSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    title = serializers.CharField()
-    due_date = serializers.DateField()
-    status = serializers.CharField()
+class AssignmentSerializer(serializers.ModelSerializer):
+    subject = serializers.StringRelatedField()
+    status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Assignment
+        fields = ['id', 'title', 'description', 'subject', 'due_date', 'status']
+
+    def get_status(self, obj):
+        user = self.context['request'].user
+        submission = obj.submissions.filter(learner=user.learner_profile).first()
+        if submission:
+            return 'submitted' if submission.score is None else 'graded'
+        return 'pending'
+
+class AssignmentSubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AssignmentSubmission
+        fields = ['id', 'submitted_at', 'content', 'score']
 
 class MessageSerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -80,16 +107,38 @@ class AttendanceSerializer(serializers.Serializer):
     date = serializers.DateField()
     status = serializers.CharField()
 
-class ExamResultDetailSerializer(serializers.Serializer):
-    subject = serializers.CharField()
-    score = serializers.FloatField(allow_null=True)
-    grade = serializers.CharField(allow_null=True)
-    comment = serializers.CharField(allow_null=True)
 
-class ExamResultSerializer(serializers.Serializer):
-    exam_type = serializers.CharField()
+class RecentGradeSerializer(serializers.Serializer):
+    course = serializers.CharField()
+    grade = serializers.CharField()
+
+class CourseProgressSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    progress = serializers.FloatField()
+
+class UpcomingEventSerializer(serializers.Serializer):
+    title = serializers.CharField()
     date = serializers.DateField()
-    results = ExamResultDetailSerializer(many=True)
-    average_score = serializers.FloatField(allow_null=True)
-    overall_grade = serializers.CharField(allow_null=True)
-    overall_comment = serializers.CharField(allow_null=True)
+
+class PerformanceTrendSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    avg_score = serializers.FloatField()
+
+class RecentScoreSerializer(serializers.Serializer):
+    subject = serializers.CharField()
+    score = serializers.FloatField()
+    
+class DashboardOverviewSerializer(serializers.Serializer):
+    student_name = serializers.CharField()
+    grade = serializers.CharField()
+    learner_id = serializers.IntegerField()
+    gpa = serializers.FloatField()
+    attendance = serializers.FloatField()
+    completed_courses = serializers.IntegerField()
+    recent_grades = RecentGradeSerializer(many=True)
+    course_progress = CourseProgressSerializer(many=True)
+    upcoming_events = UpcomingEventSerializer(many=True)
+    performance_trend = PerformanceTrendSerializer(many=True)
+    recent_scores = RecentScoreSerializer(many=True)
+
+

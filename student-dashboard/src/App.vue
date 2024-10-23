@@ -3,18 +3,26 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import NavigationMenu from './components/NavigationMenu.vue'
+import { useThemeStore } from '@/stores/theme'
 
 const route = useRoute()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 
 const showNavigation = computed(() => {
   const routesWithoutNavigation = ['/login', '/register', '/forgot-password']
   return !routesWithoutNavigation.includes(route.path) && authStore.isAuthenticated
 })
+
+const isDarkMode = computed(() => {
+  return themeStore.theme === 'dark' || 
+    (themeStore.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+})
+
 </script>
 
 <template>
-  <div id="app">
+  <div id="app" :class="{ 'dark': isDarkMode }" class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
     <NavigationMenu v-if="showNavigation">
       <RouterView />
     </NavigationMenu>
@@ -23,81 +31,16 @@ const showNavigation = computed(() => {
 </template>
 
 <style>
-/* Global styles */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@import './assets/base.css';
 
 #app {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
+  font-family: Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-/* You can remove or adjust the following styles as they might conflict with NavigationMenu styles */
-/*
-header {
-  line-height: 1.5;
-  max-height: 100vh;
+.dark {
+  color-scheme: dark;
 }
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-*/
 </style>

@@ -1,186 +1,181 @@
 <template>
-  <div class="min-h-screen bg-gray-100">
-    <div class="py-10">
-      <header>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 class="text-3xl font-bold leading-tight text-gray-900">Student Dashboard</h1>
+  <div class="dashboard bg-gray-100 min-h-screen p-6">
+    <div class="max-w-7xl mx-auto">
+      <h1 class="text-3xl font-bold text-gray-800 mb-6">
+        <template v-if="!isLoading">Welcome, {{ dashboardData.student_name }}</template>
+        <SkeletonLoader v-else type="text" />
+      </h1>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <DashboardCard v-if="!isLoading" title="Running Mean Score" :value="formatNumber(dashboardData.gpa)" icon="academic-cap" />
+        <DashboardCard v-if="!isLoading" title="Attendance" :value="formatNumber(dashboardData.attendance) + '%'" icon="user-group" />
+        <DashboardCard v-if="!isLoading" title="Subjects Taken" :value="dashboardData.completed_courses" icon="book-open" />
+        <SkeletonLoader v-if="isLoading" type="card" v-for="i in 3" :key="i" />
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Recent Grades</h2>
+          <ul v-if="!isLoading" class="space-y-2">
+            <li v-for="grade in dashboardData.recent_grades" :key="grade.course" class="flex justify-between items-center">
+              <span>{{ grade.course }}</span>
+              <span class="font-semibold" :class="gradeColorClass(grade.grade)">{{ grade.grade }}</span>
+            </li>
+          </ul>
+          <SkeletonLoader v-else type="text" v-for="i in 5" :key="i" class="mb-2" />
         </div>
-      </header>
-      <main>
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-          <div v-if="isLoading" class="text-center py-12">
-            <div class="spinner"></div>
-            <p class="mt-4 text-sm text-gray-600">Loading your dashboard...</p>
-          </div>
 
-          <div v-else-if="error" class="rounded-md bg-red-50 p-4 mt-8">
-            <div class="flex">
-              <ExclamationCircleIcon class="h-5 w-5 text-red-400" aria-hidden="true" />
-              <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800">Error</h3>
-                <div class="mt-2 text-sm text-red-700">
-                  <p>{{ error }}</p>
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Recent Subject Scores</h2>
+          <div v-if="!isLoading && dashboardData.recent_scores.length > 0">
+            <div v-for="score in dashboardData.recent_scores" :key="score.subject" class="mb-4">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-sm font-medium text-gray-600">{{ score.subject }}</span>
+                <span class="text-sm font-semibold" :class="scoreColorClass(score.score)">
+                  {{ formatNumber(score.score) }}%
+                </span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="h-2 rounded-full" 
+                     :class="scoreBackgroundClass(score.score)"
+                     :style="{ width: `${score.score}%` }">
                 </div>
               </div>
             </div>
           </div>
-
-          <div v-else class="mt-8">
-            <div class="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200">
-              <div class="px-4 py-5 sm:px-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">
-                  Welcome, {{ dashboardData.student_name }}!
-                </h3>
-                <p class="mt-1 max-w-2xl text-sm text-gray-500">
-                  Grade: {{ dashboardData.grade || 'N/A' }} | Learner ID: {{ dashboardData.learner_id || 'N/A' }}
-                </p>
+          <div v-else-if="!isLoading && dashboardData.recent_scores.length === 0" class="text-center text-gray-500 py-4">
+            No recent scores available
+          </div>
+          <div v-else>
+            <div v-for="i in 5" :key="i" class="mb-4 animate-pulse">
+              <div class="flex justify-between items-center mb-1">
+                <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+                <div class="h-4 bg-gray-200 rounded w-16"></div>
               </div>
-              <div class="px-4 py-5 sm:p-6">
-                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                  <DashboardCard 
-                    title="Attendance" 
-                    :value="(dashboardData.attendance ?? 0) + '%'" 
-                    icon="UserGroupIcon" 
-                  />
-                  <DashboardCard title="GPA" :value="dashboardData.gpa ? dashboardData.gpa.toFixed(2) : 'N/A'" icon="AcademicCapIcon" />
-                  <DashboardCard 
-                    title="Completed Courses" 
-                    :value="dashboardData.completed_courses ?? 0" 
-                    icon="CheckCircleIcon" 
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
-              <div class="bg-white overflow-hidden shadow rounded-lg">
-                <div class="px-4 py-5 sm:p-6">
-                  <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Grades</h3>
-                  <ul class="divide-y divide-gray-200">
-                    <li v-for="grade in dashboardData.recent_grades" :key="grade.course" class="py-3 flex justify-between items-center">
-                      <span class="text-sm font-medium text-gray-900">{{ grade.course }}</span>
-                      <span :class="gradeColorClass(grade.grade)" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium">
-                        {{ grade.grade }}
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <div class="bg-white overflow-hidden shadow rounded-lg">
-                <div class="px-4 py-5 sm:p-6">
-                  <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Upcoming Events</h3>
-                  <ul class="divide-y divide-gray-200">
-                    <li v-for="event in dashboardData.upcoming_events" :key="event.id" class="py-3">
-                      <div class="flex items-center">
-                        <CalendarIcon class="h-5 w-5 text-gray-400 mr-2" />
-                        <p class="text-sm font-medium text-gray-900">{{ event.title }}</p>
-                      </div>
-                      <p class="mt-1 text-sm text-gray-500">{{ formatDate(event.date) }}</p>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-8 bg-white overflow-hidden shadow rounded-lg">
-              <div class="px-4 py-5 sm:p-6">
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Course Progress</h3>
-                <div class="space-y-4">
-                  <div v-for="course in dashboardData.course_progress" :key="course.id" class="flex items-center">
-                    <div class="flex-1">
-                      <p class="text-sm font-medium text-gray-900">{{ course.name }}</p>
-                      <div class="mt-1 relative pt-1">
-                        <div class="overflow-hidden h-2 text-xs flex rounded bg-indigo-200">
-                          <div :style="{ width: course.progress + '%' }" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500"></div>
-                        </div>
-                      </div>
-                    </div>
-                    <p class="ml-4 text-sm font-medium text-gray-900">{{ course.progress }}%</p>
-                  </div>
-                </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="h-2 bg-gray-300 rounded-full" style="width: 70%"></div>
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Upcoming Events</h2>
+          <ul v-if="!isLoading" class="space-y-2">
+            <li v-for="event in dashboardData.upcoming_events" :key="event.title" class="flex justify-between items-center">
+              <span>{{ event.title }}</span>
+              <span class="text-sm text-gray-500">{{ formatDate(event.date) }}</span>
+            </li>
+          </ul>
+          <SkeletonLoader v-else type="text" v-for="i in 3" :key="i" class="mb-2" />
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4">Performance Trend</h2>
+          <div v-if="!isLoading && performanceTrendChartData.datasets[0].data.length > 0" class="h-64">
+            <PerformanceChart :chart-data="performanceTrendChartData" />
+          </div>
+          <p v-else-if="!isLoading" class="text-center text-gray-500">No performance data available</p>
+          <SkeletonLoader v-else type="chart" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
-import { ExclamationCircleIcon, CalendarIcon } from '@heroicons/vue/24/solid'
-import api from '@/api/config'
+<script>
+import { ref, computed, onMounted } from 'vue'
 import DashboardCard from '@/components/DashboardCard.vue'
+import PerformanceChart from '@/components/PerformanceChart.vue'
+import SkeletonLoader from '@/components/SkeletonLoader.vue'
+import studentApi from '@/api/student'
 
-const dashboardData = ref({
-  student_name: '',
-  grade: '',
-  learner_id: '',
-  attendance: 0,
-  gpa: null,
-  completed_courses: 0,
-  recent_grades: [],
-  upcoming_events: [],
-  course_progress: []
-})
+export default {
+  components: {
+    DashboardCard,
+    PerformanceChart,
+    SkeletonLoader,
+  },
+  setup() {
+    const dashboardData = ref({})
+    const isLoading = ref(true)
+    const error = ref(null)
 
-const isLoading = ref(true)
-const error = ref(null)
+    const performanceTrendChartData = computed(() => {
+      const data = dashboardData.value.performance_trend || []
+      return {
+        labels: data.map(item => formatDate(item.date)),
+        datasets: [{
+          label: 'Running Mean Score',
+          data: data.map(item => item.avg_score),
+          backgroundColor: 'rgba(59, 130, 246, 0.6)',
+          borderColor: 'rgb(59, 130, 246)',
+          borderWidth: 1
+        }]
+      }
+    })
 
-const fetchDashboardData = async () => {
-  isLoading.value = true
-  error.value = null
-  try {
-    const response = await api.get('/student/dashboard/')
-    dashboardData.value = { ...dashboardData.value, ...response.data }
-  } catch (err) {
-    console.error('Error fetching dashboard data:', err)
-    error.value = 'Failed to load dashboard data. Please try again.'
-  } finally {
-    isLoading.value = false
+    const formatDate = (dateString) => {
+      if (!dateString) return ''
+      const options = { year: 'numeric', month: 'short' }
+      return new Date(dateString).toLocaleDateString(undefined, options)
+    }
+
+    const formatNumber = (value) => {
+      return value !== undefined ? value.toFixed(2) : 'N/A'
+    }
+
+    const gradeColorClass = (grade) => {
+      const gradeMap = {
+        'EE': 'text-green-600',  // Exceeds Expectations
+        'ME': 'text-blue-600',   // Meets Expectations
+        'AE': 'text-yellow-600', // Approaches Expectations
+        'BE': 'text-red-600'     // Below Expectations
+      }
+      return gradeMap[grade] || 'text-gray-600'
+    }
+
+    const scoreColorClass = (score) => {
+      if (score >= 90) return 'text-green-600'
+      if (score >= 80) return 'text-blue-600'
+      if (score >= 70) return 'text-yellow-600'
+      if (score >= 60) return 'text-orange-600'
+      return 'text-red-600'
+    }
+
+    const scoreBackgroundClass = (score) => {
+      if (score >= 90) return 'bg-green-600'
+      if (score >= 80) return 'bg-blue-600'
+      if (score >= 70) return 'bg-yellow-600'
+      if (score >= 60) return 'bg-orange-600'
+      return 'bg-red-600'
+    }
+
+    onMounted(async () => {
+      try {
+        const response = await studentApi.getDashboard()
+        dashboardData.value = response.data
+        isLoading.value = false
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err)
+        error.value = 'Failed to load dashboard data. Please try again later.'
+        isLoading.value = false
+      }
+    })
+
+    return {
+      dashboardData,
+      performanceTrendChartData,
+      formatDate,
+      formatNumber,
+      gradeColorClass,
+      isLoading,
+      error,
+      scoreColorClass,
+      scoreBackgroundClass
+    }
   }
 }
-
-const refreshDashboard = () => {
-  fetchDashboardData()
-}
-
-const gradeColorClass = (grade) => {
-  const gradeMap = {
-    'A': 'bg-green-100 text-green-800',
-    'B': 'bg-blue-100 text-blue-800',
-    'C': 'bg-yellow-100 text-yellow-800',
-    'D': 'bg-orange-100 text-orange-800',
-    'F': 'bg-red-100 text-red-800'
-  }
-  return gradeMap[grade.charAt(0)] || 'bg-gray-100 text-gray-800'
-}
-
-const formatDate = (dateString) => {
-  const options = { year: 'numeric', month: 'long', day: 'numeric' }
-  return new Date(dateString).toLocaleDateString(undefined, options)
-}
-
-onMounted(fetchDashboardData)
-
-defineExpose({ refreshDashboard })
 </script>
-
-<style scoped>
-.spinner {
-  border: 4px solid #e2e8f0;
-  border-top: 4px solid #4f46e5;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-</style>

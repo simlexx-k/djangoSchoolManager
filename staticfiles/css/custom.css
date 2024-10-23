@@ -1,0 +1,20 @@
+/* static/css/custom.css */
+@layer components {
+    .form-input,
+    .form-textarea,
+    .form-select,  
+    .form-multiselect {
+      margin-top: 0.25rem;
+      display: block;
+      width: 100%;
+      border-radius: 0.375rem;
+      border-color: #d1d5db;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .form-multiselect:focus {
+      border-color: #93c5fd;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.5);
+    }
+  }

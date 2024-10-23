@@ -6,11 +6,14 @@ from dashboard_api.serializers.student_serializers import (
     StudentSerializer, ExamResultSerializer, AttendanceSerializer,
     FeeRecordSerializer, PaymentSerializer, TimetableSerializer, 
     CourseSerializer, AssignmentSerializer, MessageSerializer, 
-    ResourceSerializer, TimetableEntrySerializer, AttendanceSerializer
+    ResourceSerializer, TimetableEntrySerializer, AttendanceSerializer,
+    DashboardOverviewSerializer,
+    RecentScoreSerializer,
+    AssignmentSerializer, AssignmentSubmissionSerializer
 )
 from dashboard_api.permissions import IsParentOrStudent, IsAdminOrTeacherOrParentOrStudent, IsOwnerOrParent
 from learners.models import LearnerRegister, School
-from exams.models import ExamResult, Subject, ExamType
+from exams.models import ExamResult, Subject, ExamType, Assignment, AssignmentSubmission
 from administrator.models import Attendance, Timetable
 from fees.models import FeeRecord
 from finance.models import Payment
@@ -20,10 +23,12 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
-from django.db.models import Avg
+from django.db.models import Avg, Count
+from datetime import timedelta
 import logging
 from administrator.utils import get_grade, get_auto_comment
 from rest_framework.permissions import IsAuthenticated
+import traceback
 logger = logging.getLogger(__name__)
 
 class StudentProfileView(generics.RetrieveAPIView):
@@ -43,61 +48,102 @@ class StandardResultsSetPagination(PageNumberPagination):
     max_page_size = 100
 
 class StudentExamResultsView(APIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, student_id=None):
         try:
+            logger.info("Starting StudentExamResultsView.get")
+            
             if student_id:
-                student = LearnerRegister.objects.get(id=student_id)
+                student = LearnerRegister.objects.get(learner_id=student_id)
+                logger.info(f"Retrieved student with ID: {student_id}")
             else:
                 student = request.user.learner_profile
+                logger.info(f"Using authenticated user's learner profile: {student.learner_id}")
 
             exam_types = ExamType.objects.all().order_by('-date_administered')
+            logger.info(f"Retrieved {exam_types.count()} exam types")
+
+            school = School.objects.first()
+            school_name = school.name if school else "School Name"
 
             results = []
             for exam_type in exam_types:
+                logger.info(f"Processing exam type: {exam_type.name}")
                 exam_results = ExamResult.objects.filter(
                     learner_id=student,
                     exam_type=exam_type
                 ).select_related('subject')
+                logger.info(f"Retrieved {exam_results.count()} exam results for this exam type")
 
                 if exam_results.exists():
                     exam_data = {
+                        'exam_id': exam_type.exam_id,
                         'exam_type': exam_type.name,
+                        'term': exam_type.term,
                         'date': exam_type.date_administered,
                         'results': [],
                         'average_score': None,
                         'overall_grade': None,
-                        'overall_comment': None
+                        'overall_comment': None,
+                        'student_name': student.name,  # Add this line
+                        'student_grade': student.grade.grade_name,  # Add this line
+                        'school_name': school_name  # Add this line
                     }
-                    valid_scores = []
+
+                    total_score = 0
+                    valid_results = 0
                     for result in exam_results:
                         score = result.get_score()
                         if score is not None:
-                            valid_scores.append(score)
-
-                        grade = get_grade(score) if score is not None else None
-                        comment = get_auto_comment(score) if score is not None else None
-
+                            total_score += score
+                            valid_results += 1
                         exam_data['results'].append({
                             'subject': result.subject.name,
                             'score': score,
-                            'grade': grade,
-                            'comment': comment,
-                            'teacher_comment': result.teacher_comment
+                            'grade': result.get_grade(),
+                            'teacher_comment': result.teacher_comment,
+                            'date_examined': result.date_examined
                         })
 
-                    if valid_scores:
-                        average_score = sum(valid_scores) / len(valid_scores)
-                        exam_data['average_score'] = average_score
+                    if valid_results > 0:
+                        average_score = total_score / valid_results
+                        exam_data['average_score'] = round(average_score, 2)
                         exam_data['overall_grade'] = get_grade(average_score)
                         exam_data['overall_comment'] = get_auto_comment(average_score)
 
                     results.append(exam_data)
 
+            logger.info(f"Processed {len(results)} exam types with results")
             serializer = ExamResultSerializer(results, many=True)
             return Response(serializer.data)
         except Exception as e:
             logger.error(f"Error in StudentExamResultsView: {str(e)}", exc_info=True)
-            return Response({"error": "An error occurred while fetching exam results."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get_grade(self, score):
+        if score is None:
+            return None
+        elif score >= 80:
+            return 'EE'  # Exceeding Expectations
+        elif score >= 65:
+            return 'ME'  # Meeting Expectations
+        elif score >= 50:
+            return 'AE'  # Approaching Expectations
+        else:
+            return 'BE'  # Below Expectations
+
+    def get_auto_comment(self, score):
+        if score is None:
+            return None
+        elif score >= 80:
+            return 'Excellent performance! Exceeding expectations.'
+        elif score >= 65:
+            return 'Good job! Meeting expectations.'
+        elif score >= 50:
+            return 'Approaching expectations. Keep working hard!'
+        else:
+            return 'Below expectations. Extra effort and support needed.'
 
 class StudentAttendanceView(generics.ListAPIView):
     serializer_class = AttendanceSerializer
@@ -143,29 +189,110 @@ class StudentTimetableView(generics.ListAPIView):
 class StudentDashboardOverview(APIView):
     permission_classes = [permissions.IsAuthenticated, IsParentOrStudent]
 
-    def get(self, request):
+    def get(self, request, student_id=None):
         try:
-            # Get the current user
-            user = request.user
+            if student_id:
+                student = LearnerRegister.objects.get(id=student_id)
+            else:
+                student = request.user.learner_profile
 
-            # Find the associated LearnerRegister record
-            learner = LearnerRegister.objects.get(user=user)
+            # Fetch exam results
+            exam_results = ExamResult.objects.filter(learner_id=student)
+            recent_exams = exam_results.order_by('-exam_type__date_administered')[:5]
 
-            # Fetch necessary data for the dashboard
-            # (You'll need to adjust this based on what data you want to display)
+            # Calculate GPA
+            gpa = exam_results.aggregate(Avg('score'))['score__avg']
+
+            # Fetch attendance data
+            today = timezone.now().date()
+            thirty_days_ago = today - timedelta(days=30)
+            attendance = Attendance.objects.filter(
+                learner_id=student,
+                date__range=[thirty_days_ago, today]
+            )
+            attendance_rate = attendance.filter(status='present').count() / attendance.count() if attendance.count() > 0 else 0
+
+            # Fetch course progress
+            subjects = Subject.objects.filter(grades=student.grade)
+            course_progress = []
+            for subject in subjects:
+                total_exams = ExamResult.objects.filter(
+                    learner_id=student,
+                    subject=subject
+                ).count()
+                completed_exams = ExamResult.objects.filter(
+                    learner_id=student,
+                    subject=subject,
+                    score__isnull=False
+                ).count()
+                progress = (completed_exams / total_exams * 100) if total_exams > 0 else 0
+                course_progress.append({
+                    'name': subject.name,
+                    'progress': progress
+                })
+
+            # Fetch upcoming events (using ExamType as a proxy for events)
+            upcoming_events = ExamType.objects.filter(
+                date_administered__gte=today
+            ).order_by('date_administered')[:5]
+
+            # Fetch recent subject scores
+            recent_scores = ExamResult.objects.filter(
+                learner_id=student
+            ).order_by('-exam_type__date_administered', 'subject__name')[:5]
+
+            recent_scores_data = [
+                {
+                    "subject": score.subject.name,
+                    "score": score.get_score()
+                }
+                for score in recent_scores
+            ]
+
             dashboard_data = {
-                'student_name': learner.name,
-                'grade': learner.grade.grade_name,
-                'learner_id': learner.learner_id,
-                # Add other relevant data here
+                'student_name': student.name,
+                'grade': student.grade.grade_name,
+                'learner_id': student.learner_id,
+                'gpa': gpa,
+                'attendance': attendance_rate * 100,
+                'completed_courses': exam_results.values('subject').distinct().count(),
+                'recent_grades': [
+                    {
+                        'course': result.subject.name,
+                        'grade': get_grade(result.score)
+                    } for result in recent_exams
+                ],
+                'course_progress': course_progress,
+                'upcoming_events': [
+                    {
+                        'title': event.name,
+                        'date': event.date_administered
+                    } for event in upcoming_events
+                ],
+                'performance_trend': self.get_performance_trend(student),
+                "recent_scores": recent_scores_data,
             }
 
-            return Response(dashboard_data)
+            serializer = DashboardOverviewSerializer(dashboard_data)
+            return Response(serializer.data)
 
         except LearnerRegister.DoesNotExist:
             return Response({"error": "Student record not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            logger.error(f"Error in StudentDashboardOverview: {str(e)}", exc_info=True)
+            return Response({"error": "An error occurred while fetching dashboard data."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get_performance_trend(self, student):
+        exam_results = ExamResult.objects.filter(learner_id=student).order_by('exam_type__date_administered')
+        trend_data = exam_results.values('exam_type__date_administered').annotate(
+            avg_score=Avg('score')
+        ).order_by('exam_type__date_administered')
+        return [
+            {
+                'date': item['exam_type__date_administered'],
+                'avg_score': item['avg_score']
+            } for item in trend_data
+        ]
 
 class StudentCoursesView(APIView):
     def get(self, request, student_id=None):
@@ -211,27 +338,40 @@ class StudentCoursesView(APIView):
         return Response(serializer.data)
 
 class StudentAssignmentsView(APIView):
-    def get(self, request, student_id=None):
-        if student_id:
-            student = LearnerRegister.objects.get(id=student_id)
-        else:
-            student = request.user.learner_profile
+    permission_classes = [IsAuthenticated]
 
-        # For this example, we'll use ExamResults as a proxy for assignments
-        assignments = ExamResult.objects.filter(learner_id=student)
-        
-        assignment_data = [
-            {
-                "id": result.id,
-                "title": f"{result.subject.name} Exam",
-                "due_date": result.date_examined,
-                "status": "Completed" if result.score is not None else "Pending"
-            }
-            for result in assignments
-        ]
-        
-        serializer = AssignmentSerializer(assignment_data, many=True)
+    def get(self, request):
+        assignments = Assignment.objects.filter(subject__grades=request.user.learner_profile.grade)
+        serializer = AssignmentSerializer(assignments, many=True, context={'request': request})
         return Response(serializer.data)
+
+class StudentAssignmentSubmissionView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, assignment_id):
+        try:
+            assignment = Assignment.objects.get(id=assignment_id)
+            submission = AssignmentSubmission.objects.get(assignment=assignment, learner=request.user.learner_profile)
+            serializer = AssignmentSubmissionSerializer(submission)
+            return Response(serializer.data)
+        except AssignmentSubmission.DoesNotExist:
+            return Response({"detail": "Submission not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    def post(self, request, assignment_id):
+        try:
+            assignment = Assignment.objects.get(id=assignment_id)
+            submission, created = AssignmentSubmission.objects.get_or_create(
+                assignment=assignment,
+                learner=request.user.learner_profile,
+                defaults={'content': request.data.get('content', '')}
+            )
+            if not created:
+                submission.content = request.data.get('content', '')
+                submission.save()
+            serializer = AssignmentSubmissionSerializer(submission)
+            return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+        except Assignment.DoesNotExist:
+            return Response({"detail": "Assignment not found"}, status=status.HTTP_404_NOT_FOUND)
 
 class StudentMessagesView(APIView):
     def get(self, request, student_id=None):
@@ -358,4 +498,43 @@ class LearnerInfoView(APIView):
             })
         else:
             return Response({'error': 'Learner information not found'}, status=404)
+
+class StudentExamsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        student = request.user.learner_profile
+        exam_types = ExamType.objects.all().order_by('-date_administered')
+
+        results = []
+        for exam_type in exam_types:
+            exam_results = ExamResult.objects.filter(
+                learner_id=student,
+                exam_type=exam_type
+            ).select_related('subject')
+
+            if exam_results.exists():
+                exam_data = {
+                    'exam_type': exam_type.name,
+                    'date': exam_type.date_administered,
+                    'results': [],
+                    'student_name': student.name,  # Add this line
+                    'student_grade': student.grade.grade_name  # Add this line
+                }
+                for result in exam_results:
+                    exam_data['results'].append({
+                        'subject': result.subject.name,
+                        'score': result.score,
+                        'grade': result.get_grade(),
+                    })
+                results.append(exam_data)
+
+        serializer = ExamResultSerializer(results, many=True)
+        return Response(serializer.data)
+
+
+
+
+
+
 
