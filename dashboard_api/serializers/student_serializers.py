@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from learners.models import LearnerRegister, Grade
-from exams.models import ExamResult, Subject, Assignment, AssignmentSubmission
+from exams.models import ExamResult, Subject, Assignment, AssignmentSubmission, QuestionResponse
 from administrator.models import Attendance, Timetable
 from fees.models import FeeRecord
 from finance.models import Payment
@@ -79,10 +79,17 @@ class AssignmentSerializer(serializers.ModelSerializer):
             return 'submitted' if submission.score is None else 'graded'
         return 'pending'
 
+class QuestionResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionResponse
+        fields = ['question', 'answer', 'is_correct', 'score']
+
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
+    question_responses = QuestionResponseSerializer(many=True, read_only=True)
+
     class Meta:
         model = AssignmentSubmission
-        fields = ['id', 'submitted_at', 'content', 'score']
+        fields = ['id', 'assignment', 'learner', 'submitted_at', 'status', 'score', 'question_responses']
 
 class MessageSerializer(serializers.Serializer):
     id = serializers.IntegerField()

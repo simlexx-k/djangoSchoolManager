@@ -1,0 +1,39 @@
+{% extends 'teachers/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Create Assignment</h1>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-6">
+            {{ form.as_p }}
+        </div>
+        
+        <h2 class="text-2xl font-bold mb-4">Objective Questions</h2>
+        {{ formset.management_form }}
+        <div id="formset-container">
+            {% for question_form in formset %}
+            <div class="mb-6 p-4 border rounded">
+                <h3 class="text-xl font-semibold mb-2">Question {{ forloop.counter }}</h3>
+                {{ question_form.as_p }}
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" id="add-question" class="bg-blue-500 text-white px-4 py-2 rounded mb-4">Add Question</button>
+        
+        <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded">Create Assignment</button>
+    </form>
+</div>
+
+<script>
+    document.getElementById('add-question').addEventListener('click', function() {
+        var formCount = parseInt(document.getElementById('id_questions-TOTAL_FORMS').value);
+        var newForm = document.getElementById('formset-container').lastElementChild.cloneNode(true);
+        var regex = new RegExp('questions-' + (formCount-1), 'g');
+        newForm.innerHTML = newForm.innerHTML.replace(regex, 'questions-' + formCount);
+        document.getElementById('formset-container').appendChild(newForm);
+        document.getElementById('id_questions-TOTAL_FORMS').value = formCount + 1;
+    });
+</script>
+{% endblock %}

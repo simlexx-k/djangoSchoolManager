@@ -29,6 +29,7 @@ import logging
 from administrator.utils import get_grade, get_auto_comment
 from rest_framework.permissions import IsAuthenticated
 import traceback
+from rest_framework.exceptions import NotFound
 logger = logging.getLogger(__name__)
 
 class StudentProfileView(generics.RetrieveAPIView):
@@ -530,6 +531,22 @@ class StudentExamsView(APIView):
 
         serializer = ExamResultSerializer(results, many=True)
         return Response(serializer.data)
+
+class StudentAssignmentSubmissionView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsParentOrStudent]
+
+    def get(self, request, assignment_id):
+        student = request.user.learner_profile
+        try:
+            submission = AssignmentSubmission.objects.get(
+                assignment_id=assignment_id,
+                learner=student
+            )
+            serializer = AssignmentSubmissionSerializer(submission)
+            return Response(serializer.data)
+        except AssignmentSubmission.DoesNotExist:
+            raise NotFound("Submission not found for this assignment.")
+
 
 
 

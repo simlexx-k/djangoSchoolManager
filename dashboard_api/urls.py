@@ -48,8 +48,8 @@ urlpatterns = [
     path('learner/info/', LearnerInfoView.as_view(), name='learner-info'),
     #path('user/profile/', UserProfileView.as_view(), name='user-profile'),
     path('learner/profile/', LearnerProfileView.as_view(), name='learner-profile'),
-    path('assignments/', student_views.StudentAssignmentsView.as_view(), name='student-assignments'),
-    path('assignments/<int:assignment_id>/submission/', student_views.StudentAssignmentSubmitView.as_view(), name='student-assignment-submission'),
+    path('student/assignments/', student_views.StudentAssignmentsView.as_view(), name='student-assignments'),
+    path('student/assignments/<int:assignment_id>/submission/', student_views.StudentAssignmentSubmissionView.as_view(), name='student-assignment-submission'),
     #path('student/exams/', student_views.StudentExamsView.as_view(), name='student-exams'),
     path('student/assignments/<int:assignment_id>/submit/', StudentAssignmentSubmitView.as_view(), name='student-assignment-submit'),
 ]

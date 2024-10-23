@@ -21,9 +21,9 @@
           <div v-else-if="section.type === 'question'" class="border-l-4 border-blue-500 pl-4 mb-6">
             <div v-html="section.content" class="prose max-w-none mb-2"></div>
             <div class="mt-2">
-              <label :for="'answer_' + index" class="block text-sm font-medium text-gray-700">Your Answer:</label>
+              <label :for="'answer_' + section.questionNumber" class="block text-sm font-medium text-gray-700">Your Answer:</label>
               <textarea
-                :id="'answer_' + index"
+                :id="'answer_' + section.questionNumber"
                 v-model="responses[section.questionNumber]"
                 rows="4"
                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
@@ -69,31 +69,27 @@ const parsedContent = computed(() => {
   const doc = parser.parseFromString(assignment.value.description, 'text/html')
   const elements = Array.from(doc.body.children)
   
-  let currentSection = { type: 'content', content: '' }
   const sections = []
-  let questionNumber = 0
+  let currentContent = ''
 
   elements.forEach((element) => {
     if (element.tagName === 'H3' && element.textContent.trim().toLowerCase().startsWith('question')) {
-      if (currentSection.content) {
-        sections.push({ ...currentSection })
-        currentSection = { type: 'content', content: '' }
+      if (currentContent) {
+        sections.push({ type: 'content', content: currentContent })
+        currentContent = ''
       }
-      questionNumber++
       sections.push({
         type: 'question',
-        questionNumber,
+        questionNumber: sections.filter(s => s.type === 'question').length + 1,
         content: DOMPurify.sanitize(element.outerHTML)
       })
-    } else if (currentSection.type === 'question') {
-      sections[sections.length - 1].content += DOMPurify.sanitize(element.outerHTML)
     } else {
-      currentSection.content += DOMPurify.sanitize(element.outerHTML)
+      currentContent += DOMPurify.sanitize(element.outerHTML)
     }
   })
 
-  if (currentSection.content) {
-    sections.push(currentSection)
+  if (currentContent) {
+    sections.push({ type: 'content', content: currentContent })
   }
 
   return sections
@@ -140,15 +136,3 @@ const submitAssignment = async () => {
 onMounted(fetchAssignment)
 </script>
 
-<style>
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
-
-.prose h1 { @apply text-2xl font-bold mb-4; }
-.prose h2 { @apply text-xl font-semibold mb-3; }
-.prose h3 { @apply text-lg font-medium mb-2; }
-.prose p { @apply mb-4; }
-.prose ul, .prose ol { @apply ml-6 mb-4; }
-.prose li { @apply mb-2; }
-</style>

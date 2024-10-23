@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import NavigationMenu from './components/NavigationMenu.vue'
 import { useThemeStore } from '@/stores/theme'
+import './assets/tailwind.css'
 
 const route = useRoute()
 const authStore = useAuthStore()
