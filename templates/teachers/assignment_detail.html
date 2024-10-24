@@ -37,7 +37,7 @@
             <p><strong>Type:</strong> {{ question.get_question_type_display }}</p>
             {% if question.options %}
             <ul class="list-disc list-inside ml-4">
-                {% for option in question.get_options %}
+                {% for option in question.loaded_options %}
                 <li>{{ option }}</li>
                 {% endfor %}
             </ul>

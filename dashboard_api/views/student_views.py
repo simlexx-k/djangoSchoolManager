@@ -9,7 +9,10 @@ from dashboard_api.serializers.student_serializers import (
     ResourceSerializer, TimetableEntrySerializer, AttendanceSerializer,
     DashboardOverviewSerializer,
     RecentScoreSerializer,
-    AssignmentSerializer, AssignmentSubmissionSerializer
+    AssignmentSerializer, AssignmentSubmissionSerializer,
+    GradedAssignmentSerializer,
+    GradedAssignmentDetailSerializer,
+    GradedAssignmentListSerializer
 )
 from dashboard_api.permissions import IsParentOrStudent, IsAdminOrTeacherOrParentOrStudent, IsOwnerOrParent
 from learners.models import LearnerRegister, School
@@ -353,7 +356,7 @@ class StudentAssignmentDetailView(generics.RetrieveAPIView):
     def get_object(self):
         assignment_id = self.kwargs.get('assignment_id')
         student = self.request.user.learner_profile
-        return Assignment.objects.get(id=assignment_id, grade=student.grade)
+        return Assignment.objects.prefetch_related('objective_questions').get(id=assignment_id, grade=student.grade)
 
 class StudentAssignmentSubmitView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsParentOrStudent]
@@ -368,8 +371,14 @@ class StudentAssignmentSubmitView(APIView):
             defaults={'status': 'submitted'}
         )
         
-        # Process the submission data here
-        # You might want to create QuestionResponse objects for each answer
+        responses = request.data.get('responses', {})
+        for question_id, answer in responses.items():
+            question = ObjectiveQuestion.objects.get(id=question_id, assignment=assignment)
+            QuestionResponse.objects.create(
+                submission=submission,
+                question=question,
+                answer=answer
+            )
         
         return Response({'message': 'Assignment submitted successfully'})
 
@@ -546,6 +555,56 @@ class StudentAssignmentSubmissionView(APIView):
             return Response(serializer.data)
         except AssignmentSubmission.DoesNotExist:
             raise NotFound("Submission not found for this assignment.")
+
+class StudentGradedAssignmentsView(generics.ListAPIView):
+    serializer_class = GradedAssignmentSerializer
+    permission_classes = [permissions.IsAuthenticated, IsParentOrStudent]
+
+    def get_queryset(self):
+        student = self.request.user.learner_profile
+        return AssignmentSubmission.objects.filter(
+            learner=student,
+            status='graded'
+        ).select_related('assignment').prefetch_related('question_responses')
+
+class StudentGradedAssignmentDetailView(generics.RetrieveAPIView):
+    serializer_class = GradedAssignmentDetailSerializer
+    permission_classes = [permissions.IsAuthenticated, IsParentOrStudent]
+
+    def get_object(self):
+        submission_id = self.kwargs.get('submission_id')
+        student = self.request.user.learner_profile
+        logger.info(f"Fetching graded assignment submission {submission_id} for student {student.id}")
+        try:
+            submission = AssignmentSubmission.objects.select_related('assignment', 'assignment__subject').prefetch_related('question_responses').get(
+                id=submission_id,
+                learner=student,
+                status='graded'
+            )
+            logger.info(f"Found submission: {submission.id}")
+            return submission
+        except AssignmentSubmission.DoesNotExist:
+            logger.warning(f"Graded assignment submission {submission_id} not found for student {student.id}")
+            raise NotFound("Graded assignment submission not found.")
+
+class StudentGradedAssignmentsListView(generics.ListAPIView):
+    serializer_class = GradedAssignmentListSerializer
+    permission_classes = [permissions.IsAuthenticated, IsParentOrStudent]
+
+    def get_queryset(self):
+        student = self.request.user.learner_profile
+        return AssignmentSubmission.objects.filter(
+            learner=student,
+            status='graded'
+        ).select_related('assignment').order_by('-submitted_at')
+
+
+
+
+
+
+
+
 
 
 

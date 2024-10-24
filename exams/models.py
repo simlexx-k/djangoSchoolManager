@@ -309,22 +309,41 @@ class ObjectiveQuestion(models.Model):
         ('true_false', 'True/False'),
         ('short_answer', 'Short Answer'),
     ]
+    OPTION_CHOICES = [
+        ('A', 'A'),
+        ('B', 'B'),
+        ('C', 'C'),
+        ('D', 'D'),
+    ]
 
-    assignment = models.ForeignKey('Assignment', on_delete=models.CASCADE, related_name='objective_questions')
+    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='objective_questions')
     question_text = CKEditor5Field(config_name='extends')
     question_type = models.CharField(max_length=20, choices=QUESTION_TYPES)
-    options = models.TextField(blank=True, null=True)  # Store as JSON string
-    correct_answer = models.CharField(max_length=200)
+    option_a = models.CharField(max_length=255, blank=True, null=True)
+    option_b = models.CharField(max_length=255, blank=True, null=True)
+    option_c = models.CharField(max_length=255, blank=True, null=True)
+    option_d = models.CharField(max_length=255, blank=True, null=True)
+    correct_answer = models.CharField(max_length=1, choices=OPTION_CHOICES, blank=True, null=True)
     points = models.PositiveIntegerField(default=1)
 
-    def set_options(self, options_list):
-        self.options = json.dumps(options_list) if options_list else None
-
     def get_options(self):
-        return json.loads(self.options) if self.options else []
+        if self.question_type == 'multiple_choice':
+            return {
+                'A': self.option_a,
+                'B': self.option_b,
+                'C': self.option_c,
+                'D': self.option_d,
+            }
+        elif self.question_type == 'true_false':
+            return {
+                'A': 'True',
+                'B': 'False',
+            }
+        else:
+            return {}
 
     def __str__(self):
-        return f"Question for {self.assignment}: {self.question_text[:50]}..."
+        return f"{self.get_question_type_display()}: {self.question_text[:50]}"
 
 class AssignmentSubmission(models.Model):
     STATUS_CHOICES = [
@@ -360,4 +379,7 @@ class QuestionResponse(models.Model):
 
     def __str__(self):
         return f"Response to {self.question} by {self.submission.learner}"
+
+
+
 

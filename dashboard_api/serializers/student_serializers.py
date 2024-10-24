@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from learners.models import LearnerRegister, Grade
-from exams.models import ExamResult, Subject, Assignment, AssignmentSubmission, QuestionResponse
+from exams.models import ExamResult, Subject, Assignment, AssignmentSubmission, QuestionResponse, ObjectiveQuestion
 from administrator.models import Attendance, Timetable
 from fees.models import FeeRecord
 from finance.models import Payment
@@ -64,13 +64,19 @@ class CourseSerializer(serializers.Serializer):
     name = serializers.CharField()
     teacher = serializers.CharField()
 
+class ObjectiveQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ObjectiveQuestion
+        fields = ['id', 'question_text', 'question_type', 'option_a', 'option_b', 'option_c', 'option_d']
+
 class AssignmentSerializer(serializers.ModelSerializer):
     subject = serializers.StringRelatedField()
     status = serializers.SerializerMethodField()
+    objective_questions = ObjectiveQuestionSerializer(many=True, read_only=True)
 
     class Meta:
         model = Assignment
-        fields = ['id', 'title', 'description', 'subject', 'due_date', 'status']
+        fields = ['id', 'title', 'description', 'subject', 'due_date', 'status', 'objective_questions']
 
     def get_status(self, obj):
         user = self.context['request'].user
@@ -80,9 +86,29 @@ class AssignmentSerializer(serializers.ModelSerializer):
         return 'pending'
 
 class QuestionResponseSerializer(serializers.ModelSerializer):
+    question_text = serializers.CharField(source='question.question_text')
+    question_type = serializers.CharField(source='question.question_type')
+    options = serializers.SerializerMethodField()
+    correct_answer = serializers.CharField(source='question.correct_answer')
+
     class Meta:
         model = QuestionResponse
-        fields = ['question', 'answer', 'is_correct', 'score']
+        fields = ['question_text', 'question_type', 'options', 'answer', 'is_correct', 'score', 'correct_answer']
+
+    def get_options(self, obj):
+        if obj.question.question_type == 'multiple_choice':
+            return {
+                'A': obj.question.option_a,
+                'B': obj.question.option_b,
+                'C': obj.question.option_c,
+                'D': obj.question.option_d,
+            }
+        elif obj.question.question_type == 'true_false':
+            return {
+                'A': 'True',
+                'B': 'False',
+            }
+        return None
 
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     question_responses = QuestionResponseSerializer(many=True, read_only=True)
@@ -148,4 +174,28 @@ class DashboardOverviewSerializer(serializers.Serializer):
     performance_trend = PerformanceTrendSerializer(many=True)
     recent_scores = RecentScoreSerializer(many=True)
 
+class GradedAssignmentSerializer(serializers.ModelSerializer):
+    assignment_title = serializers.CharField(source='assignment.title')
+    question_responses = QuestionResponseSerializer(many=True)
 
+    class Meta:
+        model = AssignmentSubmission
+        fields = ['id', 'assignment_title', 'submitted_at', 'score', 'feedback', 'question_responses']
+
+class GradedAssignmentDetailSerializer(serializers.ModelSerializer):
+    assignment_title = serializers.CharField(source='assignment.title')
+    assignment_description = serializers.CharField(source='assignment.description')
+    subject = serializers.CharField(source='assignment.subject.name')
+    question_responses = QuestionResponseSerializer(many=True)
+
+    class Meta:
+        model = AssignmentSubmission
+        fields = ['id', 'assignment_title', 'assignment_description', 'subject', 'submitted_at', 'score', 'feedback', 'question_responses']
+
+class GradedAssignmentListSerializer(serializers.ModelSerializer):
+    assignment_title = serializers.CharField(source='assignment.title')
+    subject = serializers.CharField(source='assignment.subject.name')
+
+    class Meta:
+        model = AssignmentSubmission
+        fields = ['id', 'assignment_title', 'subject', 'submitted_at', 'score']

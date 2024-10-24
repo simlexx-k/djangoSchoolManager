@@ -183,13 +183,40 @@ class CustomPasswordChangeForm(PasswordChangeForm):
 class ObjectiveQuestionForm(forms.ModelForm):
     class Meta:
         model = ObjectiveQuestion
-        fields = ['question_text', 'question_type', 'options', 'correct_answer', 'points']
+        fields = ['question_text', 'question_type', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'points']
         widgets = {
-            'question_text': CKEditor5Widget(config_name='extends'),
+            'question_text': forms.Textarea(attrs={'rows': 3}),
+            'correct_answer': forms.RadioSelect(),
         }
 
-ObjectiveQuestionFormSet = forms.inlineformset_factory(
-    Assignment, ObjectiveQuestion, form=ObjectiveQuestionForm, extra=1, can_delete=True
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['correct_answer'].widget = forms.RadioSelect(choices=ObjectiveQuestion.OPTION_CHOICES)
+        self.fields['question_type'].widget.attrs.update({'class': 'question-type-select'})
+
+    def clean(self):
+        cleaned_data = super().clean()
+        question_type = cleaned_data.get('question_type')
+        
+        if question_type == 'multiple_choice':
+            if not all([cleaned_data.get(f'option_{opt}') for opt in 'abcd']):
+                raise forms.ValidationError("All options are required for multiple choice questions.")
+        elif question_type == 'true_false':
+            cleaned_data['option_a'] = 'True'
+            cleaned_data['option_b'] = 'False'
+            cleaned_data['option_c'] = None
+            cleaned_data['option_d'] = None
+        else:  # short_answer
+            cleaned_data['option_a'] = cleaned_data['option_b'] = cleaned_data['option_c'] = cleaned_data['option_d'] = None
+            cleaned_data['correct_answer'] = None
+
+        return cleaned_data
+
+ObjectiveQuestionFormSet = forms.modelformset_factory(
+    ObjectiveQuestion,
+    form=ObjectiveQuestionForm,
+    extra=1,
+    can_delete=True
 )
 
 class FeedbackTemplateForm(forms.ModelForm):
@@ -199,4 +226,3 @@ class FeedbackTemplateForm(forms.ModelForm):
         widgets = {
             'template_text': CKEditor5Widget(config_name='extends'),
         }
-

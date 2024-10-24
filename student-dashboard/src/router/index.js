@@ -17,6 +17,8 @@ import ContactView from '../views/ContactView.vue'
 import ExamsView from '../views/ExamsView.vue'
 import AssignmentSubmitView from '../views/AssignmentSubmitView.vue'
 import SubmissionView from '../views/SubmissionView.vue'
+import GradedAssignmentsView from '@/views/GradedAssignmentsView.vue'
+import GradedAssignmentDetailView from '@/views/GradedAssignmentDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -108,6 +110,17 @@ const router = createRouter({
       name: 'AssignmentSubmission',
       component: SubmissionView,
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/graded-assignments',
+      name: 'GradedAssignments',
+      component: GradedAssignmentsView
+    },
+    {
+      path: '/graded-assignments/:id',
+      name: 'GradedAssignmentDetail',
+      component: GradedAssignmentDetailView,
+      props: true
     }
   ]
 })

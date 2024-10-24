@@ -70,6 +70,14 @@
     .field-error textarea {
         border-color: #dc2626;
     }
+    
+    .question-options {
+        display: none;
+    }
+    
+    .question-options.show {
+        display: block;
+    }
 </style>
 {% endblock %}
 
@@ -86,9 +94,17 @@
         {{ formset.management_form }}
         <div id="formset-container">
             {% for question_form in formset %}
-            <div class="mb-6 p-4 border rounded">
+            <div class="mb-6 p-4 border rounded question-form">
                 <h3 class="text-xl font-semibold mb-2">Question {{ forloop.counter }}</h3>
-                {{ question_form.as_p }}
+                {% for field in question_form %}
+                    <div class="mb-4">
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="error-message">{{ field.errors }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
             </div>
             {% endfor %}
         </div>
@@ -99,13 +115,18 @@
 </div>
 
 <script>
-    document.getElementById('add-question').addEventListener('click', function() {
-        var formCount = parseInt(document.getElementById('id_questions-TOTAL_FORMS').value);
-        var newForm = document.getElementById('formset-container').lastElementChild.cloneNode(true);
-        var regex = new RegExp('questions-' + (formCount-1), 'g');
-        newForm.innerHTML = newForm.innerHTML.replace(regex, 'questions-' + formCount);
-        document.getElementById('formset-container').appendChild(newForm);
-        document.getElementById('id_questions-TOTAL_FORMS').value = formCount + 1;
+    document.addEventListener('DOMContentLoaded', function() {
+        const formsetContainer = document.getElementById('formset-container');
+        const addQuestionBtn = document.getElementById('add-question');
+
+        addQuestionBtn.addEventListener('click', function() {
+            const formCount = parseInt(document.getElementById('id_questions-TOTAL_FORMS').value);
+            const newForm = formsetContainer.querySelector('.question-form').cloneNode(true);
+            const regex = new RegExp('questions-\\d+', 'g');
+            newForm.innerHTML = newForm.innerHTML.replace(regex, `questions-${formCount}`);
+            formsetContainer.appendChild(newForm);
+            document.getElementById('id_questions-TOTAL_FORMS').value = formCount + 1;
+        });
     });
 </script>
 {% endblock %}

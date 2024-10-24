@@ -52,4 +52,6 @@ urlpatterns = [
     path('student/assignments/<int:assignment_id>/submission/', student_views.StudentAssignmentSubmissionView.as_view(), name='student-assignment-submission'),
     #path('student/exams/', student_views.StudentExamsView.as_view(), name='student-exams'),
     path('student/assignments/<int:assignment_id>/submit/', StudentAssignmentSubmitView.as_view(), name='student-assignment-submit'),
+    path('student/graded-assignments/', student_views.StudentGradedAssignmentsListView.as_view(), name='student-graded-assignments-list'),
+    path('student/graded-assignments/<int:submission_id>/', student_views.StudentGradedAssignmentDetailView.as_view(), name='student-graded-assignment-detail'),
 ]
