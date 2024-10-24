@@ -219,6 +219,7 @@ const navigationItems = ref([
   { name: 'Subjects', href: '/courses', icon: BookOpenIcon, current: false, requiresAuth: true },
   { name: 'Exams', href: '/exams', icon: ClipboardDocumentListIcon, current: false, requiresAuth: true },
   { name: 'Assignments', href: '/assignments', icon: PencilSquareIcon, current: false, requiresAuth: true },
+  { name: 'Graded Assignments', href: '/graded-assignments', icon: AcademicCapIcon, current: false, requiresAuth: true },
   { name: 'Grades', href: '/grades', icon: AcademicCapIcon, current: false, requiresAuth: true },
   { name: 'Attendance', href: '/attendance', icon: UsersIcon, current: false, requiresAuth: true },
   { name: 'Schedule', href: '/schedule', icon: CalendarIcon, current: false, requiresAuth: true },

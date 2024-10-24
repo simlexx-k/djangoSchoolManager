@@ -12,33 +12,36 @@
         <p>{{ error }}</p>
       </div>
       
-      <div v-else>
-        <h2 class="text-xl font-semibold text-gray-800 mb-2">{{ assignment.title }}</h2>
-        
-        <div v-for="(section, index) in parsedContent" :key="index" class="mb-6">
-          <div v-if="section.type === 'content'" v-html="section.content" class="prose max-w-none mb-4"></div>
-          
-          <div v-else-if="section.type === 'question'" class="border-l-4 border-blue-500 pl-4 mb-6">
-            <div v-html="section.content" class="prose max-w-none mb-2"></div>
-            <div class="mt-2">
-              <label :for="'answer_' + section.questionNumber" class="block text-sm font-medium text-gray-700">Your Answer:</label>
-              <textarea
-                :id="'answer_' + section.questionNumber"
-                v-model="responses[section.questionNumber]"
-                rows="4"
-                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                :placeholder="'Enter your answer for Question ' + section.questionNumber"
-              ></textarea>
+      <div v-else-if="assignment">
+        <h2 class="text-xl font-semibold mb-2">{{ assignment.title }}</h2>
+        <div class="text-gray-600 mb-4" v-html="assignment.description"></div>
+        <p class="text-sm text-gray-500 mb-6">Due: {{ formatDate(assignment.due_date) }}</p>
+
+        <form @submit.prevent="submitAssignment">
+          <div v-for="question in assignment.objective_questions" :key="question.id" class="mb-6">
+            <h3 class="text-lg font-medium mb-2">{{ question.question_text }}</h3>
+            <div v-if="question.question_type === 'multiple_choice'" class="space-y-2">
+              <label v-for="option in ['A', 'B', 'C', 'D']" :key="option" class="flex items-center">
+                <input type="radio" :name="`question_${question.id}`" :value="option" v-model="responses[question.id]" class="mr-2">
+                <span>{{ question[`option_${option.toLowerCase()}`] }}</span>
+              </label>
+            </div>
+            <div v-else-if="question.question_type === 'true_false'" class="space-y-2">
+              <label class="flex items-center">
+                <input type="radio" :name="`question_${question.id}`" value="True" v-model="responses[question.id]" class="mr-2">
+                <span>True</span>
+              </label>
+              <label class="flex items-center">
+                <input type="radio" :name="`question_${question.id}`" value="False" v-model="responses[question.id]" class="mr-2">
+                <span>False</span>
+              </label>
+            </div>
+            <div v-else-if="question.question_type === 'short_answer'">
+              <textarea v-model="responses[question.id]" rows="3" class="w-full p-2 border rounded"></textarea>
             </div>
           </div>
-        </div>
-        
-        <form @submit.prevent="submitAssignment" class="mt-8">
-          <button
-            type="submit"
-            :disabled="isSubmitting"
-            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
+
+          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" :disabled="isSubmitting">
             {{ isSubmitting ? 'Submitting...' : 'Submit Assignment' }}
           </button>
         </form>
@@ -48,10 +51,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import studentApi from '@/api/student'
-import DOMPurify from 'dompurify'
 
 const route = useRoute()
 const router = useRouter()
@@ -62,47 +64,14 @@ const isLoading = ref(true)
 const isSubmitting = ref(false)
 const error = ref(null)
 
-const parsedContent = computed(() => {
-  if (!assignment.value || !assignment.value.description) return []
-  
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(assignment.value.description, 'text/html')
-  const elements = Array.from(doc.body.children)
-  
-  const sections = []
-  let currentContent = ''
-
-  elements.forEach((element) => {
-    if (element.tagName === 'H3' && element.textContent.trim().toLowerCase().startsWith('question')) {
-      if (currentContent) {
-        sections.push({ type: 'content', content: currentContent })
-        currentContent = ''
-      }
-      sections.push({
-        type: 'question',
-        questionNumber: sections.filter(s => s.type === 'question').length + 1,
-        content: DOMPurify.sanitize(element.outerHTML)
-      })
-    } else {
-      currentContent += DOMPurify.sanitize(element.outerHTML)
-    }
-  })
-
-  if (currentContent) {
-    sections.push({ type: 'content', content: currentContent })
-  }
-
-  return sections
-})
-
 const fetchAssignment = async () => {
   const assignmentId = route.params.id
   try {
     const response = await studentApi.getAssignment(assignmentId)
     if (response.data.results && response.data.results.length > 0) {
-      assignment.value = response.data.results.find(a => a.id == assignmentId)
+      assignment.value = response.data.results.find(a => a.id === parseInt(assignmentId)) || response.data.results[0]
     } else {
-      assignment.value = response.data
+      error.value = 'Assignment not found.'
     }
     console.log('Fetched assignment:', assignment.value)
   } catch (err) {
@@ -114,9 +83,9 @@ const fetchAssignment = async () => {
 }
 
 const submitAssignment = async () => {
-  const unansweredQuestions = Object.keys(responses.value).filter(key => !responses.value[key].trim())
+  const unansweredQuestions = assignment.value.objective_questions.filter(q => !responses.value[q.id])
   if (unansweredQuestions.length > 0) {
-    alert(`Please answer all questions before submitting. Unanswered questions: ${unansweredQuestions.join(', ')}`)
+    alert(`Please answer all questions before submitting. Unanswered questions: ${unansweredQuestions.map(q => q.id).join(', ')}`)
     return
   }
 
@@ -133,6 +102,15 @@ const submitAssignment = async () => {
   }
 }
 
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 onMounted(fetchAssignment)
 </script>
-

@@ -28,6 +28,7 @@ from django.views.generic.edit import CreateView, UpdateView
 from .forms import ObjectiveQuestionForm
 from exams.models import ObjectiveQuestion
 from django.forms import formset_factory
+from django.core.exceptions import ValidationError
 #from administrator.models import Assignment
 # Create your views here.
 
@@ -146,28 +147,24 @@ def assignment_list(request):
 @login_required
 @user_passes_test(is_teacher)
 def create_assignment(request):
-    ObjectiveQuestionFormSet = formset_factory(ObjectiveQuestionForm, extra=1)
-    
     if request.method == 'POST':
         form = AssignmentForm(request.POST, request.FILES, user=request.user)
         formset = ObjectiveQuestionFormSet(request.POST, prefix='questions')
-        
         if form.is_valid() and formset.is_valid():
             assignment = form.save(commit=False)
             assignment.teacher = request.user.teacher
             assignment.save()
             
-            for question_form in formset:
-                if question_form.cleaned_data:
-                    question = question_form.save(commit=False)
-                    question.assignment = assignment
-                    question.save()
+            questions = formset.save(commit=False)
+            for question in questions:
+                question.assignment = assignment
+                question.save()
             
             messages.success(request, 'Assignment created successfully.')
             return redirect('assignment_detail', assignment_id=assignment.id)
     else:
         form = AssignmentForm(user=request.user)
-        formset = ObjectiveQuestionFormSet(prefix='questions')
+        formset = ObjectiveQuestionFormSet(queryset=ObjectiveQuestion.objects.none(), prefix='questions')
     
     context = {
         'form': form,
@@ -186,6 +183,10 @@ def assignment_detail(request, assignment_id):
 
     objective_questions = assignment.objective_questions.all()
     submissions = AssignmentSubmission.objects.filter(assignment=assignment).order_by('-submitted_at')
+
+    # Ensure options are properly loaded for each question
+    for question in objective_questions:
+        question.loaded_options = question.get_options()
 
     context = {
         'assignment': assignment,
@@ -578,6 +579,10 @@ class ObjectiveQuestionUpdateView(UpdateView):
     form_class = ObjectiveQuestionForm
     template_name = 'teachers/edit_objective_question.html'
     success_url = '/questions/'  # Adjust as needed
+
+
+
+
 
 
 

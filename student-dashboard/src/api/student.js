@@ -43,7 +43,7 @@ export default {
   // You can add more methods here as needed
 
   getAssignment(id) {
-    return api.get(`student/assignments/${id}/`);
+    return api.get(`student/assignments/${id}/`, { params: { page_size: 1 } });
   },
 
   submitAssignment(id, data) {
@@ -57,5 +57,25 @@ export default {
       console.error('Error fetching submission:', error)
       throw error
     }
-  }
+  },
+  getGradedAssignments() {
+    return api.get('student/graded-assignments/')
+      .then(response => {
+        console.log('API response:', response.data);
+        if (response.data && response.data.results && Array.isArray(response.data.results)) {
+          return response.data.results;
+        } else {
+          console.error('Unexpected API response format:', response.data);
+          throw new Error('Unexpected API response format');
+        }
+      })
+      .catch(error => {
+        console.error('API error:', error);
+        console.error('Error response:', error.response);
+        throw error;
+      });
+  },
+  getGradedAssignmentDetail(id) {
+    return api.get(`student/graded-assignments/${id}/`);
+  },
 };
