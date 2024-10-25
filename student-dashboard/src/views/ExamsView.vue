@@ -127,12 +127,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import studentApi from '@/api/student'
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
-import schoolLogo from '@/assets/masabaLogo.png'  // Import the logo
+//import pdfMake from "pdfmake/build/pdfmake";
+//import "pdfmake/build/vfs_fonts"; // Import for side effects
+import schoolLogo from '@/assets/masabaLogo.png'
 import QRCode from 'qrcode'
 
-pdfMake.vfs = pdfFonts.pdfMake.vfs;
 
 const exams = ref([])
 const isLoading = ref(true)
@@ -233,246 +232,251 @@ const generateQRCode = async (data) => {
   }
 }
 
-const createExamPDFContent = async (exam) => {
-  const qrCodeData = `${exam.school_name} - ${exam.student_name} - ${exam.exam_type} - ${exam.date}`
-  qrCodeDataUrl.value = await generateQRCode(qrCodeData)
+//const createExamPDFContent = async (exam) => {
+//  const qrCodeData = `${exam.school_name} - ${exam.student_name} - ${exam.exam_type} - ${exam.date}`
+//  qrCodeDataUrl.value = await generateQRCode(qrCodeData)
 
-  return {
-    content: [
-      {
-        columns: [
-          {
-            image: schoolLogoDataUrl.value,
+//  return {
+//    content: [
+//      {
+//        columns: [
+//          {
+//            image: schoolLogoDataUrl.value,
             width: 60,
-            alignment: 'left'
-          },
-          {
-            stack: [
-              { 
-                text: exam.school_name,
-                style: 'schoolName',
-                alignment: 'right'
-              },
-              {
-                text: 'Exam Results Report',
-                style: 'mainHeader',
-                alignment: 'right'
-              }
-            ],
-            width: '*'
-          }
-        ],
-        margin: [0, 0, 0, 20]
-      },
-      {
-        canvas: [{ type: 'line', x1: 0, y1: 5, x2: 595 - 2*40, y2: 5, lineWidth: 3, lineColor: '#1e3a8a' }]
-      },
-      {
-        columns: [
-          {
-            width: '*',
-            text: [
-              { text: 'Student: ', style: 'label' },
-              { text: `${exam.student_name}\n`, style: 'value' },
-              { text: 'Class: ', style: 'label' },
-              { text: exam.student_grade, style: 'value' }
-            ]
-          },
-          {
-            width: '*',
-            text: [
-              { text: 'Exam: ', style: 'label' },
-              { text: `${exam.exam_type}\n`, style: 'value' },
-              { text: 'Date: ', style: 'label' },
-              { text: formatDate(exam.date), style: 'value' }
-            ],
-            alignment: 'right'
-          }
-        ],
-        margin: [0, 20, 0, 20]
-      },
-      {
-        table: {
-          headerRows: 1,
-          widths: ['*', 'auto', 'auto', '*'],
-          body: [
-            [
-              { text: 'Subject', style: 'tableHeader' },
-              { text: 'Score', style: 'tableHeader' },
-              { text: 'Grade', style: 'tableHeader' },
-              { text: 'Comment', style: 'tableHeader' }
-            ],
-            ...exam.results.map(result => [
-              result.subject,
-              { 
-                text: formatScore(result.score), 
-                alignment: 'center',
-                ...getScoreStyle(result.score)
-              },
-              { 
-                text: result.grade, 
-                alignment: 'center',
-                ...getGradeStyle(result.grade)
-              },
-              result.teacher_comment || 'No comment'
-            ])
-          ]
-        },
-        layout: {
-          hLineWidth: (i, node) => (i === 0 || i === node.table.body.length) ? 2 : 1,
-          vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length) ? 2 : 1,
-          hLineColor: (i, node) => (i === 0 || i === node.table.body.length) ? '#1e3a8a' : '#e2e8f0',
-          vLineColor: (i, node) => (i === 0 || i === node.table.widths.length) ? '#1e3a8a' : '#e2e8f0',
-          fillColor: (rowIndex, node, columnIndex) => {
-            return (rowIndex % 2 === 0) ? '#f0f9ff' : null;
-          },
-          paddingLeft: (i) => 8,
-          paddingRight: (i) => 8,
-          paddingTop: (i) => 8,
-          paddingBottom: (i) => 8
-        }
-      },
-      {
-        columns: [
-          {
-            width: 'auto',
-            text: [
-              { text: 'Average Score: ', style: 'label' },
-              { text: formatScore(exam.average_score), ...getScoreStyle(exam.average_score) }
-            ]
-          },
-          {
-            width: 'auto',
-            text: [
-              { text: 'Overall Grade: ', style: 'label' },
-              { text: exam.overall_grade, ...getGradeStyle(exam.overall_grade) }
-            ]
-          }
-        ],
-        margin: [0, 20, 0, 10]
-      },
-      {
-        text: [
-          { text: 'Overall Comment: ', style: 'label' },
-          { text: exam.overall_comment, style: 'value' }
-        ],
-        margin: [0, 0, 0, 20]
-      },
-      {
-        canvas: [{ type: 'line', x1: 0, y1: 5, x2: 595 - 2*40, y2: 5, lineWidth: 1, lineColor: '#1e3a8a' }]
-      },
-      {
-        columns: [
-          {
-            width: '*',
-            text: `This is an official document of ${exam.school_name}`,
-            style: 'footer',
-            alignment: 'left'
-          },
-          {
-            width: 'auto',
-            image: qrCodeDataUrl.value,
-            fit: [50, 50],
-            alignment: 'right'
-          }
-        ],
-        margin: [0, 20, 0, 0]
-      }
-    ],
-    styles: getPDFStyles(),
-    defaultStyle: {
-      font: 'Roboto'
-    }
-  };
-}
+//            alignment: 'left'
+//          },
+//          {
+//            stack: [
+//              { 
+//                text: exam.school_name,
+//                style: 'schoolName',
+//                alignment: 'right'
+//              },
+//              {
+//                text: 'Exam Results Report',
+//                style: 'mainHeader',
+//                alignment: 'right'
+//              }
+//            ],
+//            width: '*'
+//          }
+//        ],
+//        margin: [0, 0, 0, 20]
+//      },
+//      {
+//        canvas: [{ type: 'line', x1: 0, y1: 5, x2: 595 - 2*40, y2: 5, lineWidth: 3, lineColor: '#1e3a8a' }]
+//      },
+//      {
+//        columns: [
+//          {
+//            width: '*',
+//            text: [
+//              { text: 'Student: ', style: 'label' },
+//              { text: `${exam.student_name}\n`, style: 'value' },
+//              { text: 'Class: ', style: 'label' },
+//              { text: exam.student_grade, style: 'value' }
+//            ]
+//          },
+//          {
+//            width: '*',
+//            text: [
+//              { text: 'Exam: ', style: 'label' },
+//              { text: `${exam.exam_type}\n`, style: 'value' },
+//              { text: 'Date: ', style: 'label' },
+//              { text: formatDate(exam.date), style: 'value' }
+//            ],
+//            alignment: 'right'
+//          }
+//        ],
+//        margin: [0, 20, 0, 20]
+//      },
+//      {
+//        table: {
+//          headerRows: 1,
+//          widths: ['*', 'auto', 'auto', '*'],
+//          body: [
+//            [
+//              { text: 'Subject', style: 'tableHeader' },
+//              { text: 'Score', style: 'tableHeader' },
+//              { text: 'Grade', style: 'tableHeader' },
+//              { text: 'Comment', style: 'tableHeader' }
+//            ],
+//            ...exam.results.map(result => [
+//              result.subject,
+//              { 
+//                text: formatScore(result.score), 
+//                alignment: 'center',
+//                ...getScoreStyle(result.score)
+//              },
+//              { 
+//                text: result.grade, 
+//                alignment: 'center',
+//                ...getGradeStyle(result.grade)
+//              },
+//              result.teacher_comment || 'No comment'
+//            ])
+//          ]
+//        },
+//        layout: {
+//          hLineWidth: (i, node) => (i === 0 || i === node.table.body.length) ? 2 : 1,
+//          vLineWidth: (i, node) => (i === 0 || i === node.table.widths.length) ? 2 : 1,
+//          hLineColor: (i, node) => (i === 0 || i === node.table.body.length) ? '#1e3a8a' : '#e2e8f0',
+//          vLineColor: (i, node) => (i === 0 || i === node.table.widths.length) ? '#1e3a8a' : '#e2e8f0',
+//          fillColor: (rowIndex, node, columnIndex) => {
+//            return (rowIndex % 2 === 0) ? '#f0f9ff' : null;
+//          },
+//          paddingLeft: (i) => 8,
+//          paddingRight: (i) => 8,
+//          paddingTop: (i) => 8,
+//          paddingBottom: (i) => 8
+//        }
+//      },
+//      {
+//        columns: [
+//          {
+//            width: 'auto',
+//            text: [
+//              { text: 'Average Score: ', style: 'label' },
+//              { text: formatScore(exam.average_score), ...getScoreStyle(exam.average_score) }
+//            ]
+//          },
+//          {
+//            width: 'auto',
+//            text: [
+//              { text: 'Overall Grade: ', style: 'label' },
+//              { text: exam.overall_grade, ...getGradeStyle(exam.overall_grade) }
+//            ]
+//          }
+//        ],
+//        margin: [0, 20, 0, 10]
+//      },
+//      {
+//        text: [
+//          { text: 'Overall Comment: ', style: 'label' },
+//          { text: exam.overall_comment, style: 'value' }
+//        ],
+//        margin: [0, 0, 0, 20]
+//      },
+//      {
+//        canvas: [{ type: 'line', x1: 0, y1: 5, x2: 595 - 2*40, y2: 5, lineWidth: 1, lineColor: '#1e3a8a' }]
+//      },
+//      {
+//        columns: [
+//          {
+//            width: '*',
+//            text: `This is an official document of ${exam.school_name}`,
+//            style: 'footer',
+//            alignment: 'left'
+//          },
+//          {
+//            width: 'auto',
+//            image: qrCodeDataUrl.value,
+//            fit: [50, 50],
+//            alignment: 'right'
+//          }
+//        ],
+//        margin: [0, 20, 0, 0]
+//      }
+//    ],
+//    styles: getPDFStyles(),
+//    defaultStyle: {
+//      font: 'Roboto'
+//      }
+//  };
+//}
 
-const exportSingleExamToPDF = async (exam) => {
-  const docDefinition = await createExamPDFContent(exam);
-  pdfMake.createPdf(docDefinition).download(`${exam.exam_type}_results.pdf`);
-}
+//const exportSingleExamToPDF = async (exam) => {
+//  const docDefinition = await createExamPDFContent(exam);
+//  pdfMake.createPdf(docDefinition).download(`${exam.exam_type}_results.pdf`);
+//}
 
-const exportAllExamsToPDF = async () => {
-  const docDefinition = {
-    content: await Promise.all(exams.value.map(async (exam) => {
-      const examContent = await createExamPDFContent(exam);
-      return [
-        ...examContent.content,
-        { text: '', pageBreak: 'before' }
-      ];
-    })),
-    styles: getPDFStyles(),
-    defaultStyle: {
-      font: 'Roboto'
-    }
-  };
-  pdfMake.createPdf(docDefinition).download('all_exam_results.pdf');
-}
+//const exportAllExamsToPDF = async () => {
+//  const docDefinition = {
+//    content: await Promise.all(exams.value.map(async (exam) => {
+//        const examContent = await createExamPDFContent(exam);
+//      return [
+//        ...examContent.content,
+//        { text: '', pageBreak: 'before' }
+//      ];
+//    })),
+//    styles: getPDFStyles(),
+//    defaultStyle: {
+//      font: 'Roboto'
+//    }
+//  };
+//  pdfMake.createPdf(docDefinition).download('all_exam_results.pdf');
+//}
 
-const getScoreStyle = (score) => {
-  if (score === null) return { color: '#718096' };
-  if (score >= 80) return { color: '#059669', bold: true };
-  if (score >= 65) return { color: '#2563eb', bold: true };
-  if (score >= 50) return { color: '#d97706', bold: true };
-  return { color: '#dc2626', bold: true };
-}
+//const getScoreStyle = (score) => {
+//  if (score === null) return { color: '#718096' };
+//  if (score >= 80) return { color: '#059669', bold: true };
+//  if (score >= 65) return { color: '#2563eb', bold: true };
+//  if (score >= 50) return { color: '#d97706', bold: true };
+//  return { color: '#dc2626', bold: true };
+//}
 
-const getGradeStyle = (grade) => {
-  switch (grade) {
-    case 'EE': return { color: '#059669', bold: true, fontSize: 10 }; // Exceeding Expectations
-    case 'ME': return { color: '#2563eb', bold: true, fontSize: 10 }; // Meeting Expectations
-    case 'AE': return { color: '#d97706', bold: true, fontSize: 10 }; // Approaching Expectations
-    case 'BE': return { color: '#dc2626', bold: true, fontSize: 10 }; // Below Expectations
-    default: return { color: '#718096', bold: true, fontSize: 10 };
-  }
-}
+//const getGradeStyle = (grade) => {
+//  switch (grade) {
+//    case 'EE': return { color: '#059669', bold: true, fontSize: 10 }; // Exceeding Expectations
+//    case 'ME': return { color: '#2563eb', bold: true, fontSize: 10 }; // Meeting Expectations
+//    case 'AE': return { color: '#d97706', bold: true, fontSize: 10 }; // Approaching Expectations
+//    case 'BE': return { color: '#dc2626', bold: true, fontSize: 10 }; // Below Expectations
+//    default: return { color: '#718096', bold: true, fontSize: 10 };
+//  }
+//}
 
-const getPDFStyles = () => {
-  return {
-    schoolName: {
-      fontSize: 18,
-      bold: true,
-      color: '#1e3a8a',
-      margin: [0, 0, 0, 5]
-    },
-    mainHeader: {
-      fontSize: 14,
-      bold: true,
-      color: '#4a5568',
-      margin: [0, 0, 0, 5]
-    },
-    header: {
-      fontSize: 14,
-      bold: true,
-      color: '#1e3a8a',
-      margin: [0, 10, 0, 5]
-    },
-    tableHeader: {
-      bold: true,
-      fontSize: 12,
-      color: '#ffffff',
-      fillColor: '#1e3a8a'
-    },
-    label: {
-      bold: true,
-      fontSize: 10,
-      color: '#4b5563'
-    },
-    value: {
-      fontSize: 10,
-      color: '#1f2937'
-    },
-    footer: {
-      fontSize: 8,
-      italics: true,
-      color: '#6b7280'
-    }
-  };
-}
+//const getPDFStyles = () => {
+//  return {
+//    schoolName: {
+//      fontSize: 18,
+//      bold: true,
+//      color: '#1e3a8a',
+//      margin: [0, 0, 0, 5]
+//    },
+//    mainHeader: {
+//      fontSize: 14,
+//      bold: true,
+//      color: '#4a5568',
+//      margin: [0, 0, 0, 5]
+//    },
+//    header: {
+//      fontSize: 14,
+//      bold: true,
+//      color: '#1e3a8a',
+//      margin: [0, 10, 0, 5]
+//    },
+//    tableHeader: {
+//      bold: true,
+//      fontSize: 12,
+//      color: '#ffffff',
+//      fillColor: '#1e3a8a'
+//    },
+//    label: {
+//      bold: true,
+//      fontSize: 10,
+//      color: '#4b5563'
+//    },
+//    value: {
+//      fontSize: 10,
+//      color: '#1f2937'
+//    },
+//    footer: {
+//      fontSize: 8,
+//      italics: true,
+//      color: '#6b7280'
+//    }
+//  };
+//}
 
 onMounted(fetchExams)
 
 defineExpose({ fetchExams })
 </script>
+
+
+
+
+
 
 
 

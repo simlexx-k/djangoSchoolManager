@@ -121,6 +121,11 @@ const router = createRouter({
       name: 'GradedAssignmentDetail',
       component: GradedAssignmentDetailView,
       props: true
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../components/NotFoundError.vue')
     }
   ]
 })
