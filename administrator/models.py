@@ -89,7 +89,35 @@ class Teacher(models.Model):
     
     def __str__(self):
         return f"{self.name} ({self.employee_id})"
+from django.db import models
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
+class Year(models.Model):
+    year = models.PositiveIntegerField(unique=True)
+    is_current = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-year']
+
+    def __str__(self):
+        return str(self.year)
+
+    def clean(self):
+        if self.is_current and Year.objects.filter(is_current=True).exclude(pk=self.pk).exists():
+            raise ValidationError(_("There can only be one current year."))
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def get_current(cls):
+        try:
+            return cls.objects.get(is_current=True)
+        except cls.DoesNotExist:
+            return None
+        
 class AcademicYear(models.Model):
     year = models.CharField(max_length=9, unique=True, help_text="Format: YYYY-YYYY")
     start_date = models.DateField()
@@ -150,8 +178,7 @@ class Term(models.Model):
         (3, 'Third Term'),
     ]
     
-    year = models.PositiveIntegerField()
-    #academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
+    year = models.ForeignKey(Year, on_delete=models.CASCADE, related_name='terms')
     term_number = models.PositiveSmallIntegerField(choices=TERM_CHOICES)
     start_date = models.DateField()
     end_date = models.DateField()

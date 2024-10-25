@@ -38,7 +38,7 @@ from finance.models import Payment, FeeRecord
 def dashboard(request):
     # Get total counts
     total_students = LearnerRegister.objects.count()
-    # total_teachers = Teacher.objects.count()
+    total_teachers = Teacher.objects.count()
     total_grades = Grade.objects.count()
 
     # Get recent activities (assuming we have an Activity model)
@@ -49,7 +49,7 @@ def dashboard(request):
 
     context = {
         'total_students': total_students,
-        # 'total_teachers': total_teachers,
+        'total_teachers': total_teachers,
         'total_grades': total_grades,
         # 'recent_activities': recent_activities,
         # 'upcoming_events': upcoming_events,

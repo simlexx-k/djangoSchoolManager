@@ -5,6 +5,8 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser, Permission
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from learners.models import LearnerRegister, Grade
+from administrator.models import AcademicYear, Year
 
 # Create your models here.
 
@@ -105,3 +107,18 @@ class UserSession(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.ip_address}"
+
+class Promotion(models.Model):
+    learner = models.ForeignKey(LearnerRegister, on_delete=models.CASCADE)
+    from_grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='promotions_from')
+    to_grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='promotions_to')
+    year = models.ForeignKey(Year, on_delete=models.CASCADE)
+    promotion_date = models.DateField(auto_now_add=True)
+    is_automatic = models.BooleanField(default=True)
+    promoted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('learner', 'year')
+
+    def __str__(self):
+        return f"{self.learner} promoted from {self.from_grade} to {self.to_grade} in {self.year}"

@@ -1,0 +1,51 @@
+{% for learner in learners %}
+<tr class="border-b hover:bg-gray-50">
+    <td class="px-4 py-2">{{ learner.name }}</td>
+    <td class="px-4 py-2">{{ learner.learner_id }}</td>
+    <td class="px-4 py-2">{{ learner.grade.grade_name }}</td>
+    <td class="px-4 py-2">
+        <select class="promote-to-grade w-full border border-gray-300 rounded-md p-1" 
+                data-learner-id="{{ learner.id }}"
+                onchange="togglePromoteButton(this)">
+            <option value="">Select Grade</option>
+            {% for grade in grades %}
+                {% if grade.id != learner.grade.id %}
+                    <option value="{{ grade.id }}">{{ grade.grade_name }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </td>
+    <td class="px-4 py-2">
+        <button class="bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 transition duration-300 promote-btn" 
+                data-learner-id="{{ learner.id }}" 
+                onclick="promoteLearner({{ learner.id }}, this.previousElementSibling.querySelector('select').value)"
+                disabled>
+            Promote
+        </button>
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="5" class="px-4 py-2 text-center">No learners found</td>
+</tr>
+{% endfor %}
+
+{% if learners.has_other_pages %}
+<tr>
+    <td colspan="5" class="px-4 py-4">
+        <div class="flex justify-between items-center">
+            <span>
+                Page {{ learners.number }} of {{ learners.paginator.num_pages }}
+            </span>
+            <div>
+                {% if learners.has_previous %}
+                    <button class="pagination-btn bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 transition duration-300 mr-2" data-page="{{ learners.previous_page_number }}">Previous</button>
+                {% endif %}
+                {% if learners.has_next %}
+                    <button class="pagination-btn bg-blue-500 text-white py-1 px-3 rounded-md hover:bg-blue-600 transition duration-300" data-page="{{ learners.next_page_number }}">Next</button>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+</tr>
+{% endif %}
