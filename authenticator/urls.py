@@ -32,4 +32,6 @@ urlpatterns = [
     path('super-admin/week-schedules/manage/<int:pk>/', views.manage_week_schedule, name='edit_week_schedule'),
     path('super-admin/week-schedules/delete/<int:pk>/', views.delete_week_schedule, name='delete_week_schedule'),
     path('super-admin/api/week-schedule/<int:pk>/', views.get_week_schedule, name='get_week_schedule'),
+    path('super-admin/automatic-promotion/', views.automatic_promotion, name='automatic_promotion'),
+    path('super-admin/manual-promotion/', views.manual_promotion, name='manual_promotion'),
 ]

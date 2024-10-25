@@ -1,0 +1,11 @@
+{% extends 'super-admin/base.html' %}
+
+{% block content %}
+<h2>Automatic Promotion</h2>
+<p>This will promote all learners to the next grade. Are you sure you want to proceed?</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Proceed with Automatic Promotion</button>
+</form>
+{% endblock %}
+

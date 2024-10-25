@@ -11,80 +11,93 @@
       </svg>
     </div>
     <div class="registration bg-white dark:bg-gray-800 shadow-lg">
-      <div class="auth-options bg-gray-200 dark:bg-gray-700">
-        <a href="#" class="auth-link text-blue-600 dark:text-blue-400">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-          </svg>
-          Forgot Password?
-        </a>
-        <a href="/login" class="auth-link text-blue-600 dark:text-blue-400">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-          </svg>
-          Sign In
-        </a>
-      </div>
-      <h2 class="text-gray-800 dark:text-gray-200">Student Registration</h2>
-      <form @submit.prevent="register" class="registration-form">
-        <div class="form-group">
-          <label for="grade-select" class="text-gray-700 dark:text-gray-300">Select Grade:</label>
-          <div class="input-with-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="input-icon">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
-            </svg>
-            <select id="grade-select" v-model="selectedGradeId" @change="fetchStudents"
-                    class="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600">
-              <option value="">Please select a grade</option>
-              <option v-for="grade in grades" :key="grade.id" :value="grade.id">
-                {{ grade.grade_name }}
-              </option>
-            </select>
-          </div>
+      <template v-if="isLoading">
+        <div class="p-6 space-y-4">
+          <SkeletonLoader type="text" class="w-3/4 mx-auto" />
+          <SkeletonLoader type="text" class="w-1/2 mx-auto" />
+          <SkeletonLoader type="text" class="w-full" />
+          <SkeletonLoader type="text" class="w-full" />
+          <SkeletonLoader type="text" class="w-full" />
+          <SkeletonLoader type="text" class="w-full" />
+          <SkeletonLoader type="text" class="w-1/2 mx-auto" />
         </div>
-
-        <div v-if="students.length > 0" class="form-group">
-          <label for="student-select">Select Student:</label>
-          <div class="input-with-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="input-icon">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-            </svg>
-            <select id="student-select" v-model="selectedLearnerId">
-              <option value="">Please select a student</option>
-              <option v-for="student in students" :key="student.learner_id" :value="student.learner_id">
-                {{ student.name }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="username">Username:</label>
-          <div class="input-with-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="input-icon">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-            </svg>
-            <input id="username" v-model="username" placeholder="Enter username" required>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="password">Password:</label>
-          <div class="input-with-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="input-icon">
+      </template>
+      <template v-else>
+        <div class="auth-options bg-gray-200 dark:bg-gray-700">
+          <a href="#" class="auth-link text-blue-600 dark:text-blue-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
             </svg>
-            <input id="password" v-model="password" type="password" placeholder="Enter password" required>
-          </div>
+            Forgot Password?
+          </a>
+          <a href="/login" class="auth-link text-blue-600 dark:text-blue-400">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+            </svg>
+            Sign In
+          </a>
         </div>
+        <h2 class="text-gray-800 dark:text-gray-200">Student Registration</h2>
+        <form @submit.prevent="register" class="registration-form">
+          <div class="form-group">
+            <label for="grade-select" class="text-gray-700 dark:text-gray-300">Select Grade:</label>
+            <div class="input-with-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="input-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5zm0 0v-3.675A55.378 55.378 0 0112 8.443m-7.007 11.55A5.981 5.981 0 006.75 15.75v-1.5" />
+              </svg>
+              <select id="grade-select" v-model="selectedGradeId" @change="fetchStudents"
+                      class="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600">
+                <option value="">Please select a grade</option>
+                <option v-for="grade in grades" :key="grade.id" :value="grade.id">
+                  {{ grade.grade_name }}
+                </option>
+              </select>
+            </div>
+          </div>
 
-        <button type="submit" :disabled="!isFormValid" class="submit-button">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
-          </svg>
-          Register
-        </button>
-      </form>
+          <div v-if="students.length > 0" class="form-group">
+            <label for="student-select">Select Student:</label>
+            <div class="input-with-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="input-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              <select id="student-select" v-model="selectedLearnerId">
+                <option value="">Please select a student</option>
+                <option v-for="student in students" :key="student.learner_id" :value="student.learner_id">
+                  {{ student.name }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="username">Username:</label>
+            <div class="input-with-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="input-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              <input id="username" v-model="username" placeholder="Enter username" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <div class="input-with-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="input-icon">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+              <input id="password" v-model="password" type="password" placeholder="Enter password" required>
+            </div>
+          </div>
+
+          <button type="submit" :disabled="!isFormValid" class="submit-button">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 mr-2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+            </svg>
+            Register
+          </button>
+        </form>
+      </template>
     </div>
 
     <!-- Add this floating theme toggle button -->
@@ -101,8 +114,12 @@
 import { ref, computed, onMounted } from 'vue';
 import api from '@/api/config';
 import { useThemeStore } from '@/stores/theme';
+import SkeletonLoader from '@/components/SkeletonLoader.vue';
 
 export default {
+  components: {
+    SkeletonLoader
+  },
   setup() {
     const grades = ref([]);
     const students = ref([]);
@@ -110,6 +127,7 @@ export default {
     const selectedLearnerId = ref('');
     const username = ref('');
     const password = ref('');
+    const isLoading = ref(true);
 
     const themeStore = useThemeStore();
 
@@ -141,6 +159,8 @@ export default {
       } catch (error) {
         console.error('Error fetching grades:', error);
         alert('Failed to fetch grades. Please try again.');
+      } finally {
+        isLoading.value = false;
       }
     };
 
@@ -191,7 +211,9 @@ export default {
              password.value.trim() !== '';
     });
 
-    onMounted(fetchGrades);
+    onMounted(() => {
+      fetchGrades();
+    });
 
     return {
       grades,
@@ -205,7 +227,8 @@ export default {
       isFormValid,
       themeButtonText,
       toggleTheme,
-      themeStore // Add this line to expose themeStore to the template
+      themeStore,
+      isLoading
     };
   },
 };
@@ -512,4 +535,3 @@ input:focus {
   color: #e5e7eb;
 }
 </style>
-

@@ -2,7 +2,7 @@ from django.contrib.auth import login, authenticate, logout
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test, login_required
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .forms import CustomAuthenticationForm, AssignRoleForm, SchoolDetailsForm, RoleForm, CustomUserForm
 from .forms import CustomUserForm, RoleForm, SchoolDetailsForm, AssignRoleForm
 from administrator.views import dashboard
@@ -513,3 +513,128 @@ def delete_week_schedule(request, pk):
         'object_name': 'week schedule',
         'cancel_url': 'week_schedule_list'
     })
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from learners.models import LearnerRegister, Grade
+from administrator.models import Year
+from .models import Promotion
+
+def is_superuser(user):
+    return user.is_superuser
+
+@login_required
+@user_passes_test(is_superuser)
+def automatic_promotion(request):
+    if request.method == 'POST':
+        current_year = Year.get_current()
+        if not current_year:
+            messages.error(request, "No current year set.")
+            return redirect('super_admin_dashboard')
+
+        learners = LearnerRegister.objects.all()
+        for learner in learners:
+            current_grade = learner.grade
+            next_grade = Grade.objects.filter(id__gt=current_grade.id).order_by('id').first()
+            if next_grade:
+                Promotion.objects.create(
+                    learner=learner,
+                    from_grade=current_grade,
+                    to_grade=next_grade,
+                    year=current_year,
+                    is_automatic=True,
+                    promoted_by=request.user
+                )
+                learner.grade = next_grade
+                learner.save()
+
+        messages.success(request, "Automatic promotion completed successfully.")
+        return redirect('super_admin_dashboard')
+
+    return render(request, 'super-admin/automatic_promotion.html')
+
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required, user_passes_test
+from learners.models import LearnerRegister, Grade
+from administrator.models import Year
+from .models import Promotion
+from django.db.models import Q
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+@require_http_methods(["GET", "POST"])
+def manual_promotion(request):
+    if request.method == "POST":
+        learner_id = request.POST.get('learner_id')
+        to_grade_id = request.POST.get('to_grade_id')
+        
+        try:
+            learner = LearnerRegister.objects.get(id=learner_id)
+            to_grade = Grade.objects.get(id=to_grade_id)
+            current_year = Year.get_current()
+
+            if not current_year:
+                return JsonResponse({"success": False, "error": "No current year set."})
+
+            Promotion.objects.create(
+                learner=learner,
+                from_grade=learner.grade,
+                to_grade=to_grade,
+                year=current_year,
+                is_automatic=False,
+                promoted_by=request.user
+            )
+            learner.grade = to_grade
+            learner.save()
+
+            return JsonResponse({"success": True})
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)})
+
+    grades = Grade.objects.all()
+    learners = LearnerRegister.objects.all().select_related('grade')
+
+    grade_filter = request.GET.get('grade')
+    if grade_filter:
+        learners = learners.filter(grade__id=grade_filter)
+
+    search_query = request.GET.get('search')
+    if search_query:
+        learners = learners.filter(
+            Q(name__icontains=search_query) |
+            Q(learner_id__icontains=search_query)
+        )
+
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(learners, 10)  # Show 10 learners per page
+    try:
+        learners_page = paginator.page(page)
+    except PageNotAnInteger:
+        learners_page = paginator.page(1)
+    except EmptyPage:
+        learners_page = paginator.page(paginator.num_pages)
+
+    context = {
+        'grades': grades,
+        'learners': learners_page,
+        'selected_grade': grade_filter,
+        'search_query': search_query,
+    }
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        html = render_to_string('super-admin/learners_table_body.html', context)
+        return JsonResponse({
+            'html': html,
+            'has_next': learners_page.has_next(),
+            'has_previous': learners_page.has_previous(),
+            'page': learners_page.number,
+            'num_pages': paginator.num_pages,
+        })
+
+    return render(request, 'super-admin/manual_promotion.html', context)
+

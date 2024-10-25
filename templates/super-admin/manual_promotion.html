@@ -1,0 +1,156 @@
+{% extends 'super-admin/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single {
+        @apply h-10 border border-gray-300 rounded-md;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        @apply leading-10;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto mt-8 px-4">
+    <h2 class="text-3xl font-bold text-center mb-8">Manual Promotion</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="md:col-span-1">
+            <div class="bg-white shadow-md rounded-lg p-6 transition duration-300 ease-in-out hover:shadow-lg">
+                <h5 class="text-xl font-semibold mb-4">Filters</h5>
+                <form id="filterForm">
+                    <div class="mb-4">
+                        <label for="grade" class="block text-sm font-medium text-gray-700 mb-2">Filter by Grade:</label>
+                        <select name="grade" id="grade" class="w-full select2">
+                            <option value="">All Grades</option>
+                            {% for grade in grades %}
+                                <option value="{{ grade.id }}" {% if selected_grade == grade.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ grade.grade_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search:</label>
+                        <input type="text" name="search" id="search" class="w-full border border-gray-300 rounded-md p-2" value="{{ search_query|default:'' }}" placeholder="Name or Learner ID">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-300">Apply Filters</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="md:col-span-2">
+            <div class="mt-12">
+                <h3 class="text-2xl font-semibold mb-4">Learners</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Name</th>
+                                <th class="px-4 py-2 text-left">Learner ID</th>
+                                <th class="px-4 py-2 text-left">Current Grade</th>
+                                <th class="px-4 py-2 text-left">Promote To</th>
+                                <th class="px-4 py-2 text-left">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="learnersTableBody">
+                            {% include "super-admin/learners_table_body.html" %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const gradeSelect = document.getElementById('grade');
+        const searchInput = document.getElementById('search');
+        const filterForm = document.getElementById('filterForm');
+        const learnersTableBody = document.getElementById('learnersTableBody');
+        let currentPage = 1;
+
+        $('.select2').select2({
+            width: '100%'
+        });
+
+        function updateLearners(page = 1) {
+            const formData = new FormData(filterForm);
+            formData.append('page', page);
+            axios.get('{% url "manual_promotion" %}', {
+                params: Object.fromEntries(formData)
+            })
+            .then(function (response) {
+                learnersTableBody.innerHTML = response.data.html;
+                currentPage = response.data.page;
+            })
+            .catch(function (error) {
+                console.error('Error fetching learners:', error);
+            });
+        }
+
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateLearners(1);
+        });
+
+        gradeSelect.addEventListener('change', function() {
+            updateLearners(1);
+        });
+
+        searchInput.addEventListener('input', function() {
+            if (this.value.length >= 3 || this.value.length === 0) {
+                updateLearners(1);
+            }
+        });
+
+        learnersTableBody.addEventListener('click', function(e) {
+            if (e.target.classList.contains('pagination-btn')) {
+                e.preventDefault();
+                const page = e.target.getAttribute('data-page');
+                updateLearners(page);
+            }
+        });
+    });
+
+    function togglePromoteButton(selectElement) {
+        const learnerId = selectElement.getAttribute('data-learner-id');
+        const promoteBtn = document.querySelector(`.promote-btn[data-learner-id="${learnerId}"]`);
+        promoteBtn.disabled = !selectElement.value;
+    }
+
+    function promoteLearner(learnerId, toGradeId) {
+        if (!toGradeId) {
+            alert('Please select a grade to promote to.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('learner_id', learnerId);
+        formData.append('to_grade_id', toGradeId);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        axios.post('{% url "manual_promotion" %}', formData)
+        .then(function (response) {
+            if (response.data.success) {
+                alert('Learner promoted successfully!');
+                location.reload(); // Refresh the page to show updated data
+            } else {
+                alert('Error promoting learner: ' + response.data.error);
+            }
+        })
+        .catch(function (error) {
+            console.error('Error promoting learner:', error);
+            alert('An error occurred while promoting the learner.');
+        });
+    }
+</script>
+{% endblock %}
