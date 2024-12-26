@@ -30,13 +30,22 @@
                 <div>
                     <h2 class="text-xl font-semibold mb-2">Academic Information</h2>
                     <p><strong>Grade:</strong> {{ student.grade.grade_name }}</p>
+                    <p><strong>Registration Date:</strong> {{ student.register_date }}</p>
                     <!-- Add more academic details as needed -->
+                    <div class="mt-6">
+                    <h2 class="text-xl font-semibold mb-2">Finance Information</h2>
+                    <p><strong>Fee Payable:</strong> {{ fee_record.amount }}</p>
+                        <p><strong>Fee Paid:</strong> {{ fee_record.paid_amount }} <small>paid on</small> {{ fee_record.paid_date }}</p>
+                    <p><strong>Fee Balance:</strong> {{ fee_record.balance }}</p>
+                    <p><strong>Maize:</strong> {{ student.maize_balance }}</p>
+                    <p><strong>Maize:</strong> {{ student.beans_balance }}</p>
+            </div>
                 </div>
             </div>
 
             <div class="mt-6">
                 <h2 class="text-xl font-semibold mb-2">Parent/Guardian Information</h2>
-                <p><strong>Parent Name:</strong> {{ student.parent_name }}</p>
+                <p><strong>Parent Name:</strong> {{ student.name_of_parent }}</p>
                 <p><strong>Parent Contact:</strong> {{ student.parent_contact }}</p>
             </div>
 

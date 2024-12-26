@@ -95,10 +95,26 @@ def student_list(request):
     }
     return render(request, 'admin/student_management.html', context)
 
+
 @login_required
 def student_detail(request, pk):
     student = get_object_or_404(LearnerRegister, pk=pk)
-    return render(request, 'admin/student_detail.html', {'student': student})
+
+    # Try to fetch the Payment record; handle absence gracefully
+    payment = Payment.objects.filter(fee_record__learner=student).first()
+    fee_record = payment.fee_record if payment else None
+
+    # Optional: Calculate fee details if fee_record exists and has a `balance()` method
+    fees_details = fee_record.balance() if fee_record and hasattr(fee_record, 'balance') else "Not Available"
+
+    return render(request, 'admin/student_detail.html', {
+        'student': student,
+        'fee_record': fee_record,
+        'payment': payment,
+        'fees_details': fees_details,
+        'payment_status': "Available" if payment else "Not Available",
+    })
+
 
 @login_required
 def student_create(request):
@@ -3146,7 +3162,7 @@ def profile(request):
     }
     return render(request, 'users/profile.html', context)
 
-# authenticator/views.py
+
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
