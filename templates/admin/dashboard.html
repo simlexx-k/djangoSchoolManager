@@ -32,7 +32,7 @@
             <!-- New Fees Card -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
                 <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Total Fees Collected</h3>
-                <p class="text-3xl font-bold">Ksh.{{ total_fees_collected }}</p>
+                <p class="text-3xl font-bold">Ksh.{{ total_fees }}</p>
             </div>
             
             <!-- Recent Activity -->
@@ -72,7 +72,7 @@
             </div>
 
             <!-- Quick Actions -->
-            <div class="max-w-auto w-full bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2 lg:col-span-3">
+            <div class="max-w-auto w-full bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2 lg:col-span-3 ">
                 <h2 class="text-xl font-bold mb-4 dark:text-white">Quick Actions</h2>
                 <div class="w-full grid grid-cols-6 sm:grid-cols-6 gap-4 p-2 overflow-visible">
                     <a href="{% url 'add_student' %}" class="w-full bg-blue-500 hover:bg-blue-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
@@ -97,7 +97,6 @@
             </div>
         </div>
     </div>
-    {% include 'admin/testman.html' %}
 </div>
 
 

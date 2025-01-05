@@ -32,6 +32,7 @@ from .forms import SubjectForm, SubjectAssignmentForm, GradeSubjectForm
 from .forms import TeacherForm
 from .utils import get_grade
 from finance.models import Payment, FeeRecord
+from teachers.models import Teacher as TeacherModel
 # Create your views here.
 
 @login_required
@@ -40,6 +41,7 @@ def dashboard(request):
     total_students = LearnerRegister.objects.count()
     total_teachers = Teacher.objects.count()
     total_grades = Grade.objects.count()
+    teachers = TeacherModel.objects.count()
 
     # Get recent activities (assuming we have an Activity model)
     # recent_activities = Activity.objects.order_by('-timestamp')[:5]
@@ -49,11 +51,12 @@ def dashboard(request):
 
     context = {
         'total_students': total_students,
-        'total_teachers': total_teachers,
+        'total_teachers': teachers,
         'total_grades': total_grades,
         # 'recent_activities': recent_activities,
         # 'upcoming_events': upcoming_events,
         'total_fees_collected': FeesModel.objects.aggregate(Sum('amount'))['amount__sum'] or 0,
+        'total_fees': FeeRecord.objects.aggregate(Sum('paid_amount'))['paid_amount__sum'] or 0,
     }
 
     return render(request, 'admin/dashboard.html', context)
@@ -258,19 +261,20 @@ def fees_management(request):
             return JsonResponse({'message': 'Error recording payment. Please check the form.'}, status=400)
 
     filter_param = request.GET.get('filter', '')
-    payments = FeesModel.objects.select_related('learner_id').order_by('-register_date')
+    payments = FeeRecord.objects.select_related('learner_id').order_by('-paid_date')
 
     if filter_param == 'this_week':
         start_of_week = timezone.now().date() - timezone.timedelta(days=timezone.now().weekday())
-        payments = payments.filter(register_date__gte=start_of_week)
+        payments = payments.filter(paid_date__gte=start_of_week)
     elif filter_param == 'this_month':
-        payments = payments.filter(register_date__month=timezone.now().month, register_date__year=timezone.now().year)
+        payments = payments.filter(paid_date__month=timezone.now().month, paid_date__year=timezone.now().year)
     elif filter_param == 'this_year':
-        payments = payments.filter(register_date__year=timezone.now().year)
+        payments = payments.filter(paid_date__year=timezone.now().year)
 
     context = {
-        'recent_payments': FeesModel.objects.order_by('-register_date')[:10],
-        'students_with_pending_fees': LearnerRegister.objects.filter(feesmodel__isnull=True),
+        #'recent_paymentsxx': FeesModel.objects.order_by('-register_date')[:10],
+        'recent_payments': FeeRecord.objects.order_by('-paid_date')[:10],
+        'students_with_pending_fees': LearnerRegister.objects.filter(feerecord__isnull=True)[:10],
         'students': LearnerRegister.objects.all(),
     }
     return render(request, 'admin/fees.html', context)
@@ -292,16 +296,16 @@ def add_payment(request):
 
 @login_required
 def get_payment_details(request, payment_id):
-    payment = get_object_or_404(FeesModel, id=payment_id)
+    payment = get_object_or_404(FeeRecord, id=payment_id)
     data = {
-        'student_name': payment.learner_id.name,
+        'student_name': payment.learner.name,
         # 'payment_id': payment.id,
         'amount': str(payment.amount),
-        'payment_date': payment.register_date.strftime('%b %d, %Y'),
-        'payment_method': payment.payment_method,
+        'payment_date': payment.paid_date,
+        #'fee_type': payment.fee_type,
         'payment_id': payment.id,
-        'learner_id': payment.learner_id.learner_id,
-        'receiver_name': payment.received_by,
+        'learner_id': payment.learner.learner_id,
+        'payment_status': payment.status,
 
         # 'notes': payment.notes,
     }
@@ -357,10 +361,23 @@ def generate_pdf(payments):
     
     # Date Range
     if payments:
-        start_date = payments.order_by('register_date').first().register_date
-        end_date = payments.order_by('-register_date').first().register_date
-        date_range = f"Report Period: {start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')}"
-        elements.append(Paragraph(date_range, styles['Center']))
+        # Filter out payments with None paid_date
+        valid_payments = payments.exclude(paid_date__isnull=True)
+
+        if valid_payments.exists():  # Check if there are valid payments
+            start_date = valid_payments.order_by('paid_date').first().paid_date
+            end_date = valid_payments.order_by('-paid_date').first().paid_date
+
+            # Ensure start_date and end_date are not None
+            if start_date and end_date:
+                date_range = f"Report Period: {start_date.strftime('%B %d, %Y')} to {end_date.strftime('%B %d, %Y')}"
+                elements.append(Paragraph(date_range, styles['Center']))
+            else:
+                elements.append(Paragraph("Report Period: No valid dates found", styles['Center']))
+        else:
+            elements.append(Paragraph("Report Period: No valid payments found", styles['Center']))
+    else:
+        elements.append(Paragraph("Report Period: No payments found", styles['Center']))
 
     elements.append(PageBreak())
 
@@ -396,7 +413,7 @@ def generate_pdf(payments):
     ]))
     elements.append(summary_table)
     elements.append(Spacer(1, 0.25*inch))
-
+    '''
     # Payment Method Analysis
     elements.append(Paragraph("Payment Method Analysis", styles['Heading2']))
     payment_methods = payments.values('payment_method').annotate(
@@ -446,12 +463,12 @@ def generate_pdf(payments):
     drawing.add(pie)
     elements.append(Paragraph("Payment Method Distribution", styles['Heading3']))
     elements.append(drawing)
-
+    '''
     elements.append(PageBreak())
 
     # Monthly Payment Trend
     elements.append(Paragraph("Monthly Payment Trend", styles['Heading2']))
-    monthly_payments = payments.annotate(month=TruncMonth('register_date')).values('month').annotate(
+    monthly_payments = payments.annotate(month=TruncMonth('paid_date')).values('month').annotate(
         total=Sum('amount'),
         count=Count('id')
     ).order_by('month')
@@ -492,17 +509,29 @@ def generate_pdf(payments):
     lc.y = 50
     lc.height = 125
     lc.width = 400
-    lc.data = [tuple(payment['total'] for payment in monthly_payments)]
+
+    # Convert decimal.Decimal to float for arithmetic operations
+    lc.data = [tuple(float(payment['total']) for payment in monthly_payments)]
     lc.categoryAxis.categoryNames = [payment['month'].strftime('%b %Y') for payment in monthly_payments]
+
+    # Calculate max value and step
+    max_value = max(float(payment['total']) for payment in monthly_payments)
     lc.valueAxis.valueMin = 0
-    lc.valueAxis.valueMax = max(payment['total'] for payment in monthly_payments) * 1.1
-    lc.valueAxis.valueStep = lc.valueAxis.valueMax / 5
+    lc.valueAxis.valueMax = max_value * 1.1  # Ensure this is a float operation
+    lc.valueAxis.valueStep = lc.valueAxis.valueMax / 5  # Ensure this is a float operation
+
+    # Customize the line chart
     lc.lines[0].strokeWidth = 2
     lc.lines[0].symbol = makeMarker('Circle')
+
+    # Add the chart to the drawing
     drawing.add(lc)
+
+    # Add the chart title and drawing to the elements
     elements.append(Paragraph("Monthly Payment Trend", styles['Heading3']))
     elements.append(drawing)
 
+    # Add a page break
     elements.append(PageBreak())
 
     # Detailed Payment Records
@@ -511,7 +540,7 @@ def generate_pdf(payments):
      # Group payments by class
     payments_by_class = {}
     for payment in payments:
-        grade = payment.learner_id.grade
+        grade = payment.learner.grade
         if grade not in payments_by_class:
             payments_by_class[grade] = []
         payments_by_class[grade].append(payment)
@@ -521,14 +550,14 @@ def generate_pdf(payments):
         elements.append(Paragraph(f"{grade.grade_name} Payments", styles['Heading3']))
         
         if grade_payments:
-            data = [['Student ID', 'Student Name', 'Amount', 'Date', 'Payment Method']]
+            data = [['Student ID', 'Student Name', 'Amount', 'Date', 'Fee Type']]
             for payment in grade_payments:
                 data.append([
-                    payment.learner_id.learner_id,
-                    payment.learner_id.name,
+                    payment.learner.learner_id,
+                    payment.learner.name,
                     f"Ksh. {payment.amount:,.2f}",
-                    payment.register_date.strftime('%Y-%m-%d'),
-                    payment.payment_method
+                    payment.paid_date,
+                    payment.fee_type
                 ])
         else:
             data = [['No payments available for this class']]
@@ -562,44 +591,44 @@ def generate_pdf(payments):
 @login_required
 def export_payments(request, format):
     filter_param = request.GET.get('filter', '')
-    payments = FeesModel.objects.select_related('learner_id').order_by('-register_date')
+    saved_payments = FeeRecord.objects.select_related('learner').order_by('-paid_date')
 
     if filter_param == 'this_week':
         start_of_week = timezone.now().date() - timezone.timedelta(days=timezone.now().weekday())
-        payments = payments.filter(register_date__gte=start_of_week)
+        saved_payments = saved_payments.filter(paid_date__gte=start_of_week)
     elif filter_param == 'this_month':
-        payments = payments.filter(register_date__month=timezone.now().month, register_date__year=timezone.now().year)
+        saved_payments = saved_payments.filter(paid_date__month=timezone.now().month, paid_date__year=timezone.now().year)
     elif filter_param == 'this_year':
-        payments = payments.filter(register_date__year=timezone.now().year)
+        saved_payments = saved_payments.filter(paid_date__year=timezone.now().year)
 
     if format == 'csv':
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="payments.csv"'
         writer = csv.writer(response)
-        writer.writerow(['Student ID', 'Student Name', 'Amount', 'Date', 'Payment Method'])
-        for payment in payments:
+        writer.writerow(['Student ID', 'Student Name', 'Amount', 'Date', 'Fee Type'])
+        for saved_payment in saved_payments:
             writer.writerow(
-                [payment.learner_id.learner_id, payment.learner_id.name, payment.amount, payment.register_date,
-                 payment.payment_method])
+                [saved_payment.learner.learner_id, saved_payment.learner.name, saved_payment.amount, saved_payment.paid_date,
+                 saved_payment.fee_type])
         return response
     elif format == 'xlsx':
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="payments.xlsx"'
         workbook = xlsxwriter.Workbook(response)
         worksheet = workbook.add_worksheet()
-        headers = ['Student ID', 'Student Name', 'Amount', 'Date', 'Payment Method']
+        headers = ['Student ID', 'Student Name', 'Amount', 'Date', 'Fee Type']
         for col, header in enumerate(headers):
             worksheet.write(0, col, header)
-        for row, payment in enumerate(payments, start=1):
-            worksheet.write(row, 0, payment.learner_id.learner_id)
-            worksheet.write(row, 1, payment.learner_id.name)
+        for row, payment in enumerate(saved_payments, start=1):
+            worksheet.write(row, 0, payment.learner.learner_id)
+            worksheet.write(row, 1, payment.learner.name)
             worksheet.write(row, 2, float(payment.amount))
-            worksheet.write(row, 3, payment.register_date.strftime('%Y-%m-%d'))
-            worksheet.write(row, 4, payment.payment_method)
+            worksheet.write(row, 3, payment.paid_date.strftime('%Y-%m-%d'))
+            worksheet.write(row, 4, payment.fee_type)
         workbook.close()
         return response
     elif format == 'pdf':
-        pdf = generate_pdf(payments)
+        pdf = generate_pdf(saved_payments)
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="payments.pdf"'
         response.write(pdf)
