@@ -55,8 +55,10 @@ from reportlab.lib.colors import HexColor, red
 
 logger = logging.getLogger(__name__)
 
+
 def generate_receipt_number():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
 
 @login_required
 @permission_required('fees.view_feerecord')
@@ -64,14 +66,16 @@ def fee_record_list(request):
     fee_records = FeeRecord.objects.all().order_by('-due_date')
     return render(request, 'finance/fee_record_list.html', {'fee_records': fee_records})
 
+
 from fees.models import FeeRecord, FeeType  # Update this import
+
 
 @login_required
 @permission_required('fees.add_feerecord')
 def create_fee_record(request):
     grades = Grade.objects.all()
     selected_grade_id = request.GET.get('grade')
-    
+
     if request.method == 'POST':
         form = FeeRecordForm(request.POST)
         logger.debug(f"POST data: {request.POST}")
@@ -107,6 +111,7 @@ def create_fee_record(request):
     }
     return render(request, 'finance/create_fee_record.html', context)
 
+
 @login_required
 @permission_required('fees.add_feerecord')
 def get_learners_and_fee_types(request):
@@ -114,7 +119,8 @@ def get_learners_and_fee_types(request):
     if grade_id:
         learners = list(LearnerRegister.objects.filter(grade_id=grade_id).values('id', 'name'))
         class_fees = ClassFee.objects.filter(class_group_id=grade_id)
-        fee_types = list(FeeType.objects.filter(id__in=class_fees.values_list('fee_type_id', flat=True)).values('id', 'name'))
+        fee_types = list(
+            FeeType.objects.filter(id__in=class_fees.values_list('fee_type_id', flat=True)).values('id', 'name'))
         return JsonResponse({'learners': learners, 'fee_types': fee_types})
     return JsonResponse({'learners': [], 'fee_types': []})
 
@@ -135,11 +141,13 @@ def record_payment(request):
         form = PaymentForm()
     return render(request, 'finance/record_payment.html', {'form': form})
 
+
 @login_required
 @permission_required('finance.view_payment')
 def payment_list(request):
     payments = Payment.objects.all().order_by('-payment_date')
     return render(request, 'finance/payment_list.html', {'payments': payments})
+
 
 @login_required
 @permission_required('finance.add_expense')
@@ -156,11 +164,13 @@ def add_expense(request):
         form = ExpenseForm()
     return render(request, 'finance/add_expense.html', {'form': form})
 
+
 @login_required
 @permission_required('finance.view_expense')
 def expense_list(request):
     expenses = Expense.objects.all().order_by('-date')
     return render(request, 'finance/expense_list.html', {'expenses': expenses})
+
 
 @login_required
 @permission_required('finance.add_supply')
@@ -175,11 +185,13 @@ def add_supply(request):
         form = SupplyForm()
     return render(request, 'finance/add_supply.html', {'form': form})
 
+
 @login_required
 @permission_required('finance.view_supply')
 def supply_list(request):
     supplies = Supply.objects.all().order_by('-date_received')
     return render(request, 'finance/supply_list.html', {'supplies': supplies})
+
 
 @login_required
 @permission_required('finance.view_payment')
@@ -187,8 +199,10 @@ def financial_report(request):
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=30)  # Last 30 days
 
-    total_income = Payment.objects.filter(payment_date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or 0
-    total_expenses = Expense.objects.filter(date__range=[start_date, end_date]).aggregate(Sum('amount'))['amount__sum'] or 0
+    total_income = Payment.objects.filter(payment_date__range=[start_date, end_date]).aggregate(Sum('amount'))[
+                       'amount__sum'] or 0
+    total_expenses = Expense.objects.filter(date__range=[start_date, end_date]).aggregate(Sum('amount'))[
+                         'amount__sum'] or 0
     net_income = total_income - total_expenses
 
     context = {
@@ -200,8 +214,10 @@ def financial_report(request):
     }
     return render(request, 'finance/financial_report.html', context)
 
+
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField, Case, When
 from django.db.models.functions import Coalesce
+
 
 @login_required
 @permission_required('finance.view_payment')
@@ -238,15 +254,18 @@ def finance_dashboard(request):
 
     return render(request, 'finance/dashboard.html', context)
 
+
 @login_required
 @permission_required('finance.view_payment')
 def user_profile(request):
     return render(request, 'finance/user_profile.html')
 
+
 @login_required
 @permission_required('finance.view_payment')
 def user_settings(request):
     return render(request, 'finance/user_settings.html')
+
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -257,12 +276,13 @@ from django.db.models.functions import TruncMonth
 from .models import Payment, Expense, FeeRecord
 from .serializers import DashboardDataSerializer
 
+
 class DashboardDataAPIView(APIView):
     def get(self, request):
         # Calculate the date range (last 6 months)
         end_date = datetime.now().date().replace(day=1)
         start_date = (end_date - timedelta(days=180)).replace(day=1)
-        
+
         # Fetch data from your models
         payments = Payment.objects.filter(payment_date__range=[start_date, end_date])
         expenses = Expense.objects.filter(date__range=[start_date, end_date])
@@ -297,7 +317,8 @@ class DashboardDataAPIView(APIView):
             float(payments.filter(fee_record__fee_type__name='Tuition').aggregate(Sum('amount'))['amount__sum'] or 0),
             float(payments.filter(fee_record__fee_type__name='Donation').aggregate(Sum('amount'))['amount__sum'] or 0),
             float(payments.filter(fee_record__fee_type__name='Grant').aggregate(Sum('amount'))['amount__sum'] or 0),
-            float(payments.exclude(fee_record__fee_type__name__in=['Tuition', 'Donation', 'Grant']).aggregate(Sum('amount'))['amount__sum'] or 0),
+            float(payments.exclude(fee_record__fee_type__name__in=['Tuition', 'Donation', 'Grant']).aggregate(
+                Sum('amount'))['amount__sum'] or 0),
         ]
 
         # Calculate expense categories
@@ -352,6 +373,8 @@ class FeeTypeUpdateView(LoginRequiredMixin, PermissionRequiredMixin, UpdateView)
     permission_required = 'finance.change_feetype'
 
 
+
+
 def manage_class_fees(request, fee_type_id):
     fee_type = get_object_or_404(FeeType, id=fee_type_id)
     classes = Grade.objects.all()
@@ -369,7 +392,7 @@ def manage_class_fees(request, fee_type_id):
         return redirect('fee_type_list')
 
     class_fees = {cf.class_group_id: cf.amount for cf in ClassFee.objects.filter(fee_type=fee_type)}
-    
+
     context = {
         'fee_type': fee_type,
         'classes': classes,
@@ -377,22 +400,25 @@ def manage_class_fees(request, fee_type_id):
     }
     return render(request, 'finance/manage_class_fees.html', context)
 
+
 class FeeTypeDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
     model = FeeType
     template_name = 'finance/fee_type_confirm_delete.html'
     success_url = reverse_lazy('fee_type_list')
     permission_required = 'finance.delete_feetype'
 
+
 from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from .models import ClassFee
+
 
 class ClassFeeListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
     model = ClassFee
     template_name = 'finance/class_fee_list.html'
     context_object_name = 'class_fees'
     permission_required = 'finance.view_classfee'
-    
+
     def get_queryset(self):
         return ClassFee.objects.select_related('fee_type', 'class_group').all()
 
@@ -402,14 +428,15 @@ class ClassFeeListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         context['class_groups'] = set(cf.class_group for cf in context['class_fees'])
         return context
 
+
 class UpdateClassFeeView(UpdateView):
     model = ClassFee
     template_name = 'finance/update_class_fee.html'
     fields = ['amount']  # Add any other fields you want to update
-    
+
     def get_success_url(self):
         return reverse_lazy('class_fee_list')  # Redirect to the class fee list after updating
-    
+
 
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
@@ -427,6 +454,7 @@ from django.conf import settings
 import os
 from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
+
 
 class NumberedCanvas(canvas.Canvas):
     def __init__(self, *args, **kwargs):
@@ -448,46 +476,48 @@ class NumberedCanvas(canvas.Canvas):
 
     def draw_page_number(self, page_count):
         self.setFont("Helvetica", 8)
-        self.drawRightString(20*cm, 0.5*cm, f"Page {self._pageNumber} of {page_count}")
+        self.drawRightString(20 * cm, 0.5 * cm, f"Page {self._pageNumber} of {page_count}")
+
 
 def add_border_and_watermark(canvas, doc):
     # Add border
     canvas.setStrokeColor(HexColor("#CCCCCC"))
     canvas.setLineWidth(0.5)
-    canvas.rect(1*cm, 1*cm, doc.width, doc.height)
-    
+    canvas.rect(1 * cm, 1 * cm, doc.width, doc.height)
+
     # Add watermark
     canvas.saveState()
     canvas.setFillColor(HexColor("#F0F0F0"))
     canvas.setFont("Helvetica", 100)
-    canvas.translate(doc.width/2, doc.height/2)
+    canvas.translate(doc.width / 2, doc.height / 2)
     canvas.rotate(45)
     canvas.drawCentredString(0, 0, "PAID")
     canvas.restoreState()
-    
+
     # Add footer
     canvas.saveState()
     canvas.setFont("Helvetica", 8)
-    canvas.drawString(1*cm, 0.5*cm, "This is an electronically generated receipt. No signature required.")
+    canvas.drawString(1 * cm, 0.5 * cm, "This is an electronically generated receipt. No signature required.")
     canvas.restoreState()
+
 
 @login_required
 @permission_required('finance.view_payment')
 def print_receipt(request, payment_id):
     payment = get_object_or_404(Payment, id=payment_id)
     fee_record = payment.fee_record
-    
+
     # Create a file-like buffer to receive PDF data
     buffer = BytesIO()
-    
+
     # Set up the document
-    doc = SimpleDocTemplate(buffer, pagesize=A4, 
-                            rightMargin=1*cm, leftMargin=1*cm,
-                            topMargin=1*cm, bottomMargin=1*cm)
-    
+    doc = SimpleDocTemplate(buffer, pagesize=A4,
+                            rightMargin=1 * cm, leftMargin=1 * cm,
+                            topMargin=1 * cm, bottomMargin=1 * cm)
+
     # Create a list of flowables to build the PDF
     elements = []
-    
+
     # Styles
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(
@@ -496,7 +526,7 @@ def print_receipt(request, payment_id):
         fontSize=20,
         leading=24,
         alignment=1,
-        spaceAfter=0.5*cm
+        spaceAfter=0.5 * cm
     ))
     styles.add(ParagraphStyle(
         name='SchoolInfo',
@@ -544,12 +574,13 @@ def print_receipt(request, payment_id):
     """, styles['SchoolInfo'])
 
     header_data = [
-        [Image(logo_path, width=1*inch, height=1*inch) if logo_path and os.path.exists(logo_path) else Paragraph('Logo not found', styles['Normal']),
+        [Image(logo_path, width=1 * inch, height=1 * inch) if logo_path and os.path.exists(logo_path) else Paragraph(
+            'Logo not found', styles['Normal']),
          school_info,
          Paragraph(f"<b>Receipt No:</b><br/>{payment.receipt_number}", styles['ReceiptNumber'])]
     ]
 
-    header_table = Table(header_data, colWidths=[2*inch, 3*inch, 2*inch])
+    header_table = Table(header_data, colWidths=[2 * inch, 3 * inch, 2 * inch])
     header_table.setStyle(TableStyle([
         ('ALIGN', (0, 0), (0, 0), 'LEFT'),
         ('ALIGN', (1, 0), (1, 0), 'CENTER'),
@@ -560,11 +591,11 @@ def print_receipt(request, payment_id):
         ('BACKGROUND', (2, 0), (2, 0), HexColor("#FFF0F0")),
     ]))
     elements.append(header_table)
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.5 * cm))
 
     # Add the report title
     elements.append(Paragraph("Fee Receipt", styles['ReceiptTitle']))
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.5 * cm))
 
     # Receipt Details
     receipt_data = [
@@ -579,7 +610,7 @@ def print_receipt(request, payment_id):
         ["Balance Pending:", f"KES {fee_record.balance()}"],
     ]
 
-    table = Table(receipt_data, colWidths=[2.5*inch, 3.5*inch])
+    table = Table(receipt_data, colWidths=[2.5 * inch, 3.5 * inch])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (0, -1), HexColor("#4F4F4F")),
         ('TEXTCOLOR', (0, 0), (0, -1), white),
@@ -592,46 +623,47 @@ def print_receipt(request, payment_id):
         ('GRID', (0, 0), (-1, -1), 1, black),
     ]))
     elements.append(table)
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.5 * cm))
 
     # Add important message
     elements.append(Paragraph("Please pay before due date to avoid late fees.", styles['Important']))
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.5 * cm))
 
     # Generate QR code URL
     current_site = get_current_site(request)
     verify_url = f"https://{current_site.domain}{reverse('verify_receipt', args=[payment.receipt_number])}"
-    
+
     # Add QR code
     qr = QrCodeWidget(verify_url)
-    qr_drawing = Drawing(1*inch, 1*inch)
+    qr_drawing = Drawing(1 * inch, 1 * inch)
     qr_drawing.add(qr)
     elements.append(qr_drawing)
-    elements.append(Spacer(1, 0.5*cm))
-
+    elements.append(Spacer(1, 0.5 * cm))
 
     # Add terms and conditions
     elements.append(Paragraph("Terms and Conditions:", styles['Heading3']))
     elements.append(Paragraph("1. This receipt is valid for 30 days from the date of issue.", styles['Normal']))
     elements.append(Paragraph("2. Please retain this receipt for your records.", styles['Normal']))
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.5 * cm))
 
     # Add thank you message
     elements.append(Paragraph("Thank you for your payment!", styles['Heading3']))
 
     # Build the PDF
-    doc.build(elements, onFirstPage=add_border_and_watermark, onLaterPages=add_border_and_watermark, canvasmaker=NumberedCanvas)
-    
+    doc.build(elements, onFirstPage=add_border_and_watermark, onLaterPages=add_border_and_watermark,
+              canvasmaker=NumberedCanvas)
+
     # FileResponse sets the Content-Disposition header so that browsers
     # present the option to save the file.
     buffer.seek(0)
     return HttpResponse(buffer, content_type='application/pdf')
 
+
 def verify_receipt(request, receipt_number):
     try:
         payment = Payment.objects.get(receipt_number=receipt_number)
         fee_record = payment.fee_record
-        
+
         context = {
             'valid': True,
             'receipt_number': payment.receipt_number,
@@ -648,12 +680,12 @@ def verify_receipt(request, receipt_number):
             'valid': False,
             'message': 'Invalid or unknown receipt number.'
         }
-    
+
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse(context)
     else:
         return render(request, 'finance/verify_receipt.html', context)
-    
+
 
 def manual_verify(request):
     return render(request, 'finance/manual_verify.html')

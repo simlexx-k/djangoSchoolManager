@@ -20,6 +20,7 @@ class FeeType(models.Model):
 
 class FeeRecord(models.Model):
     year = models.ForeignKey(Term, on_delete=models.CASCADE)
+    #year_id = models.PositiveIntegerField(editable=False)
     learner = models.ForeignKey(LearnerRegister, on_delete=models.CASCADE)
     fee_type = models.ForeignKey(FeeType, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)

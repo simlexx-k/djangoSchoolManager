@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://school.katalyst.co.ke/api/dashboard/',
+  baseURL: 'http://localhost:8000/api/dashboard/',
   withCredentials: true,
 });
 

@@ -1,0 +1,29 @@
+{% extends "finance/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="text-center">Create Class Fees</h1>
+    <hr>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group mb-3">
+            <label for="feeType" class="form-label"><strong>Fee Type:</strong></label>
+            <input type="text" id="feeType" class="form-control" value="{{ fee_type.name }}" disabled>
+        </div>
+        <div class="form-group mb-3">
+            <label for="amount" class="form-label"><strong>Amount:</strong></label>
+            <input 
+                type="number" 
+                id="amount" 
+                name="amount" 
+                class="form-control"
+                placeholder="Enter fee amount"
+                required>
+        </div>
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">Create Class Fees</button>
+            <a href="{% url 'fee_type_list' %}" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

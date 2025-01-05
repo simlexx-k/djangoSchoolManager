@@ -94,6 +94,7 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 class Year(models.Model):
+    id = models.AutoField(primary_key=True)
     year = models.PositiveIntegerField(unique=True)
     is_current = models.BooleanField(default=False)
 
