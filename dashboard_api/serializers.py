@@ -1,21 +1,28 @@
 from rest_framework import serializers
+
+from learners.models import LearnerRegister
 from .models import StudentProfile
 from .models import Attendance, FeeRecord, Payment, Timetable, Assignment, AssignmentSubmission
+
+
 class StudentProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentProfile
         fields = ['id', 'user', 'grade', 'date_of_birth']
+
 
 class CourseSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     teacher = serializers.CharField()
 
+
 class AssignmentSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title = serializers.CharField()
     due_date = serializers.DateField()
     status = serializers.CharField()
+
 
 class MessageSerializer(serializers.Serializer):
     id = serializers.IntegerField()
@@ -24,11 +31,13 @@ class MessageSerializer(serializers.Serializer):
     date = serializers.DateField()
     content = serializers.CharField()
 
+
 class ResourceSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title = serializers.CharField()
     type = serializers.CharField()
     url = serializers.URLField()
+
 
 class TimetableEntrySerializer(serializers.Serializer):
     day = serializers.CharField()
@@ -36,15 +45,18 @@ class TimetableEntrySerializer(serializers.Serializer):
     start_time = serializers.TimeField(format='%H:%M')
     end_time = serializers.TimeField(format='%H:%M')
 
+
 class AttendanceSerializer(serializers.Serializer):
     date = serializers.DateField()
     status = serializers.CharField()
+
 
 class ExamResultDetailSerializer(serializers.Serializer):
     subject = serializers.CharField()
     score = serializers.FloatField(allow_null=True)
     grade = serializers.CharField(allow_null=True)
     comment = serializers.CharField(allow_null=True)
+
 
 class ExamResultSerializer(serializers.Serializer):
     exam_type = serializers.CharField()
@@ -53,12 +65,15 @@ class ExamResultSerializer(serializers.Serializer):
     average_score = serializers.FloatField(allow_null=True)
     overall_grade = serializers.CharField(allow_null=True)
     overall_comment = serializers.CharField(allow_null=True)
+
+
 class ExamResultDetailSerializer(serializers.Serializer):
     subject = serializers.CharField()
     score = serializers.FloatField(allow_null=True)
     grade = serializers.CharField(allow_null=True)
     teacher_comment = serializers.CharField(allow_null=True)
     date_examined = serializers.DateField(allow_null=True)
+
 
 class ExamResultSerializer(serializers.Serializer):
     exam_id = serializers.IntegerField()
@@ -70,20 +85,24 @@ class ExamResultSerializer(serializers.Serializer):
     overall_grade = serializers.CharField(allow_null=True)
     overall_comment = serializers.CharField(allow_null=True)
 
+
 class AttendanceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attendance
         fields = ['date', 'status']
+
 
 class FeeRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = FeeRecord
         fields = ['fee_type', 'amount', 'due_date', 'paid_amount', 'status']
 
+
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = ['amount', 'payment_date', 'receipt_number', 'payment_method']
+
 
 class TimetableSerializer(serializers.ModelSerializer):
     subject = serializers.StringRelatedField()
@@ -92,10 +111,12 @@ class TimetableSerializer(serializers.ModelSerializer):
         model = Timetable
         fields = ['day', 'subject', 'start_time', 'end_time']
 
+
 class CourseSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField()
     teacher = serializers.CharField()
+
 
 class AssignmentSerializer(serializers.ModelSerializer):
     subject = serializers.StringRelatedField()
@@ -112,7 +133,17 @@ class AssignmentSerializer(serializers.ModelSerializer):
             return 'submitted' if submission.score is None else 'graded'
         return 'pending'
 
+
 class AssignmentSubmissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AssignmentSubmission
         fields = ['id', 'submitted_at', 'content', 'score']
+
+
+class LearnerRegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LearnerRegister
+        fields = [
+            'id', 'learner_id', 'register_date', 'date_of_birth', 'name', 'grade', 'gender',
+            'fee_balance', 'maize_balance', 'beans_balance', 'user', 'parent'
+        ]

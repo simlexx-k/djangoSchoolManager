@@ -18,7 +18,7 @@ const showNavigation = computed(() => {
 })
 
 const isDarkMode = computed(() => {
-  return themeStore.theme === 'dark' || 
+  return themeStore.theme === 'dark' ||
     (themeStore.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 })
 

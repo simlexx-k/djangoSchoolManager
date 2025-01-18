@@ -1,0 +1,23 @@
+{% extends 'parent_data/base.html' %}
+
+{% block content %}
+<h1>Temporary Parent-Learner Relationship List</h1>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Parent</th>
+            <th>Learner ID</th>
+            <th>Primary Contact</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for relationship in relationships %}
+        <tr>
+            <td>{{ relationship.parent }}</td>
+            <td>{{ relationship.learner_id }}</td>
+            <td>{{ relationship.is_primary_contact }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

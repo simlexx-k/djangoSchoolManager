@@ -5,7 +5,7 @@ from django.utils import timezone
 
 import exams
 import learners
-from learners.models import LearnerRegister, FeesModel
+from learners.models import LearnerRegister, FeesModel, Parent
 from django.db.models import Count, Sum
 from .forms import FeePaymentForm
 from django.contrib import messages
@@ -102,6 +102,7 @@ def student_list(request):
 @login_required
 def student_detail(request, pk):
     student = get_object_or_404(LearnerRegister, pk=pk)
+    parent = student.parent
 
     # Try to fetch the Payment record; handle absence gracefully
     payment = Payment.objects.filter(fee_record__learner=student).first()
@@ -116,6 +117,7 @@ def student_detail(request, pk):
         'payment': payment,
         'fees_details': fees_details,
         'payment_status': "Available" if payment else "Not Available",
+        'parent': parent,
     })
 
 
@@ -160,8 +162,8 @@ def student_bulk_import(request):
                     learner_id=row['learner_id'],
                     date_of_birth=row['date_of_birth'],
                     gender=row['gender'],
-                    name_of_parent=row['name_of_parent'],
-                    parent_contact=row['parent_contact'],
+                    # name_of_parent=row['name_of_parent'],
+                    # parent_contact=row['parent_contact'],
                     grade=grade
                 )
             
@@ -280,10 +282,11 @@ def fees_management(request):
     return render(request, 'admin/fees.html', context)
 
 
+from finance.forms import FeeRecordForm
 @login_required
 def add_payment(request):
     if request.method == 'POST':
-        form = FeePaymentForm(request.POST)
+        form = FeeRecordForm(request.POST)
         if form.is_valid():
             form.save()
             messages.success(request, 'Payment added successfully.')

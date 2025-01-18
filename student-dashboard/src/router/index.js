@@ -19,6 +19,7 @@ import AssignmentSubmitView from '../views/AssignmentSubmitView.vue'
 import SubmissionView from '../views/SubmissionView.vue'
 import GradedAssignmentsView from '@/views/GradedAssignmentsView.vue'
 import GradedAssignmentDetailView from '@/views/GradedAssignmentDetailView.vue'
+import AddParent from "@/components/AddParent.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -126,6 +127,11 @@ const router = createRouter({
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../components/NotFoundError.vue')
+    },
+    {
+      path: "/add-parent",
+      name: 'AddParent',
+      component: AddParent,
     }
   ]
 })

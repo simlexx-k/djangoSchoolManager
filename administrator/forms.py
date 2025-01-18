@@ -118,11 +118,11 @@ class GradeSubjectForm(forms.ModelForm):
 class StudentForm(forms.ModelForm):
     class Meta:
         model = LearnerRegister
-        fields = ['name', 'learner_id', 'grade', 'date_of_birth', 'gender', 'name_of_parent', 'parent_contact']
+        fields = ['name', 'learner_id', 'grade', 'date_of_birth', 'gender', ]
         widgets = {
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
         }
-
+#'name_of_parent', 'parent_contact'
 
 from django import forms
 from learners.models import Grade

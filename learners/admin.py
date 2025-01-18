@@ -14,9 +14,9 @@ class FeesModelAdmin(admin.ModelAdmin):
 admin.site.register(FeesModel, FeesModelAdmin)
 
 class LearnerRegisterAdmin(admin.ModelAdmin):
-    list_display = ("learner_id", "name", "date_of_birth", "gender", "name_of_parent", "parent_contact",)
+    list_display = ("learner_id", "name", "date_of_birth", "gender")
     search_fields = ['name', 'learner_id',]  # Add search fields for LearnerRegister
-
+#, "name_of_parent", "parent_contact",
 admin.site.register(LearnerRegister, LearnerRegisterAdmin)
 
 class GradeAdmin(admin.ModelAdmin):

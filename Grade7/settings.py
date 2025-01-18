@@ -99,6 +99,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     'django_ckeditor_5',
+    'parent_data.apps.ParentDataConfig'
 ]
 
 MIDDLEWARE = [

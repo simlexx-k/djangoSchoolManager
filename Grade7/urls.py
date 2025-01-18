@@ -37,6 +37,7 @@ import authenticator.urls
 import teachers.urls
 import learners.urls
 import dashboard_api.urls
+import parent_data.urls
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -51,6 +52,7 @@ urlpatterns = [
     path('control/learners/', include("learners.urls")),
     path('teacher/', include('teachers.urls')),
     path('finance/', include('finance.urls')),
+    path('parent_data/', include('parent_data.urls')),
     path('api/', include('dashboard_api.urls')),
     path('api/dashboard/', include('dashboard_api.urls')),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

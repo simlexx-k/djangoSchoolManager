@@ -24,6 +24,38 @@ class Grade(models.Model):
         return self.grade_name
 
 
+class Parent(models.Model):
+    # Basic parent details
+    RELATIONSHIP_CHOICES = [
+        ('Father', 'Father'),
+        ('Mother', 'Mother'),
+        ('Guardian', 'Guardian'),
+    ]
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField(unique=True)
+    phone_number = models.CharField(max_length=15)
+    address = models.TextField()
+    occupation = models.CharField(max_length=100, blank=True, null=True)  # New field
+    relationship_to_learner = models.CharField(max_length=100, choices=RELATIONSHIP_CHOICES, null=True)  # New field
+
+    # Link to the User model (if you want to associate parents with users)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='parent_profile'
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['email']),  # Add index for faster lookups
+        ]
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
+
 class LearnerRegister(models.Model):
     GENDER_CHOICES = [
         ('Male', 'Male'),
@@ -35,15 +67,23 @@ class LearnerRegister(models.Model):
     name = models.CharField(max_length=100)
     grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='learners', default='1')
     gender = models.CharField(max_length=100, choices=GENDER_CHOICES)
-    name_of_parent = models.CharField(max_length=100, default='Parent')
-    parent_contact = models.CharField(max_length=100, default='Contact')
     fee_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     maize_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     beans_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='learner_profile')
 
+    # Link to the Parent model
+    parent = models.ForeignKey(
+        Parent,
+        on_delete=models.CASCADE,
+        related_name='learners',
+        null=True,
+        blank=True
+    )
+
     def __str__(self):
         return f"{self.learner_id} {self.name}"
+
 
 
 class FeesModel(models.Model):

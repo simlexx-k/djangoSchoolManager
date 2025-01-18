@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Data Form</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #007bff;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+        .learner-group {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .learner-group button {
+            margin-top: 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .learner-group button:hover {
+            background-color: #c82333;
+        }
+        .add-learner-btn {
+            width: 100%;
+            margin-bottom: 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .add-learner-btn:hover {
+            background-color: #218838;
+        }
+        .submit-btn {
+            width: 100%;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .submit-btn:hover {
+            background-color: #0056b3;
+        }
+        #responseMessage {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Parent Data Form</h1>
+        <form id="parentForm">
+            {% csrf_token %}
+            <!-- Parent Details -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="first_name">First Name:</label>
+                        <input type="text" id="first_name" name="first_name" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="last_name">Last Name:</label>
+                        <input type="text" id="last_name" name="last_name" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="phone_number">Phone Number:</label>
+                        <input type="text" id="phone_number" name="phone_number" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Address:</label>
+                <textarea id="address" name="address" rows="3" required></textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="occupation">Occupation:</label>
+                        <input type="text" id="occupation" name="occupation">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="relationship_to_learner">Relationship to Learner:</label>
+                        <input type="text" id="relationship_to_learner" name="relationship_to_learner" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learner Selection -->
+            <div id="learnerGroups">
+                <div class="learner-group">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="grade1">Select Grade:</label>
+                                <select class="grade-select" id="grade1" name="grades[]" required>
+                                    <option value="" class="text-black">-- Select a grade --</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="learner1">Select Learner:</label>
+                                <select class="learner-select" id="learner1" name="learners[]" required>
+                                    <option value="">-- Select a learner --</option>
+                                    <!-- Options will be populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" onclick="removeLearnerGroup(this)">Remove Learner</button>
+                </div>
+            </div>
+
+            <!-- Add Another Learner Button -->
+            <button type="button" class="add-learner-btn" onclick="addLearnerGroup()">Add Another Learner</button>
+
+            <!-- Submit Button -->
+            <button type="submit" class="submit-btn">Submit</button>
+        </form>
+
+        <div id="responseMessage" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        // Fetch grades from the API and populate the dropdowns
+        fetch('http://127.0.0.1:8000/parent_data/api/grades/')  // Replace with your API endpoint
+            .then(response => response.json())
+            .then(data => {
+                const gradeSelects = document.querySelectorAll('.grade-select');
+                gradeSelects.forEach(select => {
+                    select.innerHTML = '<option value="" class="text-black">-- Select a grade --</option>';
+                    data.forEach(grade => {
+                        const option = document.createElement('option');
+                        option.value = grade.id;
+                        option.textContent = grade.grade_name;
+                        select.appendChild(option);
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching grades:', error);
+                document.getElementById('responseMessage').innerHTML = `
+                    <div class="alert alert-danger" role="alert">
+                        Failed to load grades. Please try again later.
+                    </div>
+                `;
+            });
+
+        // Fetch learners based on the selected grade
+        document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('grade-select')) {
+            const gradeId = e.target.value;
+            const learnerSelect = e.target.closest('.learner-group').querySelector('.learner-select');
+
+            if (!gradeId) {
+                learnerSelect.innerHTML = '<option value="">-- Select a learner --</option>';
+                return;
+            }
+
+                fetch(`http://127.0.0.1:8000/parent_data/api/learners/?grade=${gradeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    learnerSelect.innerHTML = '<option value="">-- Select a learner --</option>';
+                    data.forEach(learner => {
+                        const option = document.createElement('option');
+                        option.value = learner.id;
+                        option.textContent = `${learner.name} (ID: ${learner.id})`;
+                        learnerSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching learners:', error);
+                    document.getElementById('responseMessage').innerHTML = `
+                        <div class="alert alert-danger" role="alert">
+                            Failed to load learners. Please try again later.
+                        </div>
+                    `;
+                });
+                }
+            });
+
+        // Add a new learner group
+        let learnerGroupCount = 1;
+        function addLearnerGroup() {
+            learnerGroupCount++;
+            const learnerGroup = document.createElement('div');
+            learnerGroup.className = 'learner-group';
+            learnerGroup.innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="grade${learnerGroupCount}">Select Grade:</label>
+                            <select class="grade-select" id="grade${learnerGroupCount}" name="grades[]" required>
+                                <option value="">-- Select a grade --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="learner${learnerGroupCount}">Select Learner:</label>
+                            <select class="learner-select" id="learner${learnerGroupCount}" name="learners[]" required>
+                                <option value="">-- Select a learner --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" onclick="removeLearnerGroup(this)">Remove Learner</button>
+            `;
+            document.getElementById('learnerGroups').appendChild(learnerGroup);
+
+            // Populate the new grade dropdown
+            fetch('http://127.0.0.1:8000/parent_data/api/grades/')
+                .then(response => response.json())
+                .then(data => {
+                    const gradeSelect = learnerGroup.querySelector('.grade-select');
+                    gradeSelect.innerHTML = '<option value="">-- Select a grade --</option>';
+                    data.forEach(grade => {
+                        const option = document.createElement('option');
+                        option.value = grade.id;
+                        option.textContent = grade.grade_name;
+                        gradeSelect.appendChild(option);
+                    });
+                });
+        }
+
+        // Remove a learner group
+        function removeLearnerGroup(button) {
+            button.parentElement.remove();
+        }
+
+        // Handle form submission
+       document.getElementById('parentForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const parentData = {
+            first_name: document.getElementById('first_name').value,
+            last_name: document.getElementById('last_name').value,
+            email: document.getElementById('email').value,
+            phone_number: document.getElementById('phone_number').value,
+            address: document.getElementById('address').value,
+            occupation: document.getElementById('occupation').value,
+            relationship_to_learner: document.getElementById('relationship_to_learner').value,
+        };
+
+        // First, create the parent
+        fetch('http://127.0.0.1:8000/parent_data/api/parents/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,  // Include the CSRF token in the headers
+            },
+            body: JSON.stringify(parentData),
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Log the error response
+                return response.json().then(err => {
+                    throw new Error(JSON.stringify(err));
+                });
+            }
+            return response.json();
+        })
+        .then(parent => {
+            // After creating the parent, associate learners
+            const learnerPromises = Array.from(document.querySelectorAll('select[name="learners[]"]')).map(select => {
+                const learnerId = select.value;
+                return fetch('http://127.0.0.1:8000/parent_data/api/parent-learner-relationships/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,  // Include the CSRF token in the headers
+                    },
+                    body: JSON.stringify({
+                        parent: parent.id,
+                        learner: learnerId,
+                    }),
+                });
+            });
+
+            // Wait for all learner associations to complete
+            return Promise.all(learnerPromises);
+        })
+        .then(responses => {
+            document.getElementById('responseMessage').innerHTML = `
+                <div class="alert alert-success" role="alert">
+                    Parent and learners associated successfully!
+                </div>
+            `;
+            document.getElementById('parentForm').reset(); // Clear the form
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            document.getElementById('responseMessage').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    Error: ${error.message}
+                </div>
+            `;
+        });
+    });
+    </script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
