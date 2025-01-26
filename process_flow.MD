@@ -20,13 +20,13 @@ Django School Management System:
    - [ ] Add relevant information and quick actions to each dashboard
 
 3. Student Management
-   - [ ] Create Student model (if not already done)
-   - [ ] Implement CRUD views for students
-   - [ ] Design list, detail, and form templates for students
-   - [ ] Add student search functionality
+   - [x] Create Student model (if not already done)
+   - [x] Implement CRUD views for students
+   - [x] Design list, detail, and form templates for students
+   - [x] Add student search functionality
 
 4. Teacher Management
-   - [ ] Create Teacher model
+   - [x] Create Teacher model
    - [ ] Implement CRUD views for teachers
    - [ ] Design list, detail, and form templates for teachers
    - [ ] Add teacher search functionality
@@ -38,10 +38,10 @@ Django School Management System:
    - [ ] Add course search and filter functionality
 
 6. Grade Management
-   - [ ] Create Grade model
-   - [ ] Implement grade entry system
-   - [ ] Create grade report views
-   - [ ] Design grade report templates
+   - [x] Create Grade model
+   - [x] Implement grade entry system
+   - [x] Create grade report views
+   - [x] Design grade report templates
 
 7. Attendance System
    - [ ] Create Attendance model
