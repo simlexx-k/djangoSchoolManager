@@ -1,0 +1,10 @@
+{% extends 'parent_data/base.html' %}
+
+{% block content %}
+<h1>Parent List</h1>
+<ul>
+    {% for parent in parents %}
+    <li>{{ parent.first_name }} {{ parent.last_name }} - {{ parent.email }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

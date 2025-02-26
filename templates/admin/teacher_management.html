@@ -1,6 +1,6 @@
 {% extends 'admin/base.html' %}
 {% load static %}
-
+{% load breadcrumbs_tags %}
 {% load custom_filters %}
 
 <head>
@@ -50,6 +50,8 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-6">
+    <!-- Breadcrumbs -->    
+     {% render_breadcrumbs breadcrumbs %}
     <h1 class="text-2xl font-bold mb-4">Teacher Management</h1>
 
     <!-- Filter and Export Options -->

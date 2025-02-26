@@ -1,0 +1,23 @@
+{% extends 'parent_data/base.html' %}
+
+{% block content %}
+<h1>Temporary Parent List</h1>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone Number</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for parent in parents %}
+        <tr>
+            <td>{{ parent.first_name }} {{ parent.last_name }}</td>
+            <td>{{ parent.email }}</td>
+            <td>{{ parent.phone_number }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

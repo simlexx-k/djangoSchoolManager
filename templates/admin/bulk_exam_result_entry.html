@@ -3,7 +3,7 @@
 </head>
 {% extends 'admin/base.html' %}
 {% load static %}
-
+{% load breadcrumbs_tags %}
 {% block extra_css %}
 <style>
     @media (max-width: 640px) {
@@ -17,6 +17,8 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+     {% render_breadcrumbs breadcrumbs %}
     <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Bulk Exam Result Entry</h1>
     
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 md:p-8">

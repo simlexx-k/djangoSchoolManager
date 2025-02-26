@@ -99,6 +99,7 @@ INSTALLED_APPS = [
     'drf_yasg',
     'corsheaders',
     'django_ckeditor_5',
+    'parent_data.apps.ParentDataConfig'
 ]
 
 MIDDLEWARE = [
@@ -112,6 +113,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'authenticator.middleware.SessionManagementMiddleware',
     'dashboard_api.middleware.RequestLoggingMiddleware',
+    'administrator.middleware.BreadcrumbsMiddleware',
 ]
 
 ROOT_URLCONF = 'Grade7.urls'
@@ -128,6 +130,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'administrator.context_processors.breadcrumbs',
             ],
         },
     },

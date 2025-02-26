@@ -1,5 +1,6 @@
 {% extends 'admin/base.html' %}
 {% load custom_filters %}
+{% load breadcrumbs_tags %}
 
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/dataTables.bootstrap4.min.css">
@@ -55,6 +56,8 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+     {% render_breadcrumbs breadcrumbs %}
     <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Bulk Exam Result Entry</h1>
     <h2 class="text-2xl font-semibold mb-4 text-gray-700 dark:text-gray-200">
         Grade: {{ grade.grade_name }} | Exam: {{ exam_type.name }} ({{ exam_type.date_administered|date:"d/m/Y" }})

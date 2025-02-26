@@ -1,0 +1,10 @@
+{% extends 'parent_data/base.html' %}
+
+{% block content %}
+<h1>Import Data</h1>
+<p>Click the button below to import data from temporary tables to main tables.</p>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary">Import Data</button>
+</form>
+{% endblock %}

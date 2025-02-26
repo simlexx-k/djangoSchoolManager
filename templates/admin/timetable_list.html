@@ -1,8 +1,10 @@
 {% extends 'admin/base.html' %}
 {% load static %}
-
+{% load breadcrumbs_tags %}
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->    
+     {% render_breadcrumbs breadcrumbs %}
     <h1 class="text-3xl font-bold mb-6">Timetable List</h1>
     
     <a href="{% url 'manage_timetable' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">

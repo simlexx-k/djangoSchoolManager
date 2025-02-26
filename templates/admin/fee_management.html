@@ -1,10 +1,13 @@
 {% extends 'admin/base.html' %}
 {% load static %}
+{% load breadcrumbs_tags %}
 
 {% block title %}Fee Management{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+     {% render_breadcrumbs breadcrumbs %}
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-800">Fee Management</h1>
         <a href="{% url 'add_fee_record' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">

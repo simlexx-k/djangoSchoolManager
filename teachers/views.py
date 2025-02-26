@@ -32,14 +32,16 @@ from django.core.exceptions import ValidationError
 #from administrator.models import Assignment
 # Create your views here.
 
-def is_teacher(user):
-    return user.user_type == 'teacher' and hasattr(user, 'teacher')
-    #return user.groups.filter(name='Teacher').exists()
+def is_teacher_or_superuser(user):
+    return user.user_type == 'teacher' and hasattr(user, 'teacher') or user.is_superuser
+
+def is_admin(user):
+    return user.user_type == 'admin' and hasattr(user, 'admin')
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser) 
 def teacher_dashboard(request):
-    teacher = Teacher.objects.get(user=request.user)
+    teacher = Teacher.objects.get(user=request.user) if not request.user.is_superuser else None
     
     context = {
         'total_classes': Grade.objects.count(),
@@ -56,13 +58,13 @@ def teacher_dashboard(request):
     return render(request, 'teachers/dashboard.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def class_list(request):
     classes = Grade.objects.all()
     return render(request, 'teachers/class_list.html', {'classes': classes})
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def class_detail(request, class_id):
     class_obj = get_object_or_404(Grade, id=class_id)
     search_query = request.GET.get('search', '')
@@ -86,7 +88,7 @@ def class_detail(request, class_id):
     return render(request, 'teachers/class_detail.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def student_list(request):
     grade_id = request.GET.get('grade')
     students = LearnerRegister.objects.all().order_by('name')
@@ -108,14 +110,14 @@ def student_list(request):
     return render(request, 'teachers/student_list.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def student_detail(request, student_id):
     student = get_object_or_404(LearnerRegister, id=student_id)
     exam_results = ExamResult.objects.filter(learner_id=student)
     return render(request, 'teachers/student_detail.html', {'student': student, 'exam_results': exam_results})
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def assignment_list(request):
     teacher = request.user.teacher
     teacher_subject_grades = TeacherSubjectGrade.objects.filter(teacher=teacher)
@@ -145,7 +147,7 @@ def assignment_list(request):
     return render(request, 'teachers/assignment_list.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def create_assignment(request):
     if request.method == 'POST':
         form = AssignmentForm(request.POST, request.FILES, user=request.user)
@@ -173,7 +175,7 @@ def create_assignment(request):
     return render(request, 'teachers/create_assignment.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def assignment_detail(request, assignment_id):
     assignment = get_object_or_404(Assignment, id=assignment_id)
     
@@ -196,7 +198,7 @@ def assignment_detail(request, assignment_id):
     return render(request, 'teachers/assignment_detail.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def edit_assignment(request, assignment_id):
     assignment = get_object_or_404(Assignment, id=assignment_id)
     ObjectiveQuestionFormSet = formset_factory(ObjectiveQuestionForm, extra=1)
@@ -233,7 +235,7 @@ def edit_assignment(request, assignment_id):
     return render(request, 'teachers/edit_assignment.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def delete_assignment(request, assignment_id):
     teacher = request.user.teacher
     teacher_subject_grades = TeacherSubjectGrade.objects.filter(teacher=teacher)
@@ -248,7 +250,7 @@ def delete_assignment(request, assignment_id):
     return render(request, 'teachers/delete_assignment.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def grade_assignment(request, submission_id):
     submission = get_object_or_404(AssignmentSubmission, id=submission_id)
     assignment = submission.assignment
@@ -296,7 +298,7 @@ def grade_assignment(request, submission_id):
     return render(request, 'teachers/grade_assignments.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def assignment_submissions(request, assignment_id):
     assignment = get_object_or_404(Assignment, id=assignment_id)
     
@@ -449,7 +451,7 @@ def weekly_attendance_summary(request, class_id):
     return render(request, 'teachers/weekly_attendance_summary.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def teacher_profile(request):
     if request.user.user_type != 'teacher':
         messages.error(request, "You don't have permission to view this page.")
@@ -499,7 +501,7 @@ def teacher_profile(request):
     return render(request, 'teachers/teacher_profile.html', context)
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def complete_teacher_profile(request):
     teacher = Teacher.objects.get(user=request.user)
     
@@ -519,7 +521,7 @@ def complete_teacher_profile(request):
     return render(request, 'teachers/complete_profile.html', {'form': form})
 
 @login_required
-@user_passes_test(is_teacher)
+@user_passes_test(is_teacher_or_superuser)
 def teacher_settings(request):
     teacher = Teacher.objects.get(user=request.user)
     

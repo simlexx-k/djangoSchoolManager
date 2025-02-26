@@ -523,8 +523,8 @@ def print_receipt(request, payment_id):
     styles.add(ParagraphStyle(
         name='ReceiptTitle',
         fontName='Helvetica-Bold',
-        fontSize=20,
-        leading=24,
+        fontSize=24,
+        leading=28,
         alignment=1,
         spaceAfter=0.5 * cm
     ))
@@ -547,7 +547,8 @@ def print_receipt(request, payment_id):
     styles.add(ParagraphStyle(
         name='Important',
         parent=styles['Normal'],
-        textColor=red
+        textColor=red,
+        fontName='Times-Italic'
     ))
 
     # School Logo
@@ -597,14 +598,34 @@ def print_receipt(request, payment_id):
     elements.append(Paragraph("Fee Receipt", styles['ReceiptTitle']))
     elements.append(Spacer(1, 0.5 * cm))
 
-    # Receipt Details
-    receipt_data = [
-        ["Date:", payment.payment_date.strftime('%Y-%m-%d')],
+    # Organize student name, date, and amount in a table with lines and elegant color-banding
+    upper_section_data = [
         ["Student Name:", fee_record.learner.name],
+        ["Date:", payment.payment_date.strftime('%Y-%m-%d')],
+        ["Amount Paid:", f"KES {payment.amount}"],
+    ]
+
+    upper_section_table = Table(upper_section_data, colWidths=[2.5 * inch, 3.5 * inch])
+    upper_section_table.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('LINEBELOW', (0, 0), (-1, -1), 0.5, colors.grey),  # Add lines below each row
+        ('LINEABOVE', (0, 0), (-1, 0), 1, colors.black),  # Add a line above the first row
+        ('LINEBELOW', (0, -1), (-1, -1), 1, colors.black),  # Add a line below the last row
+        ('BACKGROUND', (0, 0), (-1, 0), HexColor("#E6E6FA")),  # Light Lavender for the first row
+        ('BACKGROUND', (0, 2), (-1, 2), HexColor("#D6EAF8")),  # Pale Blue for the third row
+    ]))
+    elements.append(upper_section_table)
+    elements.append(Spacer(1, 0.5 * cm))
+
+    # Receipt Details (excluding student name, date, and amount)
+    receipt_data = [
         ["Grade:", fee_record.learner.grade.grade_name],
         ["Fee Type:", fee_record.fee_type.name],
         ["Total Fee Amount:", f"KES {fee_record.amount}"],
-        ["Amount Paid:", f"KES {payment.amount}"],
         ["Payment Method:", payment.get_payment_method_display()],
         ["Total Paid to Date:", f"KES {fee_record.paid_amount}"],
         ["Balance Pending:", f"KES {fee_record.balance()}"],
@@ -613,14 +634,14 @@ def print_receipt(request, payment_id):
     table = Table(receipt_data, colWidths=[2.5 * inch, 3.5 * inch])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (0, -1), HexColor("#4F4F4F")),
-        ('TEXTCOLOR', (0, 0), (0, -1), white),
-        ('TEXTCOLOR', (1, 0), (-1, -1), black),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.white),
+        ('TEXTCOLOR', (1, 0), (-1, -1), colors.black),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 10),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, black),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
     ]))
     elements.append(table)
     elements.append(Spacer(1, 0.5 * cm))
