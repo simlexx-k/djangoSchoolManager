@@ -1,27 +1,45 @@
 {% extends 'admin/base.html' %}
 {% load static %}
+{% load breadcrumbs_tags %}
 
 {% block title %}Student Management{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    {% render_breadcrumbs breadcrumbs %}
     <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
-        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">Student Management</h1>
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Student Management</h1>
         <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <a href="{% url 'student_create' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105 text-center">
+            <a href="{% url 'student_create' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 text-center shadow-md">
                 <i class="fas fa-plus mr-2"></i>Add New Student
             </a>
-            <a href="{% url 'student_bulk_import' %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-full transition duration-300 ease-in-out transform hover:scale-105 text-center">
+            <a href="{% url 'student_bulk_import' %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 text-center shadow-md">
                 <i class="fas fa-file-import mr-2"></i>Bulk Import
             </a>
+            <a href="{% url 'inactive_students_list' %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 text-center shadow-md">
+                <i class="fas fa-user-slash mr-2"></i>View Inactive Students
+            </a>
+            <!-- Export Dropdown -->
+            <div class="relative">
+                <button id="exportButton" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 text-center shadow-md">
+                    <i class="fas fa-file-export mr-2"></i>Export
+                </button>
+                <div id="exportDropdown" class="absolute hidden bg-white shadow-md rounded-lg mt-2 w-48">
+                    <a href="{% url 'export_learners_csv' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Export CSV</a>
+                    <a href="{% url 'export_learners_docx' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Export DOCX</a>
+                    <a href="{% url 'export_learners_pdf' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Export PDF</a>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-        <div class="p-4">
-            <form method="get" action="{% url 'student_management' %}" class="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search students..." class="w-full sm:w-auto flex-grow p-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400">
-                <select name="grade" class="w-full sm:w-auto p-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400">
+    <!-- New container for additional margin -->
+    <div class="bg-white shadow-md rounded-lg overflow-hidden p-6">
+        <div class="flex items-center justify-between flex-wrap space-y-4 md:space-y-0 pb-4 bg-white dark:bg-gray-900">
+            <form method="get" action="{% url 'student_management' %}" class="flex flex-wrap items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full">
+                <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search students..." class="flex-grow p-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <select name="grade" class="p-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400">
                     <option value="">All Classes</option>
                     {% for grade in grades %}
                         <option value="{{ grade.id }}" {% if selected_grade == grade.id %}selected{% endif %}>
@@ -29,38 +47,37 @@
                         </option>
                     {% endfor %}
                 </select>
-                <button type="submit" class="w-full sm:w-auto bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out">
+                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-full transition duration-300 ease-in-out">
                     <i class="fas fa-search mr-2"></i>Filter
                 </button>
             </form>
         </div>
-
         <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <thead class="text-xs font-semibold text-gray-700 uppercase bg-blue-100 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
                         <th class="py-3 px-6 text-left">Student ID</th>
                         <th class="py-3 px-6 text-left">Name</th>
                         <th class="py-3 px-6 text-left">Grade</th>
                         <th class="py-3 px-6 text-center">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="text-gray-600 text-sm font-light">
+                <tbody class="bg-white dark:bg-gray-800">
                     {% for student in page_obj %}
-                    <tr class="border-b border-gray-200 hover:bg-gray-100 transition duration-300 ease-in-out">
+                    <tr class="{% cycle 'bg-white' 'bg-gray-50' %} dark:bg-gray-800 dark:hover:bg-gray-600 border-b dark:border-gray-700 border-gray-200 hover:bg-gray-100 transition duration-300 ease-in-out">
                         <td class="py-3 px-6 text-left whitespace-nowrap">{{ student.learner_id }}</td>
                         <td class="py-3 px-6 text-left">{{ student.name }}</td>
                         <td class="py-3 px-6 text-left">{{ student.grade.grade_name }}</td>
                         <td class="py-3 px-6 text-center">
                             <div class="flex item-center justify-center space-x-2 sm:space-x-4">
-                                <a href="{% url 'student_detail' student.pk %}" class="text-blue-500 hover:text-blue-700 transition duration-300 ease-in-out">
-                                    View
+                                <a href="{% url 'student_detail' student.pk %}" class="text-blue-500 hover:text-blue-700 transition duration-300 ease-in-out" title="View Details">
+                                    <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="{% url 'student_update' student.pk %}" class="text-yellow-500 hover:text-yellow-700 transition duration-300 ease-in-out">
-                                    Edit
+                                <a href="{% url 'student_update' student.pk %}" class="text-yellow-500 hover:text-yellow-700 transition duration-300 ease-in-out" title="Edit Student">
+                                    <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="{% url 'student_delete' student.pk %}" class="text-red-500 hover:text-red-700 transition duration-300 ease-in-out">
-                                    Delete
+                                <a href="{% url 'student_delete' student.pk %}" class="text-red-500 hover:text-red-700 transition duration-300 ease-in-out" title="Delete Student">
+                                    <i class="fas fa-trash"></i>
                                 </a>
                             </div>
                         </td>
@@ -100,4 +117,22 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const exportButton = document.getElementById('exportButton');
+        const exportDropdown = document.getElementById('exportDropdown');
+
+        exportButton.addEventListener('click', function() {
+            exportDropdown.classList.toggle('hidden');
+        });
+
+        // Close the dropdown if clicked outside
+        document.addEventListener('click', function(event) {
+            if (!exportButton.contains(event.target) && !exportDropdown.contains(event.target)) {
+                exportDropdown.classList.add('hidden');
+            }
+        });
+    });
+</script>
 {% endblock %}

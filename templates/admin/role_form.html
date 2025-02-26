@@ -1,8 +1,11 @@
 <!-- templates/admin/role_form.html -->
 {% extends 'admin/base.html' %}
 {% load form_tags %}
+{% load breadcrumbs_tags %}
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->    
+     {% render_breadcrumbs breadcrumbs %}
     <div class="max-w-lg mx-auto">
         <h2 class="text-3xl font-bold text-gray-800 mb-6">{{ action }} Role</h2>
         <form method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">

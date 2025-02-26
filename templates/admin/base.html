@@ -9,11 +9,6 @@
         text-decoration: underline;
         color: #6366f1;
     }
-    a:active-item {
-        border-bottom: 2px solid #6366f1;
-        text-decoration: underline;
-        color: #6366f1;
-    }
 </style>
 
 <!DOCTYPE html>
@@ -30,24 +25,36 @@
     <link rel="stylesheet" href="{% static 'src/output.css' %}">
     {% endcompress %}
     <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     {% block extra_css %}{% endblock %}
 </head>
 
 <body class="bg-gray-100 dark:bg-gray-900">
     <header class=" w-full border-gray-200 dark:bg-gray-900 sticky top-0 z-50">
-        <nav class="py-4 backdrop-filter backdrop-blur-md sticky bg-opacity-40 z-50">
+        <nav class="py-4 backdrop-filter backdrop-blur-md sticky bg-opacity-40 z-50" aria-label="Main Navigation">
             <div class="flex flex-wrap items-center justify-between max-w-screen-xl px-4 mx-auto">
-                <a href="{% url 'admin_dashboard' %}" class="flex items-center">
+                <a href="{% url 'admin_dashboard' %}" class="flex items-center" aria-label="School Manager Home">
                     <img src="{% static 'src/img/masabaLogo.png' %}" class="h-6 mr-3 sm:h-9" alt="School Manager Logo" />
                     <span class="self-center text-xl font-semibold whitespace-nowrap dark:text-white">School Manager</span>
                 </a>
                 <div class="flex items-center lg:order-2">
                     {% if user.is_authenticated %}
-                    <a href="{% url 'logout' %}" class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 sm:mr-2 lg:mr-0 dark:bg-purple-600 dark:hover:bg-purple-700 focus:outline-none dark:focus:ring-purple-800">Logout</a>
+                    <div class="relative">
+                        <button class="flex items-center text-sm text-gray-500 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500" id="user-menu-button" aria-expanded="false" aria-haspopup="true">
+                            <div id="user-avatar" class="h-8 w-8 flex items-center justify-center bg-purple-700 text-white rounded-full">
+                                <!-- Initials will be inserted here -->
+                            </div>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 dark:bg-gray-800 hidden" role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
+                            <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200" role="menuitem" tabindex="-1" id="user-menu-item-0">Profile</a>
+                            <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200" role="menuitem" tabindex="-1" id="user-menu-item-1">Logout</a>
+                        </div>
+                    </div>
                     {% else %}
-                    <a href="{% url 'login' %}" class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 sm:mr-2 lg:mr-0 dark:bg-purple-600 dark:hover:bg-purple-700 focus:outline-none dark:focus:ring-purple-800">Sign In</a>
+                    <a href="{% url 'login' %}" class="text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-4 lg:px-5 py-2 lg:py-2.5 sm:mr-2 lg:mr-0 dark:bg-purple-600 dark:hover:bg-purple-700 focus:outline-none dark:focus:ring-purple-800" aria-label="Sign In">Sign In</a>
                     {% endif %}
-                    <button data-collapse-toggle="mobile-menu-2" type="button" class="inline-flex items-center p-2 ml-1 text-sm text-gray-500 rounded-lg lg:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600" aria-controls="mobile-menu-2" aria-expanded="false">
+                    <button data-collapse-toggle="mobile-menu-2" type="button" class="inline-flex items-center p-2 ml-1 text-sm text-gray-500 rounded-lg lg:hidden hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600" aria-controls="mobile-menu-2" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="sr-only">Open main menu</span>
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
                         <svg class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
@@ -56,27 +63,31 @@
                 <div class="items-center justify-between hidden w-full lg:flex lg:w-auto lg:order-1" id="mobile-menu-2">
                     <ul class="flex flex-col mt-4 font-medium lg:flex-row lg:space-x-8 lg:mt-0">
                         <li>
-                            <a href="{% url 'admin_dashboard' %}" class="block py-2 pl-3 pr-4 text-white bg-purple-700 rounded lg:bg-transparent lg:text-purple-700 lg:p-0 dark:text-white" aria-current="page">Home</a>
+                            <a href="{% url 'admin_dashboard' %}" class="block py-2 pl-3 pr-4 {% if request.path == '/dashboard/' %}text-white bg-purple-700{% else %}text-gray-700{% endif %} rounded lg:bg-transparent lg:text-purple-700 lg:p-0 dark:text-white" aria-current="page">Home</a>
                         </li>
                         <li>
-                            <a href="{% url 'fees_management' %}" class="block py-2 pl-3 pr-4 text-gray-700 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-purple-700 lg:p-0 dark:text-gray-400 lg:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white lg:dark:hover:bg-transparent dark:border-gray-700">Fees Management</a>
+                            <a href="{% url 'fees_management' %}" class="block py-2 pl-3 pr-4 {% if request.path == '/fees/' %}text-white bg-purple-700{% else %}text-gray-700{% endif %} border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-purple-700 lg:p-0 dark:text-gray-400 lg:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white lg:dark:hover:bg-transparent dark:border-gray-700">Fees Management</a>
                         </li>
                         <li>
-                            <a href="{% url 'student_management' %}" class="block py-2 pl-3 pr-4 text-gray-700 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-purple-700 lg:p-0 dark:text-gray-400 lg:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white lg:dark:hover:bg-transparent dark:border-gray-700">Students</a>
+                            <a href="{% url 'student_management' %}" class="block py-2 pl-3 pr-4 {% if request.path == '/students/' %}text-white bg-purple-700{% else %}text-gray-700{% endif %} border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-purple-700 lg:p-0 dark:text-gray-400 lg:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white lg:dark:hover:bg-transparent dark:border-gray-700">Students</a>
                         </li>
                         <li>
-                            <a href="{% url 'academic_management' %}" class="block py-2 pl-3 pr-4 text-gray-700 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-purple-700 lg:p-0 dark:text-gray-400 lg:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white lg:dark:hover:bg-transparent dark:border-gray-700">Academic Management</a>
+                            <a href="{% url 'academic_management' %}" class="block py-2 pl-3 pr-4 {% if request.path == '/academic-management/' %}text-white bg-purple-700{% else %}text-gray-700{% endif %} border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-purple-700 lg:p-0 dark:text-gray-400 lg:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white lg:dark:hover:bg-transparent dark:border-gray-700">Academic Management</a>
                         </li>
                         <li>
-                            <a href="{% url 'report_options' %}" class="block py-2 pl-3 pr-4 text-gray-700 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-purple-700 lg:p-0 dark:text-gray-400 lg:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white lg:dark:hover:bg-transparent dark:border-gray-700">Reports</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'profile' %}">Profile</a>
+                            <a href="{% url 'report_options' %}" class="block py-2 pl-3 pr-4 {% if request.path == '/reports/' %}text-white bg-purple-700{% else %}text-gray-700{% endif %} border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-purple-700 lg:p-0 dark:text-gray-400 lg:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white lg:dark:hover:bg-transparent dark:border-gray-700">Reports</a>
                         </li>
                         {% if user.is_superuser %}
-                        <li><a href="{% url 'manage_roles' %}">Manage Roles</a></li>
-                        <li><a href="{% url 'assign_role' %}">Assign Roles</a></li>
-                        <li><a href="{% url 'manage_school' %}">Manage School</a></li> 
+                        <li class="relative">
+                            <button class="admin-options-button block py-2 pl-3 pr-4 text-gray-700 border-b border-gray-100 hover:bg-gray-50 lg:hover:bg-transparent lg:border-0 lg:hover:text-purple-700 lg:p-0 dark:text-gray-400 lg:dark:hover:text-white dark:hover:bg-gray-700 dark:hover:text-white lg:dark:hover:bg-transparent dark:border-gray-700" aria-haspopup="true" aria-expanded="false">
+                                Admin Options
+                            </button>
+                            <ul class="absolute hidden text-gray-700 pt-1 group-hover:block">
+                                <li><a href="{% url 'manage_roles' %}" class="bg-gray-200 hover:bg-gray-400 py-2 px-4 block whitespace-no-wrap">Manage Roles</a></li>
+                                <li><a href="{% url 'assign_role' %}" class="bg-gray-200 hover:bg-gray-400 py-2 px-4 block whitespace-no-wrap">Assign Roles</a></li>
+                                <li><a href="{% url 'manage_school' %}" class="bg-gray-200 hover:bg-gray-400 py-2 px-4 block whitespace-no-wrap">Manage School</a></li>
+                            </ul>
+                        </li>
                         {% endif %}
                     </ul>
                 </div>
@@ -181,6 +192,46 @@
 
     </script>
     <!-- Dark Mode ends here-->
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const userMenuButton = document.getElementById('user-menu-button');
+            const userMenu = userMenuButton.nextElementSibling;
+
+            userMenuButton.addEventListener('click', () => {
+                userMenu.classList.toggle('hidden');
+            });
+
+            // Close the user dropdown if clicked outside
+            document.addEventListener('click', (event) => {
+                if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+                    userMenu.classList.add('hidden');
+                }
+            });
+
+            // Set user initials
+            const userAvatar = document.getElementById('user-avatar');
+            const userName = "{{ user.get_full_name|default:user.username }}"; // Use full name or username
+            const initials = userName.split(' ').map(name => name[0]).join('').toUpperCase();
+            userAvatar.textContent = initials;
+
+            // Admin Options Dropdown
+            const adminOptionsButton = document.querySelector('.admin-options-button');
+            const adminOptionsMenu = adminOptionsButton.nextElementSibling;
+
+            adminOptionsButton.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent the click from closing the menu
+                adminOptionsMenu.classList.toggle('hidden');
+            });
+
+            // Close the admin options dropdown if clicked outside
+            document.addEventListener('click', (event) => {
+                if (!adminOptionsButton.contains(event.target) && !adminOptionsMenu.contains(event.target)) {
+                    adminOptionsMenu.classList.add('hidden');
+                }
+            });
+        });
+    </script>
 
 </body>
 

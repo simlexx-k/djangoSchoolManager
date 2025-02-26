@@ -42,6 +42,8 @@ def dashboard(request):
     total_teachers = Teacher.objects.count()
     total_grades = Grade.objects.count()
     teachers = TeacherModel.objects.count()
+    # Get the number of students per class
+    students_per_class = LearnerRegister.objects.values('grade__grade_name').annotate(count=Count('id'))
 
     # Get recent activities (assuming we have an Activity model)
     # recent_activities = Activity.objects.order_by('-timestamp')[:5]
@@ -57,6 +59,7 @@ def dashboard(request):
         # 'upcoming_events': upcoming_events,
         'total_fees_collected': FeesModel.objects.aggregate(Sum('amount'))['amount__sum'] or 0,
         'total_fees': FeeRecord.objects.aggregate(Sum('paid_amount'))['paid_amount__sum'] or 0,
+        'students_per_class': list(students_per_class),  # Convert QuerySet to list for JSON serialization
     }
 
     return render(request, 'admin/dashboard.html', context)
@@ -74,7 +77,7 @@ def student_list(request):
     query = request.GET.get('q')
     selected_grade = request.GET.get('grade')
     
-    students = LearnerRegister.objects.all()
+    students = LearnerRegister.objects.filter(status='active')  # Only show active students
     grades = Grade.objects.all()
 
     if query:
@@ -120,18 +123,27 @@ def student_detail(request, pk):
         'parent': parent,
     })
 
-
+from .forms import ParentForm
 @login_required
 def student_create(request):
     if request.method == 'POST':
-        form = StudentForm(request.POST)
-        if form.is_valid():
-            student = form.save()
-            messages.success(request, 'Student created successfully.')
-            return redirect('student_detail', pk=student.pk)
+        learner_form = StudentForm(request.POST)
+        parent_form = ParentForm(request.POST)
+        if learner_form.is_valid() and parent_form.is_valid():
+            parent = parent_form.save()
+            learner = learner_form.save(commit=False)
+            learner.parent = parent
+            learner.save()
+            messages.success(request, 'Student and parent created successfully.')
+            return redirect('student_detail', pk=learner.pk)
     else:
-        form = StudentForm()
-    return render(request, 'admin/student_form.html', {'form': form})
+        learner_form = StudentForm()
+        parent_form = ParentForm()
+
+    return render(request, 'admin/student_form.html', {
+        'learner_form': learner_form,
+        'parent_form': parent_form
+    })
 
 import csv
 from django.http import HttpResponse
@@ -142,7 +154,7 @@ from django.db.models import Q
 from learners.models import LearnerRegister, Grade
 from .forms import StudentBulkImportForm
 
-# ... existing views ...
+
 @login_required
 def student_bulk_import(request):
     grades = Grade.objects.all()
@@ -186,15 +198,26 @@ def student_bulk_import_template(request, grade_name, grade_id):
 @login_required
 def student_update(request, pk):
     student = get_object_or_404(LearnerRegister, pk=pk)
+    parent = student.parent  # Assuming the LearnerRegister model has a ForeignKey to Parent
+
     if request.method == 'POST':
         form = StudentForm(request.POST, instance=student)
-        if form.is_valid():
+        parent_form = ParentForm(request.POST, instance=parent)
+        
+        if form.is_valid() and parent_form.is_valid():
             form.save()
-            messages.success(request, 'Student updated successfully.')
-            return redirect('admin/student_detail.html', pk=student.pk)
+            parent_form.save()
+            messages.success(request, 'Student and parent updated successfully.')
+            return redirect('student_detail', pk=student.pk)
     else:
         form = StudentForm(instance=student)
-    return render(request, 'admin/student_form.html', {'form': form, 'student': student})
+        parent_form = ParentForm(instance=parent)
+
+    return render(request, 'admin/student_form.html', {
+        'learner_form': form,
+        'parent_form': parent_form,
+        'student': student
+    })
 
 @login_required
 def student_delete(request, pk):
@@ -263,6 +286,9 @@ def fees_management(request):
             return JsonResponse({'message': 'Error recording payment. Please check the form.'}, status=400)
 
     filter_param = request.GET.get('filter', '')
+    grade_filter = request.GET.get('grade', '')
+    search_query = request.GET.get('q', '')
+
     payments = FeeRecord.objects.select_related('learner_id').order_by('-paid_date')
 
     if filter_param == 'this_week':
@@ -273,11 +299,36 @@ def fees_management(request):
     elif filter_param == 'this_year':
         payments = payments.filter(paid_date__year=timezone.now().year)
 
+    # Filter students with pending fees
+    students_with_pending_fees = LearnerRegister.objects.filter(feerecord__isnull=True)
+
+    if grade_filter:
+        students_with_pending_fees = students_with_pending_fees.filter(grade__id=grade_filter)
+
+    if search_query:
+        students_with_pending_fees = students_with_pending_fees.filter(
+            Q(name__icontains=search_query) | Q(learner_id__icontains=search_query)
+        )
+
+    paginator = Paginator(students_with_pending_fees, 10)  # Show 10 students per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Calculate total collected fees
+    total_collected_fees = FeeRecord.objects.aggregate(Sum('amount'))['amount__sum'] or 0
+
+    # Calculate total pending fees
+    # Assuming each student has a fixed fee amount, you might have a model or a constant for this
+    total_fees_due = LearnerRegister.objects.aggregate(Sum('grade__classfee'))['grade__classfee__sum'] or 0
+    total_pending_fees = total_fees_due - total_collected_fees
+
     context = {
-        #'recent_paymentsxx': FeesModel.objects.order_by('-register_date')[:10],
         'recent_payments': FeeRecord.objects.order_by('-paid_date')[:10],
-        'students_with_pending_fees': LearnerRegister.objects.filter(feerecord__isnull=True)[:10],
+        'students_with_pending_fees': page_obj,
         'students': LearnerRegister.objects.all(),
+        'grades': Grade.objects.all(),  # Add grades to context for filtering
+        'total_collected_fees': total_collected_fees,
+        'total_pending_fees': total_pending_fees,
     }
     return render(request, 'admin/fees.html', context)
 
@@ -2448,15 +2499,38 @@ def manage_attendance(request):
             form.save()
             messages.success(request, 'Attendance recorded successfully.')
             return redirect('attendance_list')
+        else:
+            messages.error(request, 'There was an error recording the attendance. Please check the form and try again.')
     else:
         form = AttendanceForm()
-    
-    return render(request, 'admin/manage_attendance.html', {'form': form})
+
+    # Fetch all grades for the filter dropdown
+    grades = Grade.objects.all()
+
+    context = {
+        'form': form,
+        'grades': grades,
+    }
+    return render(request, 'admin/manage_attendance.html', context)
 
 @login_required
 def attendance_list(request):
+    query = request.GET.get('q', '')
     attendances = Attendance.objects.all().select_related('learner', 'grade')
-    return render(request, 'admin/attendance_list.html', {'attendances': attendances})
+
+    # Implement search functionality
+    if query:
+        attendances = attendances.filter(
+            Q(learner__name__icontains=query) |
+            Q(grade__grade_name__icontains=query)
+        )
+
+    # Implement pagination
+    paginator = Paginator(attendances, 10)  # Show 10 records per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'admin/attendance_list.html', {'page_obj': page_obj, 'query': query})
 
 from .forms import TimetableForm
 from .models import Timetable
@@ -2590,8 +2664,46 @@ def delete_curriculum(request, pk):
 # Attendance views
 @login_required
 def attendance_list(request):
-    attendances = Attendance.objects.all()
-    return render(request, 'admin/attendance_list.html', {'attendances': attendances})
+    query = request.GET.get('q', '')
+    selected_grade = request.GET.get('grade', '')
+    start_date = request.GET.get('start_date', '')
+    end_date = request.GET.get('end_date', '')
+
+    attendances = Attendance.objects.all().select_related('learner', 'grade')
+
+    # Implement search and filter functionality
+    if query:
+        attendances = attendances.filter(
+            Q(learner__name__icontains=query) |
+            Q(grade__grade_name__icontains=query)
+        )
+
+    if selected_grade:
+        attendances = attendances.filter(grade_id=selected_grade)
+
+    if start_date:
+        attendances = attendances.filter(date__gte=start_date)
+
+    if end_date:
+        attendances = attendances.filter(date__lte=end_date)
+
+    # Implement pagination
+    paginator = Paginator(attendances, 10)  # Show 10 records per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Fetch all grades for the filter dropdown
+    grades = Grade.objects.all()
+
+    context = {
+        'page_obj': page_obj,
+        'query': query,
+        'selected_grade': selected_grade,
+        'start_date': start_date,
+        'end_date': end_date,
+        'grades': grades,
+    }
+    return render(request, 'admin/attendance_list.html', context)
 
 @login_required
 def edit_attendance(request, pk):
@@ -3226,5 +3338,189 @@ def terminate_all_sessions(request):
         UserSession.objects.filter(user=request.user).exclude(session_key=request.session.session_key).delete()
         messages.success(request, 'All other sessions terminated successfully.')
     return redirect('view_sessions')
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from learners.models import LearnerRegister
+
+@login_required
+def inactive_students_list(request):
+    # Query for students who are not active
+    inactive_students = LearnerRegister.objects.exclude(status='active')
+
+    if request.method == 'POST':
+        student_id = request.POST.get('student_id')
+        if student_id:
+            try:
+                student = LearnerRegister.objects.get(pk=student_id)
+                student.status = 'active'
+                student.save()
+                messages.success(request, f'Student {student.name} has been restored to active status.')
+            except LearnerRegister.DoesNotExist:
+                messages.error(request, 'Student not found.')
+
+    return render(request, 'admin/inactive_students.html', {
+        'inactive_students': inactive_students
+    })
+
+import csv
+from django.http import HttpResponse
+from learners.models import LearnerRegister
+
+def export_learners_csv(request):
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="learners.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Learner ID', 'Name', 'Grade'])
+
+    learners = LearnerRegister.objects.all()
+    for learner in learners:
+        writer.writerow([learner.learner_id, learner.name, learner.grade.grade_name])
+
+    return response
+
+from django.http import HttpResponse
+from docx import Document
+from learners.models import LearnerRegister
+
+def export_learners_docx(request):
+    # Create a new Document
+    doc = Document()
+    doc.add_heading('Learners List', 0)
+
+    learners = LearnerRegister.objects.all()
+    table = doc.add_table(rows=1, cols=3)
+    hdr_cells = table.rows[0].cells
+    hdr_cells[0].text = 'Learner ID'
+    hdr_cells[1].text = 'Name'
+    hdr_cells[2].text = 'Grade'
+
+    for learner in learners:
+        row_cells = table.add_row().cells
+        row_cells[0].text = str(learner.learner_id)
+        row_cells[1].text = learner.name
+        row_cells[2].text = learner.grade.grade_name
+
+    # Prepare the response
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response['Content-Disposition'] = 'attachment; filename="learners.docx"'
+    doc.save(response)
+    return response
+
+from django.http import HttpResponse
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from learners.models import LearnerRegister
+
+def export_learners_pdf(request):
+    # Create a file-like buffer to receive PDF data.
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="learners.pdf"'
+
+    # Create the PDF object, using the buffer as its "file."
+    p = canvas.Canvas(response, pagesize=letter)
+    width, height = letter
+
+    # Fetch school details
+    school = School.objects.first()  # Assuming there's only one school record
+    school_name = school.name if school else "School Name"
+    school_address = school.address if school else "School Address"
+    school_contact = school.contact_email if school else "Contact Email"
+    logo_path = 'static/src/img/masabaLogo.png'
+
+    def draw_header():
+        # Draw the logo
+        if os.path.exists(logo_path):
+            logo = Image(logo_path, width=1*inch, height=1*inch)
+            logo.drawOn(p, width / 2 - 0.5*inch, height - 1.2*inch)  # Adjusted position for the logo
+
+        # Draw the school details
+        p.setFont("Helvetica-Bold", 18)
+        p.setFillColor(colors.darkblue)
+        p.drawCentredString(width / 2, height - 100, school_name)  # Adjusted position for school name
+        p.setFont("Helvetica", 12)
+        p.setFillColor(colors.black)
+        p.drawCentredString(width / 2, height - 120, school_address)  # Adjusted position for address
+        p.drawCentredString(width / 2, height - 140, school_contact)  # Adjusted position for contact
+        p.line(100, height - 145, width - 100, height - 145)  # Add a line below the header
+
+    # Draw the initial header
+    draw_header()
+
+    # Prepare data for the table
+    learners = LearnerRegister.objects.all()
+    data = [['Learner ID', 'Name', 'Grade']]  # Table header
+    for learner in learners:
+        data.append([learner.learner_id, learner.name, learner.grade.grade_name])
+
+    # Calculate the position for the table
+    y_position = height - 180  # Start below the header
+
+    # Draw the table with pagination
+    rows_per_page = 25
+    for i in range(0, len(data), rows_per_page):
+        if i > 0:
+            p.showPage()
+            draw_header()  # Redraw the header on each new page
+            y_position = height - 180
+
+        # Include the header only on the first page
+        if i == 0:
+            table_data = data[i:i + rows_per_page]
+        else:
+            table_data = data[0:1] + data[i:i + rows_per_page]
+
+        table = Table(table_data, colWidths=[100, 200, 100])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+        ]))
+        table.wrapOn(p, width, height)
+        table.drawOn(p, 100, y_position - (len(table_data) * 20))
+
+    # Add totals table
+    p.showPage()  # Start a new page for the totals
+    draw_header()  # Redraw the header for the totals page
+    p.setFont("Helvetica-Bold", 16)
+    p.drawCentredString(width / 2, height - 160, "Learner Totals")  # Adjusted position
+
+    # Calculate totals
+    totals_data = [['Grade', 'Number of Learners']]
+    total_learners = 0
+    for grade in Grade.objects.all():
+        count = learners.filter(grade=grade).count()
+        totals_data.append([grade.grade_name, count])
+        total_learners += count
+
+    totals_data.append(['Total School Population', total_learners])
+
+    totals_table = Table(totals_data, colWidths=[200, 100])
+    totals_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.darkblue),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.lightgrey),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+    ]))
+    totals_table.wrapOn(p, width, height)
+    totals_table.drawOn(p, 100, height - 210 - (len(totals_data) * 20))  # Adjusted position
+
+    # Close the PDF object cleanly, and we're done.
+    p.showPage()
+    p.save()
+    return response
 
 

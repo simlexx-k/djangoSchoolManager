@@ -3,7 +3,9 @@
 </head>
 {% extends 'admin/base.html' %}
 {% load static %}
+{% load breadcrumbs_tags %}
 {% block content %}
 <div class="p-8 bg-gray-100 dark:bg-gray-800 min-h-screen rounded-lg">
-
+    <!-- Breadcrumbs -->    
+     {% render_breadcrumbs breadcrumbs %}
 {% endblock content %}

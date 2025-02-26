@@ -1,10 +1,13 @@
 {% extends 'admin/base.html' %}
 {% load static %}
+{% load breadcrumbs_tags %}
 
 {% block title %}Delete Fee Record{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+     {% render_breadcrumbs breadcrumbs %}
     <h1 class="text-3xl font-bold text-gray-800 mb-6">Delete Fee Record</h1>
     <div class="bg-white shadow-md rounded-lg p-6">
         <p class="mb-4">Are you sure you want to delete the fee record for {{ fee_record.learner.name }} ({{ fee_record.fee_type.name }})?</p>

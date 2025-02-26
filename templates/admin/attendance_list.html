@@ -1,42 +1,82 @@
 {% extends 'admin/base.html' %}
 {% load static %}
+{% load breadcrumbs_tags %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Attendance List</h1>
-    
-    <a href="{% url 'manage_attendance' %}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4 inline-block">
-        Record New Attendance
-    </a>
+    <!-- Breadcrumbs -->
+    {% render_breadcrumbs breadcrumbs %}
+    <h1 class="text-3xl font-bold mb-6">Attendance Records</h1>
 
-    <table class="table-auto w-full">
-        <thead>
-            <tr>
-                <th class="px-4 py-2">Learner</th>
-                <th class="px-4 py-2">Grade</th>
-                <th class="px-4 py-2">Date</th>
-                <th class="px-4 py-2">Present</th>
-                <th class="px-4 py-2">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for attendance in attendances %}
-            <tr>
-                <td class="border px-4 py-2">{{ attendance.learner }}</td>
-                <td class="border px-4 py-2">{{ attendance.grade }}</td>
-                <td class="border px-4 py-2">{{ attendance.date }}</td>
-                <td class="border px-4 py-2">{{ attendance.is_present|yesno:"Yes,No" }}</td>
-                <td class="border px-4 py-2">
-                    <a href="{% url 'edit_attendance' attendance.id %}" class="text-blue-500 hover:text-blue-800">Edit</a>
-                    <a href="{% url 'delete_attendance' attendance.id %}" class="text-red-500 hover:text-red-800 ml-2">Delete</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="border px-4 py-2 text-center">No attendance records found.</td>
-            </tr>
+    <!-- Filter Form -->
+    <form method="get" class="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search by learner or grade" class="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <select name="grade" class="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="">All Grades</option>
+            {% for grade in grades %}
+                <option value="{{ grade.id }}" {% if selected_grade == grade.id %}selected{% endif %}>
+                    {{ grade.grade_name }}
+                </option>
             {% endfor %}
-        </tbody>
-    </table>
+        </select>
+        <input type="date" name="start_date" value="{{ start_date }}" class="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <input type="date" name="end_date" value="{{ end_date }}" class="p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            Filter
+        </button>
+    </form>
+
+    <div class="overflow-x-auto">
+        <table class="table-auto w-full bg-white shadow-md rounded-lg">
+            <thead class="bg-blue-100">
+                <tr>
+                    <th class="px-4 py-2 text-left">Learner</th>
+                    <th class="px-4 py-2 text-left">Grade</th>
+                    <th class="px-4 py-2 text-left">Date</th>
+                    <th class="px-4 py-2 text-left">Status</th>
+                    <th class="px-4 py-2 text-left">Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attendance in page_obj %}
+                <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-gray-100 transition duration-300 ease-in-out">
+                    <td class="border px-4 py-2">{{ attendance.learner }}</td>
+                    <td class="border px-4 py-2">{{ attendance.grade }}</td>
+                    <td class="border px-4 py-2">{{ attendance.date }}</td>
+                    <td class="border px-4 py-2">{{ attendance.get_status_display }}</td>
+                    <td class="border px-4 py-2">{{ attendance.remarks }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center py-4">No attendance records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="mt-4 flex justify-between items-center">
+        <p class="text-gray-600 text-sm">
+            Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} records
+        </p>
+        <nav class="inline-flex rounded-md shadow-sm">
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&q={{ query|urlencode }}&grade={{ selected_grade }}&start_date={{ start_date }}&end_date={{ end_date }}" class="px-3 py-2 text-sm font-medium text-blue-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">Previous</a>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <span class="px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-gray-300">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}&q={{ query|urlencode }}&grade={{ selected_grade }}&start_date={{ start_date }}&end_date={{ end_date }}" class="px-3 py-2 text-sm font-medium text-blue-500 bg-white border border-gray-300 hover:bg-gray-50">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&q={{ query|urlencode }}&grade={{ selected_grade }}&start_date={{ start_date }}&end_date={{ end_date }}" class="px-3 py-2 text-sm font-medium text-blue-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">Next</a>
+            {% endif %}
+        </nav>
+    </div>
 </div>
 {% endblock %}

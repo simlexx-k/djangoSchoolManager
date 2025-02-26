@@ -1,10 +1,11 @@
 {% extends 'admin/base.html' %}
 {% load static %}
-
+{% load breadcrumbs_tags %}
 {% block title %}Student Details - {{ student.name }}{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    {% render_breadcrumbs breadcrumbs %}
     <!-- Student Details Card -->
     <div class="bg-white shadow-lg rounded-lg overflow-hidden">
         <!-- Header Section -->

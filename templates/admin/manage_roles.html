@@ -1,8 +1,11 @@
 <!-- templates/admin/manage_roles.html -->
 {% extends 'admin/base.html' %}
 {% load form_tags %}
+{% load breadcrumbs_tags %}
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+     {% render_breadcrumbs breadcrumbs %}
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-3xl font-bold text-gray-800">Manage Roles</h2>
         <a href="{% url 'add_role' %}" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105">

@@ -3,6 +3,7 @@ from learners.models import LearnerRegister, Grade
 from exams.models import Subject
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 # Create your models here.
 
 class Curriculum(models.Model):
@@ -15,15 +16,32 @@ class Curriculum(models.Model):
         return f"{self.name} - {self.grade}"
 
 class Attendance(models.Model):
-    learner = models.ForeignKey(LearnerRegister, on_delete=models.CASCADE, related_name='admin_attendances')  # Changed related_name
+    STATUS_CHOICES = [
+        ('present', 'Present'),
+        ('absent', 'Absent'),
+        ('late', 'Late'),
+        ('excused', 'Excused'),
+        ('unexcused', 'Unexcused Absence'),
+    ]
+
+    DEFAULT_GRADE_ID = 1  # Replace with the actual default grade ID
+
+    learner = models.ForeignKey(LearnerRegister, on_delete=models.CASCADE, related_name='admin_attendances')
+    grade = models.ForeignKey(Grade, on_delete=models.CASCADE, related_name='attendance_records', default=DEFAULT_GRADE_ID)
     date = models.DateField()
-    status = models.CharField(max_length=10, choices=[('present', 'Present'), ('absent', 'Absent'), ('late', 'Late')], default='present')
-    
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='present')
+    remarks = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(default=timezone.now)
+
     class Meta:
         unique_together = ('learner', 'date')
-    
+
     def __str__(self):
-        return f"{self.learner} - {self.date} - {'Present' if self.status == 'present' else 'Absent'}"
+        return f"{self.learner} - {self.date} - {self.get_status_display()}"
+
+    def clean(self):
+        if self.date > timezone.now().date():
+            raise ValidationError("Attendance cannot be marked for future dates.")
 
 class Timetable(models.Model):
     DAY_CHOICES = [

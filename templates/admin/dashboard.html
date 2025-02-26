@@ -1,103 +1,176 @@
 <head>
     <title>Dashboard - Admin</title>
+    <!-- Add a link to a CSS framework like Tailwind CSS or Bootstrap for better styling -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Add FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 {% extends 'admin/base.html' %}
 
 {% block content %}
 
-<div>
-    <!-- Sidebar -->
+<div class="flex-1 p-6">
+    <h1 class="text-3xl font-bold mb-6">School Dashboard</h1>
+    
+    <!-- Notification Area -->
+    <div id="notification-area" class="w-full mb-4">
+        <!-- Notifications will be dynamically inserted here -->
+    </div>
 
-    <br>
-    <!-- Main Content -->
-    <div class="flex-1">
-        <h1 class="text-3xl font-bold mb-6">School Dashboard</h1>
-        
-        <!-- Grid Layout -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Statistics Cards -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <!-- Search and Filter -->
+    <div class="mb-6">
+        <input type="text" id="search-bar" class="w-full p-2 border rounded" placeholder="Search...">
+    </div>
+
+    <!-- Grid Layout -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Statistics Cards -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex items-center">
+            <i class="fas fa-user-graduate text-4xl text-blue-500 mr-4"></i>
+            <div>
                 <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Total Students</h3>
                 <p class="text-3xl font-bold">{{ total_students }}</p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex items-center">
+            <i class="fas fa-chalkboard-teacher text-4xl text-green-500 mr-4"></i>
+            <div>
                 <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Total Teachers</h3>
                 <p class="text-3xl font-bold">{{ total_teachers }}</p>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex items-center">
+            <i class="fas fa-book text-4xl text-yellow-500 mr-4"></i>
+            <div>
                 <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Grades</h3>
                 <p class="text-3xl font-bold">{{ total_grades }}</p>
             </div>
-            
-            <!-- New Fees Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        </div>
+        
+        <!-- New Fees Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 flex items-center">
+            <i class="fas fa-money-bill-wave text-4xl text-purple-500 mr-4"></i>
+            <div>
                 <h3 class="font-bold text-gray-500 dark:text-gray-400 mb-2">Total Fees Collected</h3>
                 <p class="text-3xl font-bold">Ksh.{{ total_fees }}</p>
             </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2">
+            <h2 class="text-xl font-bold mb-4">Recent Activity</h2>
+            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for activity in recent_activities %}
+                    <li class="py-3">{{ activity.description }}</li>
+                {% empty %}
+                    <li class="py-3">No recent activities</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <!-- Calendar -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Upcoming Events</h2>
+            <ul class="space-y-2">
+                {% for event in upcoming_events %}
+                    <li>{{ event.date|date:"M d" }} - {{ event.title }}</li>
+                {% empty %}
+                    <li>No upcoming events</li>
+                {% endfor %}
+            </ul>
             
-            <!-- Recent Activity -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2">
-                <h2 class="text-xl font-bold mb-4">Recent Activity</h2>
-                <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                    {% for activity in recent_activities %}
-                        <li class="py-3">{{ activity.description }}</li>
-                    {% empty %}
-                        <li class="py-3">No recent activities</li>
-                    {% endfor %}
-                </ul>
-            </div>
-            
-            <!-- Calendar -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 class="text-xl font-bold mb-4">Upcoming Events</h2>
-                <ul class="space-y-2">
-                    {% for event in upcoming_events %}
-                        <li>{{ event.date|date:"M d" }} - {{ event.title }}</li>
-                    {% empty %}
-                        <li>No upcoming events</li>
-                    {% endfor %}
-                </ul>
-                
-            </div>
-            <!-- Graphs -->
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2">
-                <h2 class="text-xl font-bold mb-4">Graphs</h2>
-                <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                    {% for activity in recent_activities %}
-                        <li class="py-3">Coming Soon</li>
-                    {% empty %}
-                        <li class="py-3">Coming Soon</li>
-                    {% endfor %}
-                </ul>
-            </div>
+        </div>
+        <!-- Graphs -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2">
+            <h2 class="text-xl font-bold mb-4">Graphs</h2>
+            <canvas id="myChart" width="400" height="200"></canvas>
+        </div>
 
-            <!-- Quick Actions -->
-            <div class="max-w-auto w-full bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2 lg:col-span-3 ">
-                <h2 class="text-xl font-bold mb-4 dark:text-white">Quick Actions</h2>
-                <div class="w-full grid grid-cols-6 sm:grid-cols-6 gap-4 p-2 overflow-visible">
-                    <a href="{% url 'add_student' %}" class="w-full bg-blue-500 hover:bg-blue-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
-                        Add Student
-                    </a>
-                    <a href="{% url 'take_attendance' %}" class="w-full bg-green-500 hover:bg-green-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
-                        Take Attendance
-                    </a>
-                    <a href="{% url 'report_options' %}" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
-                        Generate Reports
-                    </a>
-                    <a href="{% url 'send_notification' %}" class="w-full bg-red-500 hover:bg-red-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
-                        Send Notification
-                    </a>
-                    <a href="{% url 'fees_management' %}" class="w-full bg-purple-500 hover:bg-purple-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
-                        Manage Fees
-                    </a>
-                    <a href="{% url 'student_management' %}" class="w-full bg-purple-500 hover:bg-purple-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
-                        Manage Students
-                    </a>
-                </div>
+        <!-- Quick Actions -->
+        <div class="max-w-auto w-full bg-white dark:bg-gray-800 rounded-lg shadow p-6 md:col-span-2 lg:col-span-3 ">
+            <h2 class="text-xl font-bold mb-4 dark:text-white">Quick Actions</h2>
+            <div class="w-full grid grid-cols-6 sm:grid-cols-6 gap-4 p-2 overflow-visible">
+                <a href="{% url 'student_create' %}" class="w-full bg-blue-500 hover:bg-blue-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
+                    <i class="fas fa-user-plus mr-2"></i>Add Student
+                </a>
+                <a href="{% url 'manage_attendance' %}" class="w-full bg-green-500 hover:bg-green-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
+                    <i class="fas fa-clipboard-list mr-2"></i>Take Attendance
+                </a>
+                <a href="{% url 'report_options' %}" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
+                    <i class="fas fa-chart-line mr-2"></i>Generate Reports
+                </a>
+                <a href="{% url 'send_notification' %}" class="w-full bg-red-500 hover:bg-red-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
+                    <i class="fas fa-bell mr-2"></i>Send Notification
+                </a>
+                <a href="{% url 'fees_management' %}" class="w-full bg-purple-500 hover:bg-purple-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
+                    <i class="fas fa-wallet mr-2"></i>Manage Fees
+                </a>
+                <a href="{% url 'student_management' %}" class="w-full bg-purple-500 hover:bg-purple-600 text-white dark:text-white font-bold py-2 px-4 rounded text-center">
+                    <i class="fas fa-users mr-2"></i>Manage Students
+                </a>
             </div>
         </div>
     </div>
 </div>
 
+<script>
+    // Example of adding a chart using Chart.js
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const studentsPerClass = {{ students_per_class|safe }};
+    const labels = studentsPerClass.map(item => item.grade__grade_name);
+    const data = studentsPerClass.map(item => item.count);
+
+    // Define alternating colors
+    const backgroundColors = [
+        'rgba(54, 162, 235, 0.2)',  // Blue
+        'rgba(255, 99, 132, 0.2)',  // Red
+        'rgba(255, 206, 86, 0.2)',  // Yellow
+        'rgba(75, 192, 192, 0.2)',  // Green
+        'rgba(153, 102, 255, 0.2)', // Purple
+        'rgba(255, 159, 64, 0.2)'   // Orange
+    ];
+    const borderColors = [
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 99, 132, 1)',
+        'rgba(255, 206, 86, 1)',
+        'rgba(75, 192, 192, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(255, 159, 64, 1)'
+    ];
+
+    const myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Number of Students per Class',
+                data: data,
+                backgroundColor: data.map((_, index) => backgroundColors[index % backgroundColors.length]),
+                borderColor: data.map((_, index) => borderColors[index % borderColors.length]),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    // Example of adding notifications
+    function addNotification(message) {
+        const notificationArea = document.getElementById('notification-area');
+        const notification = document.createElement('div');
+        notification.className = 'w-full bg-blue-100 border-t border-b border-blue-500 text-blue-700 px-4 py-3';
+        notification.textContent = message;
+        notificationArea.appendChild(notification);
+    }
+
+    // Add a sample notification
+    addNotification('Welcome to the School Dashboard!');
+</script>
 
 {% endblock %}

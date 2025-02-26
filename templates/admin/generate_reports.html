@@ -3,8 +3,11 @@
 </head>
 {% extends 'admin/base.html' %}
 {% load static %}
+{% load breadcrumbs_tags %}
 {% block content %}
 <div class="p-8">
+    <!-- Breadcrumbs -->
+     {% render_breadcrumbs breadcrumbs %}
     <h1 class="text-3xl font-bold mb-6">Academic Reports</h1>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

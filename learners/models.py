@@ -61,6 +61,12 @@ class LearnerRegister(models.Model):
         ('Male', 'Male'),
         ('Female', 'Female'),
     ]
+    STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('transferred', 'Transferred'),
+        ('graduated', 'Graduated'),
+        ('inactive', 'Inactive'),
+    ]
     register_date = models.DateTimeField(auto_now_add=True)
     learner_id = models.IntegerField(unique=True)
     date_of_birth = models.DateField()
@@ -70,6 +76,7 @@ class LearnerRegister(models.Model):
     fee_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     maize_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     beans_balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='learner_profile')
 
     # Link to the Parent model

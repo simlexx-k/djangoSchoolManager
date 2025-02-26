@@ -1,0 +1,12 @@
+<nav class="text-sm font-medium text-gray-500 mb-4" aria-label="Breadcrumb">
+    <ol class="list-reset flex">
+        {% for breadcrumb in breadcrumbs %}
+            <li>
+                <a href="{{ breadcrumb.url }}" class="text-blue-600 hover:text-blue-800">{{ breadcrumb.name }}</a>
+                {% if not forloop.last %}
+                    <span class="mx-2">/</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+</nav>

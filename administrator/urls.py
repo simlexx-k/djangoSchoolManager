@@ -13,7 +13,7 @@ from administrator.views import dashboard, take_attendance, send_notification, g
     delete_curriculum, edit_attendance, delete_attendance, edit_timetable, delete_timetable, edit_teacher_assignment, \
     delete_teacher_assignment, manage_academic_calendar, edit_academic_calendar, delete_academic_calendar, edit_exam, \
     delete_exam, subject_list, edit_subject, delete_subject, grade_list, edit_grade, delete_grade, \
-    student_bulk_import_template
+    student_bulk_import_template, inactive_students_list, export_learners_csv, export_learners_docx, export_learners_pdf
 from authenticator.views import logout_view
 from exams.views import create_progress_report, list_progress_reports, view_progress_report, add_skills_assessment, add_behavioral_assessment, learner_performance_chart, create_progress_report, list_progress_reports, view_progress_report, create_progress_report, list_progress_reports, view_progress_report, dashboard as exam_dashboard
 from . import views
@@ -194,4 +194,10 @@ urlpatterns = [
      path('sessions/', views.view_sessions, name='view_sessions'),
      path('sessions/terminate/<str:session_key>/', views.terminate_session, name='terminate_session'),
      path('sessions/terminate-all/', views.terminate_all_sessions, name='terminate_all_sessions'),
+
+    path('students/inactive-students/', views.inactive_students_list, name='inactive_students_list'),
+    #Export Learners
+    path('export/csv/', export_learners_csv, name='export_learners_csv'),
+    path('export/docx/', export_learners_docx, name='export_learners_docx'),
+    path('export/pdf/', export_learners_pdf, name='export_learners_pdf'),
 ]

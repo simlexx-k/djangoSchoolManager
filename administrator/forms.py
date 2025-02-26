@@ -1,11 +1,11 @@
 from django import forms
 
-from learners.models import FeesModel
+from learners.models import FeesModel, Parent
 from exams.models import ExamResult, ExamType, Subject
 from learners.models import LearnerRegister, Grade
 from django import forms
 from learners.models import Grade
-
+from django.utils import timezone
 
 class FeePaymentForm(forms.ModelForm):
     class Meta:
@@ -118,11 +118,15 @@ class GradeSubjectForm(forms.ModelForm):
 class StudentForm(forms.ModelForm):
     class Meta:
         model = LearnerRegister
-        fields = ['name', 'learner_id', 'grade', 'date_of_birth', 'gender', ]
+        fields = ['name', 'learner_id', 'grade', 'date_of_birth', 'gender', 'status']
         widgets = {
             'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
         }
-#'name_of_parent', 'parent_contact'
+
+class ParentForm(forms.ModelForm):
+    class Meta:
+        model = Parent
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'address', 'occupation', 'relationship_to_learner']
 
 from django import forms
 from learners.models import Grade
@@ -148,15 +152,23 @@ class CurriculumForm(forms.ModelForm):
 class AttendanceForm(forms.ModelForm):
     class Meta:
         model = Attendance
-        fields = ['learner', 'date', 'status']
+        fields = ['learner', 'grade', 'date', 'status', 'remarks']
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
+            'remarks': forms.Textarea(attrs={'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['learner'].queryset = LearnerRegister.objects.all()
         self.fields['status'].widget = forms.Select(choices=[('present', 'Present'), ('absent', 'Absent'), ('late', 'Late')])
+        self.fields['grade'].queryset = Grade.objects.all()
+
+    def clean_date(self):
+        date = self.cleaned_data.get('date')
+        if date and date > timezone.now().date():
+            raise forms.ValidationError("Attendance cannot be marked for future dates.")
+        return date
 
 class TimetableForm(forms.ModelForm):
     class Meta:
@@ -205,14 +217,6 @@ class GradeForm(forms.ModelForm):
     class Meta:
         model = Grade
         fields = ['grade_name', 'grade_description', 'class_teacher_remark']
-
-class SubjectForm(forms.ModelForm):
-    class Meta:
-        model = Subject
-        fields = ['name', 'grades']
-        widgets = {
-            'grades': forms.CheckboxSelectMultiple(),
-        }
 
 class ExamTypeForm(forms.ModelForm):
     class Meta:
